@@ -1,0 +1,284 @@
+<div class="equipes-page container-fluid">
+
+  <!-- CABEÇALHO DA PÁGINA -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <nav class="breadcrumb-nav" aria-label="Breadcrumb">
+        <span class="bc-item"><i class="bi bi-house-fill" aria-hidden="true"></i> Dashboard</span>
+        <i class="bi bi-chevron-right bc-sep" aria-hidden="true"></i>
+        <span class="bc-item bc-active">Equipes</span>
+      </nav>
+      <h2 class="page-title">Equipes</h2>
+      <p class="page-subtitle">Gerencie as equipes da rede, acompanhe formação e lançamento.</p>
+    </div>
+
+    <div class="page-header-right">
+      <button class="btn-nova-equipe" type="button">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        Nova Equipe
+      </button>
+    </div>
+  </div>
+
+  <!-- CARDS DE RESUMO — refletem o total global, não o resultado filtrado -->
+  <div class="row g-3 mt-0 mb-1">
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-all">
+          <i class="bi bi-people-fill" aria-hidden="true"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Total</span>
+          <strong class="kpi-value">{{ equipes().length }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-ativa">
+          <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Ativas</span>
+          <strong class="kpi-value">{{ totalAtivas() }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-formacao">
+          <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Em formação</span>
+          <strong class="kpi-value">{{ totalEmFormacao() }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-inativa">
+          <i class="bi bi-slash-circle-fill" aria-hidden="true"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Inativas</span>
+          <strong class="kpi-value">{{ totalInativas() }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARRA DE FILTROS -->
+  <div class="filter-bar">
+    <div class="filter-search-wrap">
+      <i class="bi bi-search filter-search-icon" aria-hidden="true"></i>
+      <!-- $any() contorna a tipagem estrita do Angular para acessar .value do evento nativo -->
+      <input
+        class="filter-search-input"
+        type="text"
+        placeholder="Buscar equipe pelo nome…"
+        [value]="termoBusca()"
+        (input)="atualizarBusca($any($event.target).value)"
+        aria-label="Buscar equipe"
+      />
+    </div>
+
+    <div class="filter-selects">
+      <div class="filter-select-wrap">
+        <i class="bi bi-funnel-fill filter-select-icon" aria-hidden="true"></i>
+        <select
+          class="filter-select"
+          [value]="filtroStatus()"
+          (change)="atualizarFiltroStatus($any($event.target).value)"
+          aria-label="Filtrar por status"
+        >
+          <option value="Todos">Todos os status</option>
+          <option value="Ativa">Ativa</option>
+          <option value="Em formação">Em formação</option>
+          <option value="Inativa">Inativa</option>
+        </select>
+      </div>
+
+      <div class="filter-select-wrap">
+        <i class="bi bi-camera-video-fill filter-select-icon" aria-hidden="true"></i>
+        <select
+          class="filter-select"
+          [value]="filtroModelo()"
+          (change)="atualizarFiltroModelo($any($event.target).value)"
+          aria-label="Filtrar por modelo"
+        >
+          <option value="Todos">Todos os modelos</option>
+          <option value="Presencial">Presencial</option>
+          <option value="Online">Online</option>
+          <option value="Híbrido">Híbrido</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- aria-live="polite" anuncia a contagem para leitores de tela sem interromper a navegação -->
+    <span class="filter-count" aria-live="polite">
+      {{ equipesFiltradas().length }}
+      {{ equipesFiltradas().length === 1 ? 'equipe' : 'equipes' }}
+    </span>
+  </div>
+
+  <!-- TABELA DE EQUIPES -->
+  <div class="table-card">
+    <div class="table-wrapper">
+      <table class="equipes-table" aria-label="Lista de equipes">
+        <thead>
+          <tr>
+            <th scope="col">Equipe</th>
+            <th scope="col">Status</th>
+            <th scope="col">Reunião</th>
+            <th scope="col">Formação</th>
+            <th scope="col">Previsão / Lançamento</th>
+            <th scope="col" class="col-acoes">Ações</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <!-- track por idEquipe evita re-renderização desnecessária ao atualizar o signal -->
+          @for (equipe of equipesFiltradas(); track equipe.idEquipe) {
+            <!-- row-inativa aplica opacity reduzida para sinalizar visualmente o estado desativado -->
+            <tr class="equipe-row" [class.row-inativa]="equipe.statusEquipe === 'Inativa'">
+
+              <td class="cell-nome">
+                <div class="equipe-avatar">
+                  <!-- Extrai a inicial da última palavra do nome (ex: "C+C Fênix" → "F") -->
+                  <span class="avatar-initials">{{ equipe.nomeEquipe.split(' ').slice(-1)[0].charAt(0) }}</span>
+                </div>
+                <div>
+                  <span class="equipe-nome-texto">{{ equipe.nomeEquipe }}</span>
+                  <small class="equipe-desde">
+                    Desde {{ formatarData(equipe.dataInicioFormacao) }}
+                  </small>
+                </div>
+              </td>
+
+              <td>
+                <span [class]="classeStatus(equipe.statusEquipe)">
+                  {{ equipe.statusEquipe }}
+                </span>
+              </td>
+
+              <td class="cell-reuniao">
+                <div class="reuniao-linha">
+                  <i class="bi bi-calendar2-week" aria-hidden="true"></i>
+                  {{ equipe.diaReuniao }}
+                </div>
+                <div class="reuniao-linha reuniao-secundaria">
+                  <i class="bi bi-clock" aria-hidden="true"></i>
+                  {{ equipe.horarioReuniao }}
+                  &nbsp;·&nbsp;
+                  <i class="bi" [ngClass]="iconeModelo(equipe.modeloReuniao)" aria-hidden="true"></i>
+                  {{ equipe.modeloReuniao }}
+                </div>
+              </td>
+
+              <!-- Barra de progresso omitida para equipes inativas, pois o dado de membros é 0 -->
+              <td class="cell-formacao">
+                @if (equipe.statusEquipe !== 'Inativa') {
+                  <div class="formacao-wrap">
+                    <div class="formacao-topo">
+                      <span class="formacao-contagem">
+                        {{ equipe.membros }} / {{ equipe.minimoLancamento }}
+                      </span>
+                      <span class="formacao-pct">
+                        {{ percentualFormacao(equipe) | number:'1.0-0' }}%
+                      </span>
+                    </div>
+                    <div class="progress-track">
+                      <div
+                        class="progress-fill"
+                        [class.progress-completo]="percentualFormacao(equipe) >= 100"
+                        [style.width.%]="percentualFormacao(equipe)"
+                        role="progressbar"
+                        [attr.aria-valuenow]="percentualFormacao(equipe)"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                      ></div>
+                    </div>
+                  </div>
+                } @else {
+                  <span class="text-muted-sm">—</span>
+                }
+              </td>
+
+              <!-- Exibe data efetiva com ícone de confirmação quando lançada; previsão caso contrário -->
+              <td class="cell-lancamento">
+                @if (equipe.dataEfetivaLancamento) {
+                  <div class="lancamento-wrap lancamento-ok">
+                    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                    <span>{{ formatarData(equipe.dataEfetivaLancamento) }}</span>
+                  </div>
+                  <small class="lancamento-label">Lançamento efetivo</small>
+                } @else {
+                  <div class="lancamento-wrap">
+                    <i class="bi bi-calendar-event" aria-hidden="true"></i>
+                    <span>{{ formatarData(equipe.dataPrevisaoLancamento) }}</span>
+                  </div>
+                  <small class="lancamento-label">Previsão</small>
+                }
+              </td>
+
+              <!-- Botão de inativar/reativar muda conforme o status atual da equipe -->
+              <td class="cell-acoes">
+                <div class="acoes-group">
+                  <button
+                    class="btn-acao btn-editar"
+                    (click)="editarEquipe(equipe)"
+                    title="Editar equipe"
+                    type="button"
+                    aria-label="Editar {{ equipe.nomeEquipe }}"
+                  >
+                    <i class="bi bi-pencil-fill" aria-hidden="true"></i>
+                  </button>
+
+                  @if (equipe.statusEquipe !== 'Inativa') {
+                    <button
+                      class="btn-acao btn-inativar"
+                      (click)="inativarEquipe(equipe)"
+                      title="Inativar equipe"
+                      type="button"
+                      aria-label="Inativar {{ equipe.nomeEquipe }}"
+                    >
+                      <i class="bi bi-slash-circle-fill" aria-hidden="true"></i>
+                    </button>
+                  } @else {
+                    <button
+                      class="btn-acao btn-reativar"
+                      (click)="inativarEquipe(equipe)"
+                      title="Reativar equipe"
+                      type="button"
+                      aria-label="Reativar {{ equipe.nomeEquipe }}"
+                    >
+                      <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+
+          <!-- Exibido pelo @empty do @for quando nenhuma equipe corresponde aos filtros ativos -->
+          @empty {
+            <tr>
+              <td colspan="6" class="empty-state">
+                <div class="empty-icon">
+                  <i class="bi bi-people" aria-hidden="true"></i>
+                </div>
+                <p class="empty-title">Nenhuma equipe encontrada</p>
+                <p class="empty-subtitle">Tente ajustar os filtros ou cadastre uma nova equipe.</p>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
