@@ -1,0 +1,143 @@
+/* ----- SIDEBAR BASE ----- */
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  background-color: #2f855a;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 4px 0 18px rgba(0, 0, 0, 0.08);
+  width: 56px;
+  transition: width 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  color: white;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* ----- SIDEBAR EXPANDIDA ----- */
+.sidebar.sidebar-expanded {
+  width: 200px;
+}
+
+/* ----- BOTÃO TOGGLE ÚNICO ----- */
+.toggle-btn {
+  border: none;
+  background: transparent;
+  padding: 14px;
+  width: 100%;
+  cursor: pointer;
+  font-size: 22px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+/* Quando expandida, ícone de fechar vai para a direita */
+.sidebar.sidebar-expanded .toggle-btn {
+  justify-content: flex-end;
+  padding-right: 18px;
+}
+
+.toggle-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.toggle-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: -2px;
+}
+
+/* ----- MENU ----- */
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 6px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  scrollbar-width: none; /* Firefox */
+}
+
+.menu::-webkit-scrollbar {
+  display: none; /* Chrome/Safari — sem scrollbar na nav */
+}
+
+/* ----- ITEM MENU ----- */
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  text-decoration: none;
+  color: #ecfdf5;
+  font-size: 14px;
+  border-radius: 10px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.menu-item:active {
+  transform: scale(0.98);
+}
+
+.menu-item.active-link {
+  background-color: rgba(0, 0, 0, 0.18);
+  border-left: 3px solid #a7f3d0;
+  padding-left: 9px; /* compensa os 3px da borda */
+}
+
+.menu-item:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: -2px;
+}
+
+/* ----- ÍCONES ----- */
+.menu-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  min-width: 24px;
+}
+
+.menu-icon i {
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* ----- TEXTO ----- */
+.menu-label {
+  white-space: nowrap;
+  font-weight: 500;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+
+/* ----- COLLAPSED STATE ----- */
+.sidebar:not(.sidebar-expanded) .menu-label {
+  display: none;
+}
+
+.sidebar:not(.sidebar-expanded) .menu-item {
+  justify-content: center;
+  padding: 10px;
+}
+
+.sidebar:not(.sidebar-expanded) .menu-item.active-link {
+  border-left: none;
+  border-bottom: 3px solid #a7f3d0;
+  padding: 7px 10px 10px;
+}

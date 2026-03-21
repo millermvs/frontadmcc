@@ -1,0 +1,261 @@
+<div class="dashboard-page container-fluid">
+  <!-- HERO / CABEÇALHO -->
+  <div class="hero-panel">
+    <div class="hero-left">
+      <span class="hero-badge">
+        <i class="bi bi-grid-1x2-fill" aria-hidden="true"></i>
+        Dashboard
+      </span>
+
+      <h2 class="hero-title">Painel da Rede {{ nomeRede() }}</h2>
+      <p class="hero-subtitle">
+        Acompanhe equipes, associados, conexões, negócios e movimentações da semana em um só lugar.
+      </p>
+    </div>
+
+    <div class="hero-right">
+      <div class="hero-mini-card">
+        <small>Negócios Gerados</small>
+        <strong>{{ textoMoeda(totalNegociosGerados()) }}</strong>
+      </div>
+
+      <div class="hero-mini-card">
+        <small>Negócios Recebidos</small>
+        <strong>{{ textoMoeda(totalNegociosRecebidos()) }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- LINHA DE KPIS -->
+  <div class="row g-3 mt-1">
+    <div class="col-12 col-sm-6 col-xl-3" *ngFor="let card of cardsResumo()">
+      <a class="summary-card text-decoration-none" [routerLink]="card.rota">
+        <div class="summary-card-top">
+          <div>
+            <span class="summary-title">{{ card.titulo }}</span>
+            <h3 class="summary-value">{{ card.valor }}</h3>
+          </div>
+
+          <div class="summary-icon" [ngClass]="card.classeIcone">
+            <i class="bi" [ngClass]="card.icone"></i>
+          </div>
+        </div>
+
+        <small class="summary-subtitle">{{ card.subtitulo }}</small>
+      </a>
+    </div>
+  </div>
+
+  <!-- GRID PRINCIPAL -->
+  <div class="row g-3 mt-2">
+    <!-- EQUIPES -->
+    <div class="col-12 col-xl-4">
+      <div class="panel-card h-100">
+        <div class="panel-header">
+          <div>
+            <h5 class="panel-title">Equipes da rede</h5>
+            <small class="panel-subtitle">Acompanhamento de formação e lançamento</small>
+          </div>
+
+          <a class="panel-link" routerLink="/pages/equipes">Ver tudo</a>
+        </div>
+
+        <div class="panel-body panel-scroll">
+          <div class="team-item" *ngFor="let equipe of equipes()">
+            <div class="team-item-top">
+              <div>
+                <strong class="team-name">{{ equipe.nome }}</strong>
+                <div class="team-meta">
+                  {{ equipe.membros }} de {{ equipe.minimoLancamento }} membros
+                </div>
+              </div>
+
+              <span [class]="classeStatusEquipe(equipe.status)">
+                {{ equipe.status }}
+              </span>
+            </div>
+
+            <div class="progress team-progress">
+              <div
+                class="progress-bar team-progress-bar"
+                role="progressbar"
+                [style.width.%]="percentualFormacao(equipe)">
+              </div>
+            </div>
+
+            <small class="team-progress-text">
+              {{ percentualFormacao(equipe) | number:'1.0-0' }}% para lançamento oficial
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENDA -->
+    <div class="col-12 col-xl-4">
+      <div class="panel-card h-100">
+        <div class="panel-header">
+          <div>
+            <h5 class="panel-title">Agenda da semana</h5>
+            <small class="panel-subtitle">Reuniões e encontros programados</small>
+          </div>
+
+          <a class="panel-link" routerLink="/pages/reunioes">Abrir agenda</a>
+        </div>
+
+        <div class="panel-body panel-scroll">
+          <div class="agenda-item" *ngFor="let item of agendaSemana()">
+            <div class="agenda-icon">
+              <i class="bi bi-calendar-event-fill" aria-hidden="true"></i>
+            </div>
+
+            <div class="agenda-content">
+              <div class="agenda-top">
+                <strong>{{ item.equipe }}</strong>
+                <span [class]="classeStatusAgenda(item.status)">
+                  {{ item.status }}
+                </span>
+              </div>
+
+              <div class="agenda-meta">
+                <span><i class="bi bi-clock" aria-hidden="true"></i> {{ item.dia }} • {{ item.horario }}</span>
+              </div>
+
+              <div class="agenda-meta">
+                <span><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ item.local }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RANKING -->
+    <div class="col-12 col-xl-4">
+      <div class="panel-card h-100">
+        <div class="panel-header">
+          <div>
+            <h5 class="panel-title">Top geradores</h5>
+            <small class="panel-subtitle">Quem mais movimentou conexões na rede</small>
+          </div>
+
+          <a class="panel-link" routerLink="/pages/relatorios">Relatórios</a>
+        </div>
+
+        <div class="panel-body panel-scroll">
+          <div class="ranking-item" *ngFor="let item of rankingGeradores(); let i = index">
+            <div class="ranking-left">
+              <div class="ranking-position">{{ i + 1 }}</div>
+
+              <div>
+                <strong class="ranking-name">{{ item.nome }}</strong>
+                <div class="ranking-team">{{ item.equipe }}</div>
+              </div>
+            </div>
+
+            <div class="ranking-total">
+              {{ item.total }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEGUNDA LINHA -->
+  <div class="row g-3 mt-2">
+    <!-- CONEXÕES -->
+    <div class="col-12 col-xl-8">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <h5 class="panel-title">Últimas conexões registradas</h5>
+            <small class="panel-subtitle">Indicações geradas entre associados</small>
+          </div>
+
+          <a class="panel-link" routerLink="/pages/conexoes">Ir para conexões</a>
+        </div>
+
+        <div class="panel-body panel-scroll panel-connections">
+          <div class="connection-row" *ngFor="let conexao of ultimasConexoes()">
+            <div class="connection-main">
+              <div class="connection-title">
+                <strong>{{ conexao.associadoOrigem }}</strong>
+                <i class="bi bi-arrow-right-short" aria-hidden="true"></i>
+                <strong>{{ conexao.associadoDestino }}</strong>
+              </div>
+
+              <div class="connection-subtitle">
+                Contato: {{ conexao.contato }}
+              </div>
+            </div>
+
+            <div class="connection-side">
+              <span [class]="classeTipoConexao(conexao.tipo)">
+                {{ conexao.tipo }}
+              </span>
+
+              <span [class]="classeStatusConexao(conexao.status)">
+                {{ conexao.status }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESUMO RÁPIDO -->
+    <div class="col-12 col-xl-4">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <h5 class="panel-title">Resumo rápido</h5>
+            <small class="panel-subtitle">{{ periodoAtual() }}</small>
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <div class="quick-stat">
+            <div class="quick-stat-icon soft-success">
+              <i class="bi bi-people-fill" aria-hidden="true"></i>
+            </div>
+            <div>
+              <small>Total de associados</small>
+              <strong>{{ totalAssociados() }}</strong>
+            </div>
+          </div>
+
+          <div class="quick-stat">
+            <div class="quick-stat-icon soft-info">
+              <i class="bi bi-share-fill" aria-hidden="true"></i>
+            </div>
+            <div>
+              <small>Conexões na semana</small>
+              <strong>{{ totalConexoesSemana() }}</strong>
+            </div>
+          </div>
+
+          <div class="quick-stat">
+            <div class="quick-stat-icon soft-warning">
+              <i class="bi bi-person-plus-fill" aria-hidden="true"></i>
+            </div>
+            <div>
+              <small>Visitantes no mês</small>
+              <strong>{{ totalVisitantesMes() }}</strong>
+            </div>
+          </div>
+
+          <div class="quick-stat">
+            <div class="quick-stat-icon soft-primary">
+              <i class="bi bi-diagram-3-fill" aria-hidden="true"></i>
+            </div>
+            <div>
+              <small>Equipes ativas</small>
+              <strong>{{ equipes().length }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
