@@ -1,0 +1,103 @@
+<!-- ============================================================
+  Tela de Login — Layout
+  ============================================================
+  Estrutura: tela cheia dividida em duas metades.
+  - Esquerda: painel decorativo com a marca C+C
+  - Direita: formulário de login
+
+  O (ngSubmit) no <form> é o equivalente a um @PostMapping
+  no controller — ele captura o "submit" do formulário e
+  chama o método onLogin() do componente.
+
+  O [(ngModel)] é two-way binding: quando o usuário digita,
+  o signal atualiza. Quando o signal muda, o input atualiza.
+  Analogia: é como um campo de formulário que lê e escreve
+  no mesmo DTO ao mesmo tempo.
+  ============================================================ -->
+
+<div class="login-container">
+
+  <!-- ── Painel esquerdo (decorativo) ────────────────────── -->
+  <div class="login-brand">
+    <div class="brand-content">
+      <h1>C+C</h1>
+      <p>Painel Administrativo</p>
+      <span>Gestão de Associados</span>
+    </div>
+  </div>
+
+  <!-- ── Painel direito (formulário) ─────────────────────── -->
+  <div class="login-form-panel">
+    <div class="login-form-wrapper">
+
+      <h2>Acessar o sistema</h2>
+      <p class="login-subtitle">Digite suas credenciais para entrar</p>
+
+      <!-- Mensagem de erro (aparece só quando mensagemErro não é vazio) -->
+      @if (mensagemErro()) {
+        <div class="alert-erro">
+          <i class="bi bi-exclamation-circle"></i>
+          {{ mensagemErro() }}
+        </div>
+      }
+
+      <!-- Formulário -->
+      <form (ngSubmit)="onLogin()">
+
+        <!-- Campo E-mail -->
+        <div class="campo">
+          <label for="email">E-mail</label>
+          <div class="input-icon">
+            <i class="bi bi-envelope"></i>
+            <input
+              id="email"
+              type="email"
+              placeholder="seu@email.com"
+              [ngModel]="email()"
+              (ngModelChange)="email.set($event)"
+              name="email"
+              required
+              autocomplete="email"
+            />
+          </div>
+        </div>
+
+        <!-- Campo Senha -->
+        <div class="campo">
+          <label for="senha">Senha</label>
+          <div class="input-icon">
+            <i class="bi bi-lock"></i>
+            <input
+              id="senha"
+              type="password"
+              placeholder="Digite sua senha"
+              [ngModel]="senha()"
+              (ngModelChange)="senha.set($event)"
+              name="senha"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+        </div>
+
+        <!-- Botão de Login -->
+        <button
+          type="submit"
+          class="btn-login"
+          [disabled]="carregando() || !email() || !senha()"
+        >
+          @if (carregando()) {
+            <span class="spinner"></span>
+            Entrando...
+          } @else {
+            <i class="bi bi-box-arrow-in-right"></i>
+            Entrar
+          }
+        </button>
+
+      </form>
+
+    </div>
+  </div>
+
+</div>

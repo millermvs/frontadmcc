@@ -1,0 +1,203 @@
+/* ============================================================
+   Tela de Login — Estilos
+   ============================================================
+   Design: split-screen (painel marca + painel formulário)
+   Cores: alinhadas com o tema verde do projeto (--cor-primaria)
+   ============================================================ */
+
+/* ── Container principal ─────────────────────────────────── */
+.login-container {
+  display: flex;
+  min-height: 100vh;
+  background: #f4f7f5;
+}
+
+/* ── Painel esquerdo (marca) ─────────────────────────────── */
+.login-brand {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a5632 0%, #2f855a 50%, #38a169 100%);
+  color: white;
+}
+
+.brand-content {
+  text-align: center;
+}
+
+.brand-content h1 {
+  font-size: 4rem;
+  font-weight: 800;
+  letter-spacing: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.brand-content p {
+  font-size: 1.25rem;
+  font-weight: 500;
+  opacity: 0.9;
+  margin-bottom: 0.25rem;
+}
+
+.brand-content span {
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+/* ── Painel direito (formulário) ─────────────────────────── */
+.login-form-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.login-form-wrapper {
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-form-wrapper h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.login-subtitle {
+  color: #64748b;
+  font-size: 0.95rem;
+  margin-bottom: 1.75rem;
+}
+
+/* ── Alerta de erro ──────────────────────────────────────── */
+.alert-erro {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
+}
+
+.alert-erro i {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+/* ── Campos do formulário ────────────────────────────────── */
+.campo {
+  margin-bottom: 1.25rem;
+}
+
+.campo label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.4rem;
+}
+
+.input-icon {
+  position: relative;
+}
+
+.input-icon i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 1rem;
+}
+
+.input-icon input {
+  width: 100%;
+  padding: 0.7rem 0.75rem 0.7rem 2.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #0f172a;
+  background: white;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.input-icon input:focus {
+  outline: none;
+  border-color: #2f855a;
+  box-shadow: 0 0 0 3px rgba(47, 133, 90, 0.15);
+}
+
+.input-icon input::placeholder {
+  color: #94a3b8;
+}
+
+/* ── Botão de login ──────────────────────────────────────── */
+.btn-login {
+  width: 100%;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  background: #2f855a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background 0.2s;
+}
+
+.btn-login:hover:not(:disabled) {
+  background: #276749;
+}
+
+.btn-login:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* ── Spinner de loading ──────────────────────────────────── */
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Responsivo ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .login-container {
+    flex-direction: column;
+  }
+
+  .login-brand {
+    flex: 0 0 auto;
+    padding: 2.5rem 1rem;
+  }
+
+  .brand-content h1 {
+    font-size: 2.5rem;
+  }
+
+  .login-form-panel {
+    flex: 1;
+    padding: 2rem 1.5rem;
+  }
+}
