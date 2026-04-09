@@ -1,9 +1,17 @@
-<div class="layout-container">
-  <!-- MENU LATERAL FIXO -->
-  <app-navbar></app-navbar>
+<!-- ============================================================
+  App Root — Ponto de entrada visual da aplicação
+  ============================================================
+  Este template é o "container universal" — TODO componente de
+  rota é renderizado aqui dentro.
 
-  <!-- ÁREA PRINCIPAL (troca via rotas) -->
-  <main class="main-content">
-    <router-outlet></router-outlet>
-  </main>
-</div>
+  A navbar NÃO fica aqui. Ela fica dentro do Layout, que é
+  carregado apenas para as rotas de /pages (protegidas).
+
+  Resultado:
+    /login  → renderiza Login direto aqui (sem navbar)
+    /pages  → renderiza Layout aqui (Layout contém navbar + outlet)
+
+  Analogia: é como o DispatcherServlet do Spring — recebe tudo,
+  mas o "decorador" (navbar/layout) só envolve certas rotas.
+  ============================================================ -->
+<router-outlet></router-outlet>

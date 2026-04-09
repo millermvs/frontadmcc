@@ -136,11 +136,12 @@ export const environment = {
     },
 
     // ========== EQUIPE — LOCAL PRESENCIAL ==========
-    equipesLocalPresencial: {
-      cadastrar: `${baseUrl}/equipes-local-presencial`,
-      buscarPorId: (id: number) => `${baseUrl}/equipes-local-presencial/${id}`,
-      editar: (id: number) => `${baseUrl}/equipes-local-presencial/${id}`,
-      porEquipe: (id: number) => `${baseUrl}/equipes-local-presencial/equipe/${id}`,
+    // Endpoint separado: só é chamado quando modeloReuniao ≠ ONLINE
+    locaisPresenciais: {
+      cadastrar: `${baseUrl}/locais-presenciais`,
+      buscarPorId: (id: number) => `${baseUrl}/locais-presenciais/${id}`,
+      editar: (id: number) => `${baseUrl}/locais-presenciais/${id}`,
+      porEquipe: (id: number) => `${baseUrl}/locais-presenciais/equipe/${id}`,
     },
 
     // ========== PONTUAÇÃO FAIXAS ==========

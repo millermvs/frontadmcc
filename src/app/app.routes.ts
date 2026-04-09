@@ -43,9 +43,20 @@ export const routes: Routes = [
   },
 
   // ── Rotas protegidas: Pages ─────────────────────────────
+  // O Layout é carregado como "wrapper" das rotas filhas.
+  // Ele contém a navbar + <router-outlet> onde as páginas aparecem.
+  // Isso garante que APENAS as rotas dentro de /pages veem a navbar.
+  // A rota /login fica fora — renderiza direto no app.html (sem navbar).
+  //
+  // Analogia: é como no SecurityConfig você ter dois FilterChains:
+  //   um para /auth/** (sem filtros de autenticação)
+  //   outro para /api/** (com todos os filtros)
+  // Aqui o "filtro visual" é o Layout (com navbar).
   {
     path: 'pages',
     canActivate: [authGuard],
+    loadComponent: () =>
+      import('./components/shared/layout/layout').then((m) => m.Layout),
     children: [
       {
         path: 'dashboard',

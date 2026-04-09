@@ -13,14 +13,19 @@
     </div>
 
     <div class="page-header-right">
-      <button class="btn-nova-equipe" type="button">
+      <button
+        class="btn-nova-equipe"
+        type="button"
+        data-bs-toggle="modal"
+        data-bs-target="#modalNovaEquipe"
+      >
         <i class="bi bi-plus-lg" aria-hidden="true"></i>
         Nova Equipe
       </button>
     </div>
   </div>
 
-  <!-- CARDS DE RESUMO — refletem o total global, não o resultado filtrado -->
+  <!-- CARDS DE RESUMO -->
   <div class="row g-3 mt-0 mb-1">
     <div class="col-6 col-md-3">
       <div class="kpi-card">
@@ -75,7 +80,6 @@
   <div class="filter-bar">
     <div class="filter-search-wrap">
       <i class="bi bi-search filter-search-icon" aria-hidden="true"></i>
-      <!-- $any() contorna a tipagem estrita do Angular para acessar .value do evento nativo -->
       <input
         class="filter-search-input"
         type="text"
@@ -111,14 +115,13 @@
           aria-label="Filtrar por modelo"
         >
           <option value="Todos">Todos os modelos</option>
-          <option value="Presencial">Presencial</option>
-          <option value="Online">Online</option>
-          <option value="Híbrido">Híbrido</option>
+          <option value="PRESENCIAL">Presencial</option>
+          <option value="ONLINE">Online</option>
+          <option value="HIBRIDO">Híbrido</option>
         </select>
       </div>
     </div>
 
-    <!-- aria-live="polite" anuncia a contagem para leitores de tela sem interromper a navegação -->
     <span class="filter-count" aria-live="polite">
       {{ equipesFiltradas().length }}
       {{ equipesFiltradas().length === 1 ? 'equipe' : 'equipes' }}
@@ -141,14 +144,11 @@
         </thead>
 
         <tbody>
-          <!-- track por idEquipe evita re-renderização desnecessária ao atualizar o signal -->
           @for (equipe of equipesFiltradas(); track equipe.idEquipe) {
-            <!-- row-inativa aplica opacity reduzida para sinalizar visualmente o estado desativado -->
             <tr class="equipe-row" [class.row-inativa]="equipe.statusEquipe === 'Inativa'">
 
               <td class="cell-nome">
                 <div class="equipe-avatar">
-                  <!-- Extrai a inicial da última palavra do nome (ex: "C+C Fênix" → "F") -->
                   <span class="avatar-initials">{{ equipe.nomeEquipe.split(' ').slice(-1)[0].charAt(0) }}</span>
                 </div>
                 <div>
@@ -168,18 +168,17 @@
               <td class="cell-reuniao">
                 <div class="reuniao-linha">
                   <i class="bi bi-calendar2-week" aria-hidden="true"></i>
-                  {{ equipe.diaReuniao }}
+                  {{ LABELS_DIA[equipe.diaReuniao] ?? equipe.diaReuniao }}
                 </div>
                 <div class="reuniao-linha reuniao-secundaria">
                   <i class="bi bi-clock" aria-hidden="true"></i>
-                  {{ equipe.horarioReuniao }}
+                  {{ LABELS_HORARIO[equipe.horarioReuniao] ?? equipe.horarioReuniao }}
                   &nbsp;·&nbsp;
                   <i class="bi" [ngClass]="iconeModelo(equipe.modeloReuniao)" aria-hidden="true"></i>
-                  {{ equipe.modeloReuniao }}
+                  {{ LABELS_MODELO[equipe.modeloReuniao] ?? equipe.modeloReuniao }}
                 </div>
               </td>
 
-              <!-- Barra de progresso omitida para equipes inativas, pois o dado de membros é 0 -->
               <td class="cell-formacao">
                 @if (equipe.statusEquipe !== 'Inativa') {
                   <div class="formacao-wrap">
@@ -208,7 +207,6 @@
                 }
               </td>
 
-              <!-- Exibe data efetiva com ícone de confirmação quando lançada; previsão caso contrário -->
               <td class="cell-lancamento">
                 @if (equipe.dataEfetivaLancamento) {
                   <div class="lancamento-wrap lancamento-ok">
@@ -225,7 +223,6 @@
                 }
               </td>
 
-              <!-- Botão de inativar/reativar muda conforme o status atual da equipe -->
               <td class="cell-acoes">
                 <div class="acoes-group">
                   <button
@@ -264,7 +261,6 @@
             </tr>
           }
 
-          <!-- Exibido pelo @empty do @for quando nenhuma equipe corresponde aos filtros ativos -->
           @empty {
             <tr>
               <td colspan="6" class="empty-state">
@@ -281,4 +277,285 @@
     </div>
   </div>
 
+</div>
+
+<!-- =========================================================================
+     MODAL DE CADASTRO DE NOVA EQUIPE
+     Bootstrap controla abertura (data-bs-toggle) e fechamento (data-bs-dismiss).
+     Para fechar após salvar com sucesso, o component.ts usa Modal.getInstance().
+     ========================================================================= -->
+<div class="modal fade" id="modalNovaEquipe" tabindex="-1" aria-labelledby="modalNovaEquipeTitulo">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-content">
+
+      <!-- CABEÇALHO -->
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="modalNovaEquipeTitulo">Nova Equipe</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <!-- CORPO -->
+      <div class="modal-body">
+
+        <!-- SEÇÃO 1: Informações Básicas -->
+        <h6 class="text-muted text-uppercase small fw-bold mb-3">Informações Básicas</h6>
+
+        <div class="row">
+          <div class="col-md-8 mb-3">
+            <label for="nomeEquipe" class="form-label">
+              Nome da Equipe <span class="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              class="form-control"
+              id="nomeEquipe"
+              [(ngModel)]="novaEquipe.nomeEquipe"
+              placeholder="Ex: C+C Zona Leste"
+              maxlength="20"
+              [class.is-invalid]="!!errosValidacao()['nomeEquipe']"
+            />
+            @if (errosValidacao()['nomeEquipe']) {
+              <div class="invalid-feedback">{{ errosValidacao()['nomeEquipe'] }}</div>
+            } @else {
+              <small class="form-text text-muted">Deve começar com "C+C". Máx. 20 caracteres.</small>
+            }
+          </div>
+
+          <div class="col-md-4 mb-3">
+            <label for="dataInicioFormacao" class="form-label">
+              Data de Início
+            </label>
+            <input
+              type="date"
+              class="form-control"
+              id="dataInicioFormacao"
+              [(ngModel)]="novaEquipe.dataInicioFormacao"
+            />
+            <small class="form-text text-muted">Opcional. Padrão: hoje.</small>
+          </div>
+        </div>
+
+        <!-- SEÇÃO 2: Configuração da Reunião -->
+        <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Configuração da Reunião</h6>
+
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="diaReuniao" class="form-label">
+              Dia da Reunião <span class="text-danger">*</span>
+            </label>
+            <select
+              class="form-select"
+              id="diaReuniao"
+              [(ngModel)]="novaEquipe.diaReuniao"
+              [class.is-invalid]="!!errosValidacao()['diaReuniao']"
+            >
+              <option [ngValue]="null">-- Selecione --</option>
+              <option value="TERCA">Terça-feira</option>
+              <option value="QUARTA">Quarta-feira</option>
+              <option value="QUINTA">Quinta-feira</option>
+              <option value="SEXTA">Sexta-feira</option>
+            </select>
+            @if (errosValidacao()['diaReuniao']) {
+              <div class="invalid-feedback">{{ errosValidacao()['diaReuniao'] }}</div>
+            }
+          </div>
+
+          <div class="col-md-4 mb-3">
+            <label for="horarioReuniao" class="form-label">
+              Horário <span class="text-danger">*</span>
+            </label>
+            <select
+              class="form-select"
+              id="horarioReuniao"
+              [(ngModel)]="novaEquipe.horarioReuniao"
+              [class.is-invalid]="!!errosValidacao()['horarioReuniao']"
+            >
+              <option [ngValue]="null">-- Selecione --</option>
+              <option value="08:00:00">08:00</option>
+              <option value="09:00:00">09:00</option>
+              <option value="10:00:00">10:00</option>
+              <option value="11:00:00">11:00</option>
+              <option value="13:00:00">13:00</option>
+              <option value="14:00:00">14:00</option>
+              <option value="15:00:00">15:00</option>
+              <option value="16:00:00">16:00</option>
+              <option value="17:00:00">17:00</option>
+              <option value="18:00:00">18:00</option>
+              <option value="19:00:00">19:00</option>
+              <option value="20:00:00">20:00</option>
+            </select>
+            @if (errosValidacao()['horarioReuniao']) {
+              <div class="invalid-feedback">{{ errosValidacao()['horarioReuniao'] }}</div>
+            }
+          </div>
+
+          <div class="col-md-4 mb-3">
+            <label for="modeloReuniao" class="form-label">
+              Modelo <span class="text-danger">*</span>
+            </label>
+            <select
+              class="form-select"
+              id="modeloReuniao"
+              [(ngModel)]="novaEquipe.modeloReuniao"
+              [class.is-invalid]="!!errosValidacao()['modeloReuniao']"
+            >
+              <option [ngValue]="null">-- Selecione --</option>
+              <option value="HIBRIDO">Híbrido (1ª e 3ª presencial)</option>
+              <option value="ONLINE">100% Online</option>
+              <option value="PRESENCIAL">100% Presencial</option>
+            </select>
+            @if (errosValidacao()['modeloReuniao']) {
+              <div class="invalid-feedback">{{ errosValidacao()['modeloReuniao'] }}</div>
+            }
+          </div>
+        </div>
+
+        <!-- SEÇÃO 3: Local Presencial — oculto quando modelo é ONLINE -->
+        @if (novaEquipe.modeloReuniao !== 'ONLINE') {
+          <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Local Presencial</h6>
+
+          <div class="row">
+            <div class="col-md-8 mb-3">
+              <label for="rua" class="form-label">Rua <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                class="form-control"
+                id="rua"
+                [(ngModel)]="novoLocalPresencial.rua"
+                placeholder="Ex: Av. Paulista"
+              />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label for="numero" class="form-label">Número <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                class="form-control"
+                id="numero"
+                [(ngModel)]="novoLocalPresencial.numero"
+                placeholder="Ex: 1000"
+              />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="complemento" class="form-label">Complemento (opcional)</label>
+            <input
+              type="text"
+              class="form-control"
+              id="complemento"
+              [(ngModel)]="novoLocalPresencial.complemento"
+              placeholder="Ex: Sala 500, Conjunto 10"
+            />
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label for="bairro" class="form-label">Bairro <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                class="form-control"
+                id="bairro"
+                [(ngModel)]="novoLocalPresencial.bairro"
+                placeholder="Ex: Bela Vista"
+              />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label for="cidade" class="form-label">Cidade <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                class="form-control"
+                id="cidade"
+                [(ngModel)]="novoLocalPresencial.cidade"
+                placeholder="Ex: São Paulo"
+              />
+            </div>
+            <div class="col-md-2 mb-3">
+              <label for="uf" class="form-label">UF <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                class="form-control text-uppercase"
+                id="uf"
+                [(ngModel)]="novoLocalPresencial.uf"
+                placeholder="SP"
+                maxlength="2"
+              />
+            </div>
+            <div class="col-md-2 mb-3">
+              <label for="cep" class="form-label">CEP <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                class="form-control"
+                id="cep"
+                [(ngModel)]="novoLocalPresencial.cep"
+                placeholder="01311-100"
+              />
+            </div>
+          </div>
+        }
+
+        <!-- SEÇÃO 4: Link Online — oculto quando modelo é PRESENCIAL -->
+        @if (novaEquipe.modeloReuniao !== 'PRESENCIAL') {
+          <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Link Online</h6>
+
+          <div class="mb-3">
+            <label for="linkZoom" class="form-label">
+              Link Zoom
+              @if (novaEquipe.modeloReuniao === 'ONLINE') {
+                <span class="text-danger">*</span>
+              } @else {
+                <span class="text-muted">(recomendado para reuniões online)</span>
+              }
+            </label>
+            <input
+              type="url"
+              class="form-control"
+              id="linkZoom"
+              [(ngModel)]="novaEquipe.linkReuniaoOnline"
+              placeholder="https://zoom.us/j/123456789"
+              [class.is-invalid]="!!errosValidacao()['linkReuniaoOnline']"
+            />
+            @if (errosValidacao()['linkReuniaoOnline']) {
+              <div class="invalid-feedback">{{ errosValidacao()['linkReuniaoOnline'] }}</div>
+            }
+          </div>
+        }
+
+      </div>
+
+      <!-- Botão oculto: usado pelo component.ts para fechar a modal após salvar com sucesso -->
+      <button id="btnFecharModalEquipe" type="button" data-bs-dismiss="modal" style="display:none" aria-hidden="true"></button>
+
+      <!-- RODAPÉ -->
+      <div class="modal-footer flex-column align-items-stretch gap-2">
+
+        @if (erroModalEquipe()) {
+          <div class="alert alert-danger mb-0">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            {{ erroModalEquipe() }}
+          </div>
+        }
+
+        <div class="d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="salvarNovaEquipe()"
+            [disabled]="carregandoModal()"
+          >
+            @if (carregandoModal()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              Salvando...
+            } @else {
+              Salvar Equipe
+            }
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
 </div>

@@ -24,7 +24,7 @@
 
     <a
       class="menu-item"
-      routerLink="pages/dashboard"
+      routerLink="/pages/dashboard"
       routerLinkActive="active-link"
       [routerLinkActiveOptions]="{ exact: true }"
     >
@@ -32,55 +32,83 @@
       <span class="menu-label">Dashboard</span>
     </a>
 
-    <a class="menu-item" routerLink="pages/equipes" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/equipes" routerLinkActive="active-link">
       <span class="menu-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Equipes</span>
     </a>
 
-    <a class="menu-item" routerLink="pages/associados" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/associados" routerLinkActive="active-link">
       <span class="menu-icon"><i class="bi bi-person-badge-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Associados</span>
     </a>
 
-    <a class="menu-item" routerLink="pages/clusters" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/clusters" routerLinkActive="active-link">
       <span class="menu-icon"><i class="bi bi-diagram-3-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Clusters</span>
     </a>
 
-    <a class="menu-item" routerLink="pages/atuacoes" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/atuacoes" routerLinkActive="active-link">
       <span class="menu-icon"><i class="bi bi-briefcase-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Atuações</span>
     </a>
 
-    <a class="menu-item" routerLink="pages/reunioes" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/reunioes" routerLinkActive="active-link">
       <span class="menu-icon"><i class="bi bi-calendar-event-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Reuniões</span>
     </a>
 
-    <a class="menu-item" routerLink="pages/conexoes" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/conexoes" routerLinkActive="active-link">
       <span class="menu-icon"><i class="bi bi-share-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Conexões</span>
     </a>
 
-    <a class="menu-item" routerLink="pages/parcerias" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/parcerias" routerLinkActive="active-link">
       <span class="menu-icon"><i class="bi bi-link-45deg" aria-hidden="true"></i></span>
       <span class="menu-label">Parcerias</span>
     </a>
 
-    <a class="menu-item" routerLink="pages/visitantes" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/visitantes" routerLinkActive="active-link">
       <span class="menu-icon"><i class="bi bi-person-plus-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Visitantes</span>
     </a>
 
-    <a class="menu-item" routerLink="pages/relatorios" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/relatorios" routerLinkActive="active-link">
       <span class="menu-icon"><i class="bi bi-file-earmark-bar-graph-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Relatórios</span>
     </a>
 
-    <a class="menu-item" routerLink="pages/perfil-cc" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/perfil-cc" routerLinkActive="active-link">
       <span class="menu-icon"><i class="bi bi-person-vcard-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Perfil C+C</span>
     </a>
 
   </nav>
+
+  <!-- SEÇÃO DO USUÁRIO + LOGOUT -->
+  <!-- Fica no rodapé da sidebar (flex: push to bottom via CSS) -->
+  <div class="sidebar-footer">
+
+    <!-- Separador visual -->
+    <div class="sidebar-divider"></div>
+
+    <!-- Info do usuário (visível apenas quando sidebar expandida) -->
+    @if (sidebarExpanded()) {
+      <div class="user-info">
+        <span class="user-name">{{ nomeUsuario() }}</span>
+        <span class="user-role">{{ roleUsuario() }}</span>
+      </div>
+    }
+
+    <!-- Botão de logout -->
+    <button
+      class="menu-item logout-btn"
+      (click)="logout()"
+      type="button"
+      aria-label="Sair do sistema"
+    >
+      <span class="menu-icon"><i class="bi bi-box-arrow-left" aria-hidden="true"></i></span>
+      <span class="menu-label">Sair</span>
+    </button>
+
+  </div>
 </aside>
