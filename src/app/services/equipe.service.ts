@@ -1,13 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { switchMap, map } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   EquipeResponseDto,
   EquipeRequestDto,
   LocalPresencialRequestDto,
-  LocalPresencialSemIdDto,
+  LocalPresencialResponseDto,
   PaginacaoResponseDto,
 } from '../models/equipe.model';
 
@@ -23,11 +22,12 @@ import {
  * - Nenhuma lógica de UI: sem DOM, sem toast, sem navegação
  *
  * Endpoints consumidos:
- *   GET    /api/v1/equipes              → listarEquipes()
- *   GET    /api/v1/equipes/{id}         → buscarEquipePorId()
- *   POST   /api/v1/equipes/cadastrar    → cadastrarEquipe() (passo 1)
- *   POST   /api/v1/locais-presenciais   → cadastrarEquipe() (passo 2, se não ONLINE)
- *   PUT    /api/v1/equipes/{id}         → editarEquipe()
+ *   GET    /api/v1/equipes                           → listarEquipes()
+ *   GET    /api/v1/equipes/{id}                      → buscarEquipePorId()
+ *   POST   /api/v1/equipes/cadastrar                 → cadastrarEquipe() (payload único, inclui localPresencial)
+ *   PUT    /api/v1/equipes/{id}                      → editarEquipe()
+ *   GET    /api/v1/locais-presenciais/equipe/{id}    → buscarLocalPresencial()
+ *   PUT    /api/v1/locais-presenciais/{id}           → editarLocalPresencial()
  */
 @Injectable({ providedIn: 'root' })
 export class EquipeService {
@@ -77,50 +77,18 @@ export class EquipeService {
   }
 
   /**
-   * cadastrarEquipe(equipe, local?)
+   * cadastrarEquipe(equipe)
    *
-   * Cria uma nova equipe. Quando o modelo não for ONLINE, encadeia
-   * automaticamente o segundo endpoint para salvar o endereço presencial.
+   * Cria uma nova equipe em um único POST atômico.
+   * O campo localPresencial dentro do EquipeRequestDto é enviado quando
+   * modeloReuniao ≠ ONLINE — o backend persiste equipe + endereço na mesma
+   * transação (@Transactional), garantindo que nunca fique equipe sem endereço.
    *
-   * Fluxo interno (transparente para o componente):
-   *   1. POST /api/v1/equipes/cadastrar       → recebe idEquipe na resposta
-   *   2. Se local !== null:
-   *      POST /api/v1/locais-presenciais       → com idEquipe preenchido
-   *   3. Retorna o EquipeResponseDto do passo 1 em ambos os casos
-   *
-   * Por que switchMap?
-   *   switchMap transforma o Observable do passo 1 em outro Observable (passo 2),
-   *   criando uma cadeia sequencial. O componente não precisa saber que existem
-   *   dois endpoints — para ele é sempre uma única operação.
-   *
-   * @param equipe  dados principais da equipe
-   * @param local   endereço presencial (null se modeloReuniao === 'ONLINE')
-   * @returns Observable<EquipeResponseDto> — o mesmo DTO do passo 1
+   * HTTP: POST /api/v1/equipes/cadastrar
+   * @returns Observable<EquipeResponseDto> — inclui localPresencial na resposta
    */
-  cadastrarEquipe(
-    equipe: EquipeRequestDto,
-    local: LocalPresencialSemIdDto | null
-  ): Observable<EquipeResponseDto> {
-    return this.http.post<EquipeResponseDto>(this.apiEquipes.cadastrar, equipe).pipe(
-      switchMap(equipeResponse => {
-
-        // Se não há endereço (modelo ONLINE), encerra aqui
-        if (local === null) {
-          return of(equipeResponse);
-        }
-
-        // Monta o payload do passo 2 com o idEquipe recebido no passo 1
-        const localPayload: LocalPresencialRequestDto = {
-          ...local,
-          idEquipe: equipeResponse.idEquipe,
-        };
-
-        // Faz o POST do endereço e retorna o EquipeResponseDto original
-        return this.http
-          .post<unknown>(this.apiLocais.cadastrar, localPayload)
-          .pipe(map(() => equipeResponse));
-      })
-    );
+  cadastrarEquipe(equipe: EquipeRequestDto): Observable<EquipeResponseDto> {
+    return this.http.post<EquipeResponseDto>(this.apiEquipes.cadastrar, equipe);
   }
 
   /**
@@ -131,5 +99,37 @@ export class EquipeService {
    */
   editarEquipe(id: number, equipe: EquipeRequestDto): Observable<EquipeResponseDto> {
     return this.http.put<EquipeResponseDto>(this.apiEquipes.editar(id), equipe);
+  }
+
+  /**
+   * buscarLocalPresencial(idEquipe)
+   *
+   * Busca o endereço presencial de uma equipe específica.
+   * Chamado sob demanda (lazy) ao abrir o modal de endereço — não antecipado na listagem.
+   * HTTP: GET /api/v1/locais-presenciais/equipe/{idEquipe}
+   */
+  buscarLocalPresencial(idEquipe: number): Observable<LocalPresencialResponseDto> {
+    return this.http.get<LocalPresencialResponseDto>(this.apiLocais.porEquipe(idEquipe));
+  }
+
+  /**
+   * editarLocalPresencial(idLocal, dto)
+   *
+   * Atualiza o endereço presencial de uma equipe.
+   * HTTP: PUT /api/v1/locais-presenciais/{idLocal}
+   *
+   * Recebe LocalPresencialRequestDto (com idEquipe) porque o backend exige o campo
+   * no corpo do PUT. Diferente do cadastro (onde o service preenche idEquipe via
+   * switchMap), aqui o componente já tem o idEquipe disponível em enderecoAtual()
+   * e monta o DTO completo antes de chamar este método.
+   *
+   * @param idLocal  ID do registro de local presencial (retornado pelo buscarLocalPresencial)
+   * @param dto      DTO completo com idEquipe preenchido pelo componente
+   */
+  editarLocalPresencial(
+    idLocal: number,
+    dto: LocalPresencialRequestDto
+  ): Observable<LocalPresencialResponseDto> {
+    return this.http.put<LocalPresencialResponseDto>(this.apiLocais.editar(idLocal), dto);
   }
 }

@@ -161,21 +161,41 @@
 
               <td>
                 <span [class]="classeStatus(equipe.statusEquipe)">
-                  {{ LABELS_STATUS[equipe.statusEquipe] ?? equipe.statusEquipe }}
+                  {{ LABELS_STATUS[equipe.statusEquipe] }}
                 </span>
               </td>
 
               <td class="cell-reuniao">
                 <div class="reuniao-linha">
                   <i class="bi bi-calendar2-week" aria-hidden="true"></i>
-                  {{ LABELS_DIA[equipe.diaReuniao] ?? equipe.diaReuniao }}
+                  {{ LABELS_DIA[equipe.diaReuniao] }}
                 </div>
                 <div class="reuniao-linha reuniao-secundaria">
                   <i class="bi bi-clock" aria-hidden="true"></i>
-                  {{ LABELS_HORARIO[equipe.horarioReuniao] ?? equipe.horarioReuniao }}
+                  {{ LABELS_HORARIO[equipe.horarioReuniao] }}
                   &nbsp;·&nbsp;
-                  <i class="bi" [ngClass]="iconeModelo(equipe.modeloReuniao)" aria-hidden="true"></i>
-                  {{ LABELS_MODELO[equipe.modeloReuniao] ?? equipe.modeloReuniao }}
+
+                  <!-- ONLINE: sem interação -->
+                  @if (equipe.modeloReuniao === 'ONLINE') {
+                    <i class="bi" [ngClass]="iconeModelo(equipe.modeloReuniao)" aria-hidden="true"></i>
+                    <span>{{ LABELS_MODELO[equipe.modeloReuniao] }}</span>
+                  }
+
+                  <!-- PRESENCIAL / HÍBRIDO: clicável para ver/editar endereço -->
+                  @if (equipe.modeloReuniao !== 'ONLINE') {
+                    <button
+                      type="button"
+                      class="btn-reuniao-local"
+                      title="Ver / Editar Endereço"
+                      aria-label="Ver e editar endereço presencial de {{ equipe.nomeEquipe }}"
+                      (click)="abrirModalEndereco(equipe)"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalEnderecoPresencial"
+                    >
+                      <i class="bi" [ngClass]="iconeModelo(equipe.modeloReuniao)" aria-hidden="true"></i>
+                      {{ LABELS_MODELO[equipe.modeloReuniao] }}
+                    </button>
+                  }
                 </div>
               </td>
 
@@ -427,7 +447,12 @@
                   id="rua"
                   formControlName="rua"
                   placeholder="Ex: Av. Paulista"
+                  maxlength="150"
+                  [class.is-invalid]="!!errosValidacao()['rua']"
                 />
+                @if (errosValidacao()['rua']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['rua'] }}</div>
+                }
               </div>
               <div class="col-md-4 mb-3">
                 <label for="numero" class="form-label">Número <span class="text-danger">*</span></label>
@@ -437,7 +462,12 @@
                   id="numero"
                   formControlName="numero"
                   placeholder="Ex: 1000"
+                  maxlength="20"
+                  [class.is-invalid]="!!errosValidacao()['numero']"
                 />
+                @if (errosValidacao()['numero']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['numero'] }}</div>
+                }
               </div>
             </div>
 
@@ -449,6 +479,7 @@
                 id="complemento"
                 formControlName="complemento"
                 placeholder="Ex: Sala 500, Conjunto 10"
+                maxlength="80"
               />
             </div>
 
@@ -461,7 +492,12 @@
                   id="bairro"
                   formControlName="bairro"
                   placeholder="Ex: Bela Vista"
+                  maxlength="100"
+                  [class.is-invalid]="!!errosValidacao()['bairro']"
                 />
+                @if (errosValidacao()['bairro']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['bairro'] }}</div>
+                }
               </div>
               <div class="col-md-4 mb-3">
                 <label for="cidade" class="form-label">Cidade <span class="text-danger">*</span></label>
@@ -471,7 +507,12 @@
                   id="cidade"
                   formControlName="cidade"
                   placeholder="Ex: São Paulo"
+                  maxlength="100"
+                  [class.is-invalid]="!!errosValidacao()['cidade']"
                 />
+                @if (errosValidacao()['cidade']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['cidade'] }}</div>
+                }
               </div>
               <div class="col-md-2 mb-3">
                 <label for="uf" class="form-label">UF <span class="text-danger">*</span></label>
@@ -482,7 +523,11 @@
                   formControlName="uf"
                   placeholder="SP"
                   maxlength="2"
+                  [class.is-invalid]="!!errosValidacao()['uf']"
                 />
+                @if (errosValidacao()['uf']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['uf'] }}</div>
+                }
               </div>
               <div class="col-md-2 mb-3">
                 <label for="cep" class="form-label">CEP <span class="text-danger">*</span></label>
@@ -491,8 +536,13 @@
                   class="form-control"
                   id="cep"
                   formControlName="cep"
-                  placeholder="01311-100"
+                  placeholder="01311100"
+                  maxlength="8"
+                  [class.is-invalid]="!!errosValidacao()['cep']"
                 />
+                @if (errosValidacao()['cep']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['cep'] }}</div>
+                }
               </div>
             </div>
           </div>
@@ -568,10 +618,236 @@
 
 
 <!-- =========================================================================
+     MODAL DE ENDEREÇO PRESENCIAL
+     Aberto pelo botão .btn-reuniao-local na coluna Reunião (só PRESENCIAL/HÍBRIDO).
+     Lazy load: buscarLocalPresencial() é chamado ao abrir (não na listagem).
+     ========================================================================= -->
+<div class="modal fade" id="modalEnderecoPresencial" tabindex="-1" aria-labelledby="modalEnderecoTitulo">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <!-- CABEÇALHO -->
+      <div class="modal-header modal-header-endereco">
+        <div>
+          <p class="modal-header-label">Endereço Presencial</p>
+          <h5 class="modal-title fw-bold" id="modalEnderecoTitulo">
+            {{ nomeEquipeEndereco() }}
+          </h5>
+        </div>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+          (click)="resetarFormularioEndereco()"
+        ></button>
+      </div>
+
+      <!-- CORPO -->
+      <div class="modal-body">
+
+        <!-- CARREGANDO -->
+        @if (carregandoEndereco()) {
+          <div class="endereco-loading">
+            <span class="spinner-border spinner-border-sm text-success me-2"></span>
+            Carregando endereço...
+          </div>
+        }
+
+        <!-- ERRO AO CARREGAR -->
+        @if (!carregandoEndereco() && erroEndereco() && !enderecoAtual()) {
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            {{ erroEndereco() }}
+          </div>
+        }
+
+        <!-- FORMULÁRIO (exibido quando endereço foi carregado) -->
+        @if (!carregandoEndereco() && enderecoAtual()) {
+          <form [formGroup]="formEndereco" novalidate>
+
+            <div class="row">
+              <div class="col-8 mb-3">
+                <label for="endRua" class="form-label">Rua <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  id="endRua"
+                  formControlName="rua"
+                  placeholder="Ex: Av. Paulista"
+                  maxlength="150"
+                  [class.is-invalid]="!!errosValidacaoEndereco()['rua']"
+                />
+                @if (errosValidacaoEndereco()['rua']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEndereco()['rua'] }}</div>
+                }
+              </div>
+              <div class="col-4 mb-3">
+                <label for="endNumero" class="form-label">Número <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  id="endNumero"
+                  formControlName="numero"
+                  placeholder="Ex: 1000"
+                  maxlength="20"
+                  [class.is-invalid]="!!errosValidacaoEndereco()['numero']"
+                />
+                @if (errosValidacaoEndereco()['numero']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEndereco()['numero'] }}</div>
+                }
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="endComplemento" class="form-label">Complemento <span class="text-muted">(opcional)</span></label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                id="endComplemento"
+                formControlName="complemento"
+                placeholder="Ex: Sala 500"
+                maxlength="80"
+              />
+            </div>
+
+            <div class="row">
+              <div class="col-5 mb-3">
+                <label for="endBairro" class="form-label">Bairro <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  id="endBairro"
+                  formControlName="bairro"
+                  placeholder="Ex: Bela Vista"
+                  maxlength="100"
+                  [class.is-invalid]="!!errosValidacaoEndereco()['bairro']"
+                />
+                @if (errosValidacaoEndereco()['bairro']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEndereco()['bairro'] }}</div>
+                }
+              </div>
+              <div class="col-4 mb-3">
+                <label for="endCidade" class="form-label">Cidade <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  id="endCidade"
+                  formControlName="cidade"
+                  placeholder="Ex: São Paulo"
+                  maxlength="100"
+                  [class.is-invalid]="!!errosValidacaoEndereco()['cidade']"
+                />
+                @if (errosValidacaoEndereco()['cidade']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEndereco()['cidade'] }}</div>
+                }
+              </div>
+              <div class="col-3 mb-3">
+                <label for="endUf" class="form-label">UF <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control form-control-sm text-uppercase"
+                  id="endUf"
+                  formControlName="uf"
+                  placeholder="SP"
+                  maxlength="2"
+                  [class.is-invalid]="!!errosValidacaoEndereco()['uf']"
+                />
+                @if (errosValidacaoEndereco()['uf']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEndereco()['uf'] }}</div>
+                }
+              </div>
+            </div>
+
+            <div class="mb-1">
+              <label for="endCep" class="form-label">CEP <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                id="endCep"
+                formControlName="cep"
+                placeholder="01311100"
+                maxlength="8"
+                [class.is-invalid]="!!errosValidacaoEndereco()['cep']"
+              />
+              @if (errosValidacaoEndereco()['cep']) {
+                <div class="invalid-feedback">{{ errosValidacaoEndereco()['cep'] }}</div>
+              }
+            </div>
+
+          </form>
+        }
+
+      </div>
+
+      <!-- Botão oculto: ViewChild no component.ts acessa por #btnFecharModalEndereco -->
+      <button #btnFecharModalEndereco type="button" data-bs-dismiss="modal" style="display:none" aria-hidden="true"></button>
+
+      <!-- RODAPÉ -->
+      <div class="modal-footer d-flex justify-content-between align-items-center">
+
+        <!-- BOTÃO COPIAR (esquerda) -->
+        <button
+          type="button"
+          class="btn-copiar-endereco"
+          [class.btn-copiar-copiado]="enderecoCopiado()"
+          (click)="copiarEndereco()"
+          [disabled]="!enderecoAtual() || carregandoEndereco()"
+          title="Copiar endereço completo"
+        >
+          @if (enderecoCopiado()) {
+            <i class="bi bi-clipboard-check-fill me-1"></i>
+            Copiado!
+          } @else {
+            <i class="bi bi-clipboard me-1"></i>
+            Copiar
+          }
+        </button>
+
+        <!-- ERRO DE SALVAMENTO -->
+        @if (erroEndereco() && enderecoAtual()) {
+          <span class="text-danger small">
+            <i class="bi bi-exclamation-circle me-1"></i>{{ erroEndereco() }}
+          </span>
+        }
+
+        <!-- AÇÕES (direita) -->
+        <div class="d-flex gap-2">
+          <button
+            type="button"
+            class="btn btn-sm btn-secondary"
+            data-bs-dismiss="modal"
+            (click)="resetarFormularioEndereco()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-salvar-modal"
+            (click)="salvarEndereco()"
+            [disabled]="!formEndereco.dirty || formEndereco.invalid || carregandoEndereco() || !enderecoAtual()"
+          >
+            @if (carregandoEndereco() && enderecoAtual()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+              Salvando...
+            } @else {
+              Salvar
+            }
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- =========================================================================
      MODAL DE EDIÇÃO DE EQUIPE
      Bootstrap controla abertura (data-bs-toggle) e fechamento (data-bs-dismiss).
      Para fechar após salvar com sucesso, o component.ts usa ViewChild (#btnFecharModalEditarEquipe).
-     Nota: edição do endereço presencial será implementada em sprint dedicado.
+     Suporta troca de modelo (ex: ONLINE → HÍBRIDO) com cadastro de endereço no mesmo PUT.
      ========================================================================= -->
 <div class="modal fade" id="modalEditarEquipe" tabindex="-1" aria-labelledby="modalEditarEquipeTitulo">
   <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
@@ -698,7 +974,122 @@
           </div>
         </div>
 
-        <!-- SEÇÃO 3: Link Online — só aparece quando modelo foi selecionado E não é PRESENCIAL -->
+        <!-- SEÇÃO 3: Local Presencial — só aparece quando modelo foi selecionado E não é ONLINE -->
+        @if (modeloEdicao && modeloEdicao !== 'ONLINE') {
+          <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Local Presencial</h6>
+
+          <div formGroupName="localPresencial">
+            <div class="row">
+              <div class="col-md-8 mb-3">
+                <label for="ruaEdicao" class="form-label">Rua <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="ruaEdicao"
+                  formControlName="rua"
+                  placeholder="Ex: Av. Paulista"
+                  maxlength="150"
+                  [class.is-invalid]="!!errosValidacao()['rua']"
+                />
+                @if (errosValidacao()['rua']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['rua'] }}</div>
+                }
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="numeroEdicao" class="form-label">Número <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="numeroEdicao"
+                  formControlName="numero"
+                  placeholder="Ex: 1000"
+                  maxlength="20"
+                  [class.is-invalid]="!!errosValidacao()['numero']"
+                />
+                @if (errosValidacao()['numero']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['numero'] }}</div>
+                }
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="complementoEdicao" class="form-label">Complemento (opcional)</label>
+              <input
+                type="text"
+                class="form-control"
+                id="complementoEdicao"
+                formControlName="complemento"
+                placeholder="Ex: Sala 500, Conjunto 10"
+                maxlength="80"
+              />
+            </div>
+
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label for="bairroEdicao" class="form-label">Bairro <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="bairroEdicao"
+                  formControlName="bairro"
+                  placeholder="Ex: Bela Vista"
+                  maxlength="100"
+                  [class.is-invalid]="!!errosValidacao()['bairro']"
+                />
+                @if (errosValidacao()['bairro']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['bairro'] }}</div>
+                }
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="cidadeEdicao" class="form-label">Cidade <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="cidadeEdicao"
+                  formControlName="cidade"
+                  placeholder="Ex: São Paulo"
+                  maxlength="100"
+                  [class.is-invalid]="!!errosValidacao()['cidade']"
+                />
+                @if (errosValidacao()['cidade']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['cidade'] }}</div>
+                }
+              </div>
+              <div class="col-md-2 mb-3">
+                <label for="ufEdicao" class="form-label">UF <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control text-uppercase"
+                  id="ufEdicao"
+                  formControlName="uf"
+                  placeholder="SP"
+                  maxlength="2"
+                  [class.is-invalid]="!!errosValidacao()['uf']"
+                />
+                @if (errosValidacao()['uf']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['uf'] }}</div>
+                }
+              </div>
+              <div class="col-md-2 mb-3">
+                <label for="cepEdicao" class="form-label">CEP <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="cepEdicao"
+                  formControlName="cep"
+                  placeholder="01311100"
+                  maxlength="8"
+                  [class.is-invalid]="!!errosValidacao()['cep']"
+                />
+                @if (errosValidacao()['cep']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['cep'] }}</div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- SEÇÃO 4: Link Online — só aparece quando modelo foi selecionado E não é PRESENCIAL -->
         @if (modeloEdicao && modeloEdicao !== 'PRESENCIAL') {
           <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Link Online</h6>
 
@@ -749,7 +1140,7 @@
             type="button"
             class="btn btn-salvar-modal"
             (click)="editarEquipe()"
-            [disabled]="formEdicao.invalid || carregandoModal()"
+            [disabled]="!formEdicao.dirty || formEdicao.invalid || carregandoModal()"
           >
             @if (carregandoModal()) {
               <span class="spinner-border spinner-border-sm me-2"></span>

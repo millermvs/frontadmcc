@@ -588,6 +588,108 @@
 }
 
 /* ================================================
+   COLUNA REUNIÃO — BOTÃO LOCAL PRESENCIAL
+   Aparece apenas para modelos PRESENCIAL e HÍBRIDO.
+   Parece um texto comum, mas revela cursor pointer no hover
+   para sinalizar interatividade sem poluir a tabela.
+   ================================================ */
+.btn-reuniao-local {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  text-decoration: underline dotted rgba(47, 133, 90, 0.4);
+  text-underline-offset: 3px;
+}
+
+.btn-reuniao-local:hover {
+  color: #2f855a;
+  text-decoration: underline solid #2f855a;
+}
+
+.btn-reuniao-local:focus-visible {
+  outline: 2px solid #2f855a;
+  outline-offset: 2px;
+}
+
+/* ================================================
+   MODAL DE ENDEREÇO — CABEÇALHO
+   ================================================ */
+.modal-header-endereco {
+  background: linear-gradient(135deg, #2f855a, #38a169);
+  color: #ffffff;
+  border-bottom: none;
+}
+
+.modal-header-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  opacity: 0.85;
+  margin: 0 0 2px;
+}
+
+.modal-header-endereco .modal-title {
+  color: #ffffff;
+  font-size: 16px;
+}
+
+/* ================================================
+   MODAL DE ENDEREÇO — LOADING
+   ================================================ */
+.endereco-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* ================================================
+   MODAL DE ENDEREÇO — BOTÃO COPIAR
+   ================================================ */
+.btn-copiar-endereco {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-copiar-endereco:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+/* Estado "copiado" — feedback visual verde por 2s */
+.btn-copiar-copiado {
+  background: #dcfce7 !important;
+  border-color: #86efac !important;
+  color: #166534 !important;
+}
+
+.btn-copiar-endereco:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ================================================
    RESPONSIVO — TABLET (768px)
    ================================================ */
 @media (max-width: 768px) {

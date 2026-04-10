@@ -8,8 +8,9 @@
  * - Type aliases espelham os enums do backend (Java UPPER_CASE)
  *
  * Endpoints:
- *   POST /api/v1/equipes/cadastrar     → EquipeRequestDto
- *   POST /api/v1/locais-presenciais    → LocalPresencialRequestDto (só quando modeloReuniao ≠ ONLINE)
+ *   POST /api/v1/equipes/cadastrar     → EquipeRequestDto (inclui localPresencial quando ≠ ONLINE)
+ *   GET  /api/v1/locais-presenciais/equipe/{id} → LocalPresencialResponseDto
+ *   PUT  /api/v1/locais-presenciais/{id}        → LocalPresencialRequestDto (edição)
  */
 
 // ============================================================================
@@ -46,8 +47,9 @@ export type StatusEquipe = 'ATIVA' | 'EM_FORMACAO' | 'INATIVA';
 /**
  * EquipeRequestDto
  *
- * O que o formulário envia ao endpoint principal de criação.
- * NÃO inclui endereço (isso vai para o endpoint 2, apenas se modelo ≠ ONLINE).
+ * Payload único para o endpoint de criação.
+ * O campo localPresencial é enviado apenas quando modeloReuniao ≠ ONLINE.
+ * O backend usa @Transactional — ou equipe + endereço são gravados juntos, ou nada é gravado.
  */
 export interface EquipeRequestDto {
   nomeEquipe: string;
@@ -56,7 +58,8 @@ export interface EquipeRequestDto {
   diaReuniao: DiaReuniao | null;        // null → @NotNull do backend valida corretamente
   horarioReuniao: string | null;        // HH:mm:ss. null → @NotNull do backend valida
   modeloReuniao: ModeloReuniao | null;  // null → @NotNull do backend valida
-  linkReuniaoOnline: string | null
+  linkReuniaoOnline: string | null;
+  localPresencial: LocalPresencialSemIdDto | null; // null quando modeloReuniao === 'ONLINE'
 }
 
 // ============================================================================
@@ -93,6 +96,30 @@ export interface LocalPresencialRequestDto {
 export type LocalPresencialSemIdDto = Omit<LocalPresencialRequestDto, 'idEquipe'>;
 
 // ============================================================================
+// DTOS — RESPOSTA: GET /api/v1/locais-presenciais/equipe/{id}
+// ============================================================================
+
+/**
+ * LocalPresencialResponseDto
+ *
+ * O que o backend retorna ao buscar o local presencial de uma equipe.
+ * Presente no EquipeResponseDto (resposta do cadastro/busca) e no GET do endpoint de locais.
+ * Inclui o idLocalPresencial para uso no PUT de edição.
+ */
+export interface LocalPresencialResponseDto {
+  idLocalPresencial: number;
+  idEquipe: number;
+  nomeEquipe: string;
+  rua: string;
+  numero: string;
+  complemento: string | null;
+  bairro: string;
+  cidade: string;
+  uf: string;   // 2 caracteres. Ex: "SP"
+  cep: string;  // Ex: "01311-100"
+}
+
+// ============================================================================
 // DTOS — RESPOSTA: GET/POST /api/v1/equipes
 // ============================================================================
 
@@ -101,6 +128,7 @@ export type LocalPresencialSemIdDto = Omit<LocalPresencialRequestDto, 'idEquipe'
  *
  * O que o backend retorna após criar ou buscar uma equipe.
  * NÃO herda de EquipeRequestDto (os campos do response são diferentes).
+ * Para equipes PRESENCIAL/HIBRIDO, localPresencial vem preenchido no mesmo payload.
  */
 export interface EquipeResponseDto {
   idEquipe: number;
@@ -115,6 +143,7 @@ export interface EquipeResponseDto {
   statusEquipe: StatusEquipe;
   numeroComponentes: number;            // Calculado pelo backend (só associados Ativos)
   pontuacaoMensal: number;
+  localPresencial: LocalPresencialResponseDto | null; // null quando modeloReuniao === 'ONLINE'
   criadoEm: string;                     // ISO 8601: yyyy-MM-ddTHH:mm:ssZ
   atualizadoEm: string;
 }

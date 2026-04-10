@@ -1,18 +1,21 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, signal, OnInit, inject, ViewChild, ElementRef } from '@angular/core';
+import { Component, computed, signal, OnInit, inject, ViewChild, ElementRef, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { EquipeService } from '../../../services/equipe.service';
 import {
   EquipeResponseDto,
   EquipeRequestDto,
-  LocalPresencialSemIdDto,
+  LocalPresencialResponseDto,
+  LocalPresencialRequestDto,
   ModeloReuniao,
   LABELS_DIA,
   LABELS_MODELO,
   LABELS_HORARIO,
   LABELS_STATUS,
 } from '../../../models/equipe.model';
+import { formatarEnderecoCompleto } from '../../../helpers/endereco.helper';
 
 // Tipo interno: estende EquipeResponseDto com campos adicionais do frontend.
 // Sem export — é uma estrutura privada deste componente.
@@ -58,7 +61,8 @@ export class Equipes implements OnInit {
   // =========================================================================
 
   private equipesService = inject(EquipeService);
-  private fb = inject(FormBuilder);
+  private fb             = inject(FormBuilder);
+  private destroyRef     = inject(DestroyRef);
 
   // =========================================================================
   // VIEWCHILD — referências aos botões ocultos de fechar modal
@@ -73,6 +77,9 @@ export class Equipes implements OnInit {
 
   @ViewChild('btnFecharModalEditarEquipe')
   private btnFecharEdicao!: ElementRef<HTMLButtonElement>;
+
+  @ViewChild('btnFecharModalEndereco')
+  private btnFecharEndereco!: ElementRef<HTMLButtonElement>;
 
   // =========================================================================
   // SIGNALS — LISTAGEM
@@ -106,6 +113,37 @@ export class Equipes implements OnInit {
   idEquipeParaAtualizar = signal<number | null>(null);
 
   // =========================================================================
+  // SIGNALS — MODAL DE ENDEREÇO PRESENCIAL
+  // =========================================================================
+
+  /** Nome da equipe cujo endereço está sendo exibido/editado (para o header do modal). */
+  nomeEquipeEndereco    = signal<string>('');
+
+  /** Dados atuais do endereço retornados pelo backend — null enquanto não carregado. */
+  enderecoAtual         = signal<LocalPresencialResponseDto | null>(null);
+
+  /** ID do registro de local presencial (necessário para o PUT de edição). */
+  idLocalPresencial     = signal<number | null>(null);
+
+  /** Controla o spinner de carregamento dentro do modal de endereço. */
+  carregandoEndereco    = signal(false);
+
+  /** Mensagem de erro exibida dentro do modal de endereço. */
+  erroEndereco          = signal<string | null>(null);
+
+  /**
+   * Erros por campo retornados pelo backend ao salvar o endereço (400 com objeto errors).
+   * Funciona igual ao errosValidacao do cadastro — chaves normalizadas via normalizarErros().
+   */
+  errosValidacaoEndereco = signal<Record<string, string>>({});
+
+  /**
+   * Flag de confirmação visual do botão "Copiar".
+   * true = ícone troca para ✓ por 2 segundos, depois volta ao normal.
+   */
+  enderecoCopiado       = signal(false);
+
+  // =========================================================================
   // FORMULÁRIOS REATIVOS
   //
   // Por que ReactiveFormsModule?
@@ -113,8 +151,9 @@ export class Equipes implements OnInit {
   // + FormBuilder. O modal de equipe tem 10+ campos.
   // =========================================================================
 
-  formCadastro: FormGroup = this.criarFormCadastro();
-  formEdicao: FormGroup   = this.criarFormEdicao();
+  formCadastro: FormGroup  = this.criarFormCadastro();
+  formEdicao: FormGroup    = this.criarFormEdicao();
+  formEndereco: FormGroup  = this.criarFormEndereco();
 
   // =========================================================================
   // CONSTANTES
@@ -174,6 +213,8 @@ export class Equipes implements OnInit {
 
   ngOnInit(): void {
     this.carregarEquipes();
+    this.observarModeloCadastro();
+    this.observarModeloEdicao();
   }
 
   // =========================================================================
@@ -216,11 +257,9 @@ export class Equipes implements OnInit {
   /**
    * salvarNovaEquipe()
    *
-   * Extrai os valores do formCadastro, monta os DTOs tipados e delega ao service.
-   *
-   * Decide qual local passar ao service:
-   *   - ONLINE → null (service não chama o segundo endpoint)
-   *   - PRESENCIAL / HIBRIDO → localPresencial (service encadeia os dois POSTs)
+   * Extrai os valores do formCadastro e monta o DTO unificado para o backend.
+   * O campo localPresencial é enviado quando modelo ≠ ONLINE.
+   * O backend persiste equipe + endereço atomicamente via @Transactional.
    */
   salvarNovaEquipe(): void {
     this.carregandoModal.set(true);
@@ -237,13 +276,10 @@ export class Equipes implements OnInit {
       horarioReuniao:        val.horarioReuniao,
       modeloReuniao:         val.modeloReuniao,
       linkReuniaoOnline:     val.linkReuniaoOnline,
+      localPresencial:       val.modeloReuniao !== 'ONLINE' ? val.localPresencial : null,
     };
 
-    const local: LocalPresencialSemIdDto | null = val.modeloReuniao !== 'ONLINE'
-      ? (val.localPresencial as LocalPresencialSemIdDto)
-      : null;
-
-    this.equipesService.cadastrarEquipe(equipeDto, local).subscribe({
+    this.equipesService.cadastrarEquipe(equipeDto).subscribe({
       next: () => {
         this.btnFecharCadastro.nativeElement.click();
         this.formCadastro.reset({ dataInicioFormacao: this.obterDataHoje() });
@@ -253,7 +289,7 @@ export class Equipes implements OnInit {
       },
       error: (err: HttpErrorResponse) => {
         if (err.status === 400 && err.error?.errors) {
-          this.errosValidacao.set(err.error.errors);
+          this.errosValidacao.set(this.normalizarErros(err.error.errors));
           this.erroModalEquipe.set('Corrija os campos destacados.');
         } else {
           this.erroModalEquipe.set(this.extrairMensagemErro(err));
@@ -311,6 +347,18 @@ export class Equipes implements OnInit {
       horarioReuniao:        equipe.horarioReuniao,
       modeloReuniao:         equipe.modeloReuniao,
       linkReuniaoOnline:     equipe.linkReuniaoOnline,
+      // Pré-preenche endereço se a equipe já tem um (PRESENCIAL/HÍBRIDO).
+      // Se vier null (ONLINE ou lista sem o campo), o sub-grupo fica vazio
+      // para o usuário preencher ao trocar o modelo.
+      localPresencial: equipe.localPresencial ? {
+        rua:         equipe.localPresencial.rua,
+        numero:      equipe.localPresencial.numero,
+        complemento: equipe.localPresencial.complemento,
+        bairro:      equipe.localPresencial.bairro,
+        cidade:      equipe.localPresencial.cidade,
+        uf:          equipe.localPresencial.uf,
+        cep:         equipe.localPresencial.cep,
+      } : null,
     });
   }
 
@@ -334,6 +382,7 @@ export class Equipes implements OnInit {
       horarioReuniao:        val.horarioReuniao,
       modeloReuniao:         val.modeloReuniao,
       linkReuniaoOnline:     val.linkReuniaoOnline,
+      localPresencial:       val.modeloReuniao !== 'ONLINE' ? val.localPresencial : null,
     };
 
     this.equipesService.editarEquipe(this.idEquipeParaAtualizar()!, equipeDto).subscribe({
@@ -347,7 +396,7 @@ export class Equipes implements OnInit {
       },
       error: (err: HttpErrorResponse) => {
         if (err.status === 400 && err.error?.errors) {
-          this.errosValidacao.set(err.error.errors);
+          this.errosValidacao.set(this.normalizarErros(err.error.errors));
           this.erroModalEquipe.set('Corrija os campos destacados.');
         } else {
           this.erroModalEquipe.set(this.extrairMensagemErro(err));
@@ -363,6 +412,128 @@ export class Equipes implements OnInit {
   // TODO: implementar após definir UX de confirmação (modal de confirmação ou inline)
   inativarEquipe(_equipe: Equipe): void {
     // TODO: chamar EquipeService.inativarEquipe() após confirmar com o usuário
+  }
+
+  // =========================================================================
+  // MÉTODOS PÚBLICOS — MODAL DE ENDEREÇO PRESENCIAL
+  // =========================================================================
+
+  /**
+   * abrirModalEndereco(equipe)
+   *
+   * Prepara e carrega o endereço presencial de uma equipe.
+   * O Bootstrap abre o modal pelo data-bs-toggle no elemento clicável da tabela.
+   * Esta função cuida apenas do estado interno e da chamada HTTP (lazy load).
+   *
+   * Só deve ser chamado para modelos PRESENCIAL ou HIBRIDO.
+   */
+  abrirModalEndereco(equipe: Equipe): void {
+    this.nomeEquipeEndereco.set(equipe.nomeEquipe);
+    this.enderecoAtual.set(null);
+    this.idLocalPresencial.set(null);
+    this.erroEndereco.set(null);
+    this.errosValidacaoEndereco.set({});
+    this.enderecoCopiado.set(false);
+    this.carregandoEndereco.set(true);
+    this.formEndereco.reset();
+
+    this.equipesService.buscarLocalPresencial(equipe.idEquipe).subscribe({
+      next: (local) => {
+        this.enderecoAtual.set(local);
+        this.idLocalPresencial.set(local.idLocalPresencial);
+        this.formEndereco.patchValue({
+          id: local.idEquipe,
+          rua:         local.rua,
+          numero:      local.numero,
+          complemento: local.complemento,
+          bairro:      local.bairro,
+          cidade:      local.cidade,
+          uf:          local.uf,
+          cep:         local.cep,
+        });
+      },
+      error: (err: HttpErrorResponse) => {
+        this.erroEndereco.set(this.extrairMensagemErro(err));
+        this.carregandoEndereco.set(false);
+      },
+      complete: () => {
+        this.carregandoEndereco.set(false);
+      },
+    });
+  }
+
+  /**
+   * salvarEndereco()
+   *
+   * Envia o PUT com os campos editados do endereço presencial.
+   */
+  salvarEndereco(): void {
+
+    if (!this.idLocalPresencial()) return;
+
+    this.carregandoEndereco.set(true);
+    this.erroEndereco.set(null);
+    this.errosValidacaoEndereco.set({});
+
+    // Monta o DTO completo incluindo idEquipe (disponível em enderecoAtual).
+    // O service não tem como inferir o idEquipe sozinho neste fluxo de edição —
+    // diferente do cadastro, onde o service recebe o idEquipe via switchMap do POST anterior.
+    const val = this.formEndereco.getRawValue();
+    const dto = { ...val, idEquipe: this.enderecoAtual()!.idEquipe };
+
+    this.equipesService.editarLocalPresencial(this.idLocalPresencial()!, dto).subscribe({
+      next: (localAtualizado) => {
+        this.enderecoAtual.set(localAtualizado);
+        this.btnFecharEndereco.nativeElement.click();
+        this.formEndereco.reset();
+      },
+      error: (err: HttpErrorResponse) => {
+        if (err.status === 400 && err.error?.errors) {
+          this.errosValidacaoEndereco.set(this.normalizarErros(err.error.errors));
+          this.erroEndereco.set('Corrija os campos destacados.');
+        } else {
+          this.erroEndereco.set(this.extrairMensagemErro(err));
+        }
+        this.carregandoEndereco.set(false);
+      },
+      complete: () => {
+        this.carregandoEndereco.set(false);
+      },
+    });
+  }
+
+  /**
+   * copiarEndereco()
+   *
+   * Copia o endereço completo formatado para a área de transferência.
+   * O helper formatarEnderecoCompleto() cuida da formatação — lógica pura sem efeito colateral.
+   * O feedback visual (ícone ✓ por 2s) é controlado pelo signal enderecoCopiado.
+   */
+  copiarEndereco(): void {
+    const endereco = this.enderecoAtual();
+    if (!endereco) return;
+
+    const textoFormatado = formatarEnderecoCompleto(endereco);
+
+    navigator.clipboard.writeText(textoFormatado).then(() => {
+      this.enderecoCopiado.set(true);
+      setTimeout(() => this.enderecoCopiado.set(false), 2000);
+    });
+  }
+
+  /**
+   * resetarFormularioEndereco()
+   *
+   * Limpa o estado do modal de endereço.
+   * Chamado pelo botão Cancelar e pelo ícone X.
+   */
+  resetarFormularioEndereco(): void {
+    this.formEndereco.reset();
+    this.enderecoAtual.set(null);
+    this.idLocalPresencial.set(null);
+    this.erroEndereco.set(null);
+    this.errosValidacaoEndereco.set({});
+    this.enderecoCopiado.set(false);
   }
 
   // =========================================================================
@@ -389,6 +560,25 @@ export class Equipes implements OnInit {
         this.carregandoLista.set(false);
       },
     });
+  }
+
+  /**
+   * normalizarErros(errors)
+   *
+   * O Spring Boot serializa erros de objetos aninhados com o caminho completo
+   * da propriedade: ex. 'localPresencial.cep' → mensagem.
+   * Este método remove o prefixo do objeto pai, deixando só o nome do campo
+   * ('cep'), que é o que o template usa para acesso direto no errosValidacao().
+   *
+   * Funciona para qualquer nível de aninhamento: pega sempre o último segmento.
+   */
+  private normalizarErros(errors: Record<string, string>): Record<string, string> {
+    const resultado: Record<string, string> = {};
+    for (const [chave, mensagem] of Object.entries(errors)) {
+      const chaveSimples = chave.includes('.') ? chave.split('.').pop()! : chave;
+      resultado[chaveSimples] = mensagem;
+    }
+    return resultado;
   }
 
   /**
@@ -456,8 +646,101 @@ export class Equipes implements OnInit {
   }
 
   /**
+   * observarModeloCadastro()
+   *
+   * Assina as mudanças do campo modeloReuniao no formCadastro.
+   * Quando o modelo é PRESENCIAL ou HIBRIDO, os campos de endereço tornam-se
+   * obrigatórios — o que desabilita automaticamente o botão "Salvar Equipe"
+   * (que já depende de formCadastro.invalid).
+   * Quando o modelo volta para ONLINE, os validators são removidos.
+   *
+   * Por que takeUntilDestroyed?
+   * valueChanges é um Observable infinito. Sem cancelamento, a subscription
+   * vaza após o componente ser destruído. takeUntilDestroyed se integra ao
+   * ciclo de vida do Angular e cancela automaticamente no destroy.
+   */
+  private observarModeloCadastro(): void {
+    this.formCadastro.get('modeloReuniao')!
+      .valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((modelo: ModeloReuniao | null) => {
+        this.atualizarValidacaoEnderecoObrigatorio(modelo, this.formCadastro);
+      });
+  }
+
+  /**
+   * observarModeloEdicao()
+   *
+   * Mesmo comportamento do observarModeloCadastro(), mas para o formEdicao.
+   * Necessário porque o modal de edição agora também exibe o sub-grupo
+   * localPresencial condicionalmente, com validação dinâmica.
+   */
+  private observarModeloEdicao(): void {
+    this.formEdicao.get('modeloReuniao')!
+      .valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((modelo: ModeloReuniao | null) => {
+        this.atualizarValidacaoEnderecoObrigatorio(modelo, this.formEdicao);
+      });
+  }
+
+  /**
+   * atualizarValidacaoEnderecoObrigatorio(modelo, form)
+   *
+   * Adiciona ou remove Validators.required nos campos do sub-grupo localPresencial
+   * com base no modelo de reunião selecionado.
+   * Recebe o FormGroup pai como parâmetro para funcionar tanto no cadastro
+   * quanto na edição sem duplicar lógica.
+   *
+   * Campos com required: rua, numero, bairro, cidade, uf, cep.
+   * Complemento permanece sempre opcional (regra de negócio do PRD).
+   *
+   * Após cada alteração de validator, updateValueAndValidity() força o Angular
+   * a recalcular a validade do campo e do formulário pai — necessário para que
+   * form.invalid reflita o novo estado imediatamente.
+   */
+  private atualizarValidacaoEnderecoObrigatorio(modelo: ModeloReuniao | null, form: FormGroup): void {
+    const localGroup = form.get('localPresencial');
+    if (!localGroup) return;
+
+    const camposObrigatorios = ['rua', 'numero', 'bairro', 'cidade', 'uf', 'cep'];
+    const enderecoObrigatorio = modelo === 'PRESENCIAL' || modelo === 'HIBRIDO';
+
+    camposObrigatorios.forEach(campo => {
+      const control = localGroup.get(campo);
+      if (!control) return;
+
+      if (enderecoObrigatorio) {
+        control.setValidators(Validators.required);
+      } else {
+        control.clearValidators();
+      }
+      control.updateValueAndValidity({ emitEvent: false });
+    });
+  }
+
+  /**
+   * Cria o FormGroup do modal de ENDEREÇO PRESENCIAL.
+   * Campos espelham LocalPresencialSemIdDto (sem o idEquipe, preenchido pelo service).
+   */
+  private criarFormEndereco(): FormGroup {
+    return this.fb.group({
+      idEquipe:    [null], // Preenchido pelo service, não exposto no template
+      rua:         ['', Validators.required],
+      numero:      ['', Validators.required],
+      complemento: [null],
+      bairro:      ['', Validators.required],
+      cidade:      ['', Validators.required],
+      uf:          ['', [Validators.required, Validators.maxLength(2)]],
+      cep:         ['', Validators.required],
+    });
+  }
+
+  /**
    * Cria o FormGroup do modal de EDIÇÃO.
-   * Sem localPresencial — edição de endereço será implementada em sprint dedicado.
+   * Inclui localPresencial como sub-grupo — exibido condicionalmente quando
+   * modeloReuniao ≠ ONLINE. Os validators são adicionados dinamicamente
+   * via observarModeloEdicao(), igual ao fluxo de cadastro.
    */
   private criarFormEdicao(): FormGroup {
     return this.fb.group({
@@ -468,6 +751,15 @@ export class Equipes implements OnInit {
       horarioReuniao:        [null, Validators.required],
       modeloReuniao:         [null, Validators.required],
       linkReuniaoOnline:     [null],
+      localPresencial: this.fb.group({
+        rua:         [''],
+        numero:      [''],
+        complemento: [null],
+        bairro:      [''],
+        cidade:      [''],
+        uf:          ['', Validators.maxLength(2)],
+        cep:         [''],
+      }),
     });
   }
 }
