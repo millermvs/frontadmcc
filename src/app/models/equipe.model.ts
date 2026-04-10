@@ -33,9 +33,11 @@ export type ModeloReuniao = 'HIBRIDO' | 'ONLINE' | 'PRESENCIAL';
 
 /**
  * StatusEquipe
- * Valores conforme backend (a confirmar se é SCREAMING_CASE ou texto).
+ * Valores em formato de exibição conforme contrato com o backend.
+ * Atenção: se o backend serializar o enum Java como SCREAMING_CASE (ex: 'ATIVA'),
+ * atualize estes valores e ajuste classeStatus() e os filtros do template.
  */
-export type StatusEquipe = 'Em formação' | 'Ativa' | 'Inativa';
+export type StatusEquipe = 'ATIVA' | 'EM_FORMACAO' | 'INATIVA';
 
 // ============================================================================
 // DTOS — ENDPOINT 1: POST /api/v1/equipes/cadastrar
@@ -54,8 +56,7 @@ export interface EquipeRequestDto {
   diaReuniao: DiaReuniao | null;        // null → @NotNull do backend valida corretamente
   horarioReuniao: string | null;        // HH:mm:ss. null → @NotNull do backend valida
   modeloReuniao: ModeloReuniao | null;  // null → @NotNull do backend valida
-  linkReuniaoOnline: string | null;
-  statusEquipe: string;
+  linkReuniaoOnline: string | null
 }
 
 // ============================================================================
@@ -111,7 +112,7 @@ export interface EquipeResponseDto {
   horarioReuniao: string;
   modeloReuniao: ModeloReuniao;
   linkReuniaoOnline: string | null;
-  statusEquipe: string;
+  statusEquipe: StatusEquipe;
   numeroComponentes: number;            // Calculado pelo backend (só associados Ativos)
   pontuacaoMensal: number;
   criadoEm: string;                     // ISO 8601: yyyy-MM-ddTHH:mm:ssZ
@@ -166,6 +167,18 @@ export const HORARIOS_DISPONIVEIS: string[] = [
 ];
 
 /**
+ * Lista de status para o <select> do formulário e filtros.
+ * valor → o que vai para o backend | label → o que o usuário vê.
+ * Atenção: se o backend serializar o enum Java como SCREAMING_CASE (ex: 'ATIVA'),
+ * atualize estes valores e ajuste classeStatus() e os filtros do template.
+ */
+export const STATUS_EQUIPE: Array<{ valor: StatusEquipe; label: string }> = [
+  { valor: 'ATIVA', label: 'Ativa' },
+  { valor: 'EM_FORMACAO', label: 'Em formação' },
+  { valor: 'INATIVA', label: 'Inativa' },
+];
+
+/**
  * Labels de exibição para DiaReuniao (backend → usuário).
  * Uso: LABELS_DIA[equipe.diaReuniao] → "Terça-feira"
  */
@@ -194,3 +207,16 @@ export const LABELS_MODELO: Record<ModeloReuniao, string> = {
 export const LABELS_HORARIO: Record<string, string> = Object.fromEntries(
   HORARIOS_DISPONIVEIS.map(h => [h, h.substring(0, 5)])
 );
+
+/**
+ * Labels de exibição para StatusEquipe (backend → usuário).
+ * Uso: LABELS_STATUS[equipe.statusEquipe] → "Ativa"
+ *
+ * IMPORTANTE: se o backend serializar o enum Java como SCREAMING_CASE (ex: 'ATIVA'),
+ * atualize estes valores e ajuste classeStatus() e os filtros do template.
+ */
+export const LABELS_STATUS: Record<StatusEquipe, string> = {
+  ATIVA: 'Ativa',
+  EM_FORMACAO: 'Em formação',
+  INATIVA: 'Inativa',
+};

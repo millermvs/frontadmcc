@@ -97,7 +97,7 @@ export const environment = {
     // ========== EQUIPES ==========
     equipes: {
       listar: `${baseUrl}/equipes`,
-      cadastrar: `${baseUrl}/equipes/cadastrar`,
+      cadastrar: `${baseUrl}/equipes`,
       buscarPorId: (id: number) => `${baseUrl}/equipes/${id}`,
       editar: (id: number) => `${baseUrl}/equipes/${id}`,
     },

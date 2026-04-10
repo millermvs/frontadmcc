@@ -100,9 +100,9 @@
           aria-label="Filtrar por status"
         >
           <option value="Todos">Todos os status</option>
-          <option value="Ativa">Ativa</option>
-          <option value="Em formação">Em formação</option>
-          <option value="Inativa">Inativa</option>
+          <option value="ATIVA">Ativa</option>
+          <option value="EM_FORMACAO">Em formação</option>
+          <option value="INATIVA">Inativa</option>
         </select>
       </div>
 
@@ -145,7 +145,7 @@
 
         <tbody>
           @for (equipe of equipesFiltradas(); track equipe.idEquipe) {
-            <tr class="equipe-row" [class.row-inativa]="equipe.statusEquipe === 'Inativa'">
+            <tr class="equipe-row" [class.row-inativa]="equipe.statusEquipe === 'INATIVA'">
 
               <td class="cell-nome">
                 <div class="equipe-avatar">
@@ -161,7 +161,7 @@
 
               <td>
                 <span [class]="classeStatus(equipe.statusEquipe)">
-                  {{ equipe.statusEquipe }}
+                  {{ LABELS_STATUS[equipe.statusEquipe] ?? equipe.statusEquipe }}
                 </span>
               </td>
 
@@ -180,7 +180,7 @@
               </td>
 
               <td class="cell-formacao">
-                @if (equipe.statusEquipe !== 'Inativa') {
+                @if (equipe.statusEquipe !== 'INATIVA') {
                   <div class="formacao-wrap">
                     <div class="formacao-topo">
                       <span class="formacao-contagem">
@@ -227,15 +227,17 @@
                 <div class="acoes-group">
                   <button
                     class="btn-acao btn-editar"
-                    (click)="editarEquipe(equipe)"
+                    (click)="abrirModalEditarEquipe(equipe)"
                     title="Editar equipe"
                     type="button"
                     aria-label="Editar {{ equipe.nomeEquipe }}"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalEditarEquipe"
                   >
                     <i class="bi bi-pencil-fill" aria-hidden="true"></i>
                   </button>
 
-                  @if (equipe.statusEquipe !== 'Inativa') {
+                  @if (equipe.statusEquipe !== 'INATIVA') {
                     <button
                       class="btn-acao btn-inativar"
                       (click)="inativarEquipe(equipe)"
@@ -279,10 +281,11 @@
 
 </div>
 
+
 <!-- =========================================================================
      MODAL DE CADASTRO DE NOVA EQUIPE
      Bootstrap controla abertura (data-bs-toggle) e fechamento (data-bs-dismiss).
-     Para fechar após salvar com sucesso, o component.ts usa Modal.getInstance().
+     Para fechar após salvar com sucesso, o component.ts usa ViewChild (#btnFecharModalEquipe).
      ========================================================================= -->
 <div class="modal fade" id="modalNovaEquipe" tabindex="-1" aria-labelledby="modalNovaEquipeTitulo">
   <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
@@ -291,11 +294,12 @@
       <!-- CABEÇALHO -->
       <div class="modal-header">
         <h5 class="modal-title fw-bold" id="modalNovaEquipeTitulo">Nova Equipe</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar" (click)="resetarFormulario()"></button>
       </div>
 
       <!-- CORPO -->
       <div class="modal-body">
+      <form [formGroup]="formCadastro" novalidate>
 
         <!-- SEÇÃO 1: Informações Básicas -->
         <h6 class="text-muted text-uppercase small fw-bold mb-3">Informações Básicas</h6>
@@ -309,9 +313,8 @@
               type="text"
               class="form-control"
               id="nomeEquipe"
-              [(ngModel)]="novaEquipe.nomeEquipe"
+              formControlName="nomeEquipe"
               placeholder="Ex: C+C Zona Leste"
-              maxlength="20"
               [class.is-invalid]="!!errosValidacao()['nomeEquipe']"
             />
             @if (errosValidacao()['nomeEquipe']) {
@@ -329,7 +332,7 @@
               type="date"
               class="form-control"
               id="dataInicioFormacao"
-              [(ngModel)]="novaEquipe.dataInicioFormacao"
+              formControlName="dataInicioFormacao"
             />
             <small class="form-text text-muted">Opcional. Padrão: hoje.</small>
           </div>
@@ -346,7 +349,7 @@
             <select
               class="form-select"
               id="diaReuniao"
-              [(ngModel)]="novaEquipe.diaReuniao"
+              formControlName="diaReuniao"
               [class.is-invalid]="!!errosValidacao()['diaReuniao']"
             >
               <option [ngValue]="null">-- Selecione --</option>
@@ -367,7 +370,7 @@
             <select
               class="form-select"
               id="horarioReuniao"
-              [(ngModel)]="novaEquipe.horarioReuniao"
+              formControlName="horarioReuniao"
               [class.is-invalid]="!!errosValidacao()['horarioReuniao']"
             >
               <option [ngValue]="null">-- Selecione --</option>
@@ -396,7 +399,7 @@
             <select
               class="form-select"
               id="modeloReuniao"
-              [(ngModel)]="novaEquipe.modeloReuniao"
+              formControlName="modeloReuniao"
               [class.is-invalid]="!!errosValidacao()['modeloReuniao']"
             >
               <option [ngValue]="null">-- Selecione --</option>
@@ -410,97 +413,99 @@
           </div>
         </div>
 
-        <!-- SEÇÃO 3: Local Presencial — oculto quando modelo é ONLINE -->
-        @if (novaEquipe.modeloReuniao !== 'ONLINE') {
+        <!-- SEÇÃO 3: Local Presencial — só aparece quando modelo foi selecionado E não é ONLINE -->
+        @if (modeloCadastro && modeloCadastro !== 'ONLINE') {
           <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Local Presencial</h6>
 
-          <div class="row">
-            <div class="col-md-8 mb-3">
-              <label for="rua" class="form-label">Rua <span class="text-danger">*</span></label>
-              <input
-                type="text"
-                class="form-control"
-                id="rua"
-                [(ngModel)]="novoLocalPresencial.rua"
-                placeholder="Ex: Av. Paulista"
-              />
+          <div formGroupName="localPresencial">
+            <div class="row">
+              <div class="col-md-8 mb-3">
+                <label for="rua" class="form-label">Rua <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="rua"
+                  formControlName="rua"
+                  placeholder="Ex: Av. Paulista"
+                />
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="numero" class="form-label">Número <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="numero"
+                  formControlName="numero"
+                  placeholder="Ex: 1000"
+                />
+              </div>
             </div>
-            <div class="col-md-4 mb-3">
-              <label for="numero" class="form-label">Número <span class="text-danger">*</span></label>
-              <input
-                type="text"
-                class="form-control"
-                id="numero"
-                [(ngModel)]="novoLocalPresencial.numero"
-                placeholder="Ex: 1000"
-              />
-            </div>
-          </div>
 
-          <div class="mb-3">
-            <label for="complemento" class="form-label">Complemento (opcional)</label>
-            <input
-              type="text"
-              class="form-control"
-              id="complemento"
-              [(ngModel)]="novoLocalPresencial.complemento"
-              placeholder="Ex: Sala 500, Conjunto 10"
-            />
-          </div>
+            <div class="mb-3">
+              <label for="complemento" class="form-label">Complemento (opcional)</label>
+              <input
+                type="text"
+                class="form-control"
+                id="complemento"
+                formControlName="complemento"
+                placeholder="Ex: Sala 500, Conjunto 10"
+              />
+            </div>
 
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label for="bairro" class="form-label">Bairro <span class="text-danger">*</span></label>
-              <input
-                type="text"
-                class="form-control"
-                id="bairro"
-                [(ngModel)]="novoLocalPresencial.bairro"
-                placeholder="Ex: Bela Vista"
-              />
-            </div>
-            <div class="col-md-4 mb-3">
-              <label for="cidade" class="form-label">Cidade <span class="text-danger">*</span></label>
-              <input
-                type="text"
-                class="form-control"
-                id="cidade"
-                [(ngModel)]="novoLocalPresencial.cidade"
-                placeholder="Ex: São Paulo"
-              />
-            </div>
-            <div class="col-md-2 mb-3">
-              <label for="uf" class="form-label">UF <span class="text-danger">*</span></label>
-              <input
-                type="text"
-                class="form-control text-uppercase"
-                id="uf"
-                [(ngModel)]="novoLocalPresencial.uf"
-                placeholder="SP"
-                maxlength="2"
-              />
-            </div>
-            <div class="col-md-2 mb-3">
-              <label for="cep" class="form-label">CEP <span class="text-danger">*</span></label>
-              <input
-                type="text"
-                class="form-control"
-                id="cep"
-                [(ngModel)]="novoLocalPresencial.cep"
-                placeholder="01311-100"
-              />
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label for="bairro" class="form-label">Bairro <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="bairro"
+                  formControlName="bairro"
+                  placeholder="Ex: Bela Vista"
+                />
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="cidade" class="form-label">Cidade <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="cidade"
+                  formControlName="cidade"
+                  placeholder="Ex: São Paulo"
+                />
+              </div>
+              <div class="col-md-2 mb-3">
+                <label for="uf" class="form-label">UF <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control text-uppercase"
+                  id="uf"
+                  formControlName="uf"
+                  placeholder="SP"
+                  maxlength="2"
+                />
+              </div>
+              <div class="col-md-2 mb-3">
+                <label for="cep" class="form-label">CEP <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="cep"
+                  formControlName="cep"
+                  placeholder="01311-100"
+                />
+              </div>
             </div>
           </div>
         }
 
-        <!-- SEÇÃO 4: Link Online — oculto quando modelo é PRESENCIAL -->
-        @if (novaEquipe.modeloReuniao !== 'PRESENCIAL') {
+        <!-- SEÇÃO 4: Link Online — só aparece quando modelo foi selecionado E não é PRESENCIAL -->
+        @if (modeloCadastro && modeloCadastro !== 'PRESENCIAL') {
           <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Link Online</h6>
 
           <div class="mb-3">
             <label for="linkZoom" class="form-label">
               Link Zoom
-              @if (novaEquipe.modeloReuniao === 'ONLINE') {
+              @if (modeloCadastro === 'ONLINE') {
                 <span class="text-danger">*</span>
               } @else {
                 <span class="text-muted">(recomendado para reuniões online)</span>
@@ -510,7 +515,7 @@
               type="url"
               class="form-control"
               id="linkZoom"
-              [(ngModel)]="novaEquipe.linkReuniaoOnline"
+              formControlName="linkReuniaoOnline"
               placeholder="https://zoom.us/j/123456789"
               [class.is-invalid]="!!errosValidacao()['linkReuniaoOnline']"
             />
@@ -520,10 +525,11 @@
           </div>
         }
 
+      </form>
       </div>
 
-      <!-- Botão oculto: usado pelo component.ts para fechar a modal após salvar com sucesso -->
-      <button id="btnFecharModalEquipe" type="button" data-bs-dismiss="modal" style="display:none" aria-hidden="true"></button>
+      <!-- Botão oculto: ViewChild no component.ts o acessa pela ref #btnFecharModalEquipe -->
+      <button #btnFecharModalEquipe type="button" data-bs-dismiss="modal" style="display:none" aria-hidden="true"></button>
 
       <!-- RODAPÉ -->
       <div class="modal-footer flex-column align-items-stretch gap-2">
@@ -536,20 +542,220 @@
         }
 
         <div class="d-flex justify-content-end gap-2">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" (click)="resetarFormulario()">
             Cancelar
           </button>
           <button
             type="button"
-            class="btn btn-primary"
+            class="btn btn-salvar-modal"
             (click)="salvarNovaEquipe()"
-            [disabled]="carregandoModal()"
+            [disabled]="formCadastro.invalid || carregandoModal()"
           >
             @if (carregandoModal()) {
               <span class="spinner-border spinner-border-sm me-2"></span>
               Salvando...
             } @else {
               Salvar Equipe
+            }
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- =========================================================================
+     MODAL DE EDIÇÃO DE EQUIPE
+     Bootstrap controla abertura (data-bs-toggle) e fechamento (data-bs-dismiss).
+     Para fechar após salvar com sucesso, o component.ts usa ViewChild (#btnFecharModalEditarEquipe).
+     Nota: edição do endereço presencial será implementada em sprint dedicado.
+     ========================================================================= -->
+<div class="modal fade" id="modalEditarEquipe" tabindex="-1" aria-labelledby="modalEditarEquipeTitulo">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-content">
+
+      <!-- CABEÇALHO -->
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="modalEditarEquipeTitulo">Editar Equipe</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar" (click)="resetarFormularioEdicao()"></button>
+      </div>
+
+      <!-- CORPO -->
+      <div class="modal-body">
+      <form [formGroup]="formEdicao" novalidate>
+
+        <!-- SEÇÃO 1: Informações Básicas -->
+        <h6 class="text-muted text-uppercase small fw-bold mb-3">Informações Básicas</h6>
+
+        <div class="row">
+          <div class="col-md-8 mb-3">
+            <label for="nomeEquipeEdicao" class="form-label">
+              Nome da Equipe <span class="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              class="form-control"
+              id="nomeEquipeEdicao"
+              formControlName="nomeEquipe"
+              placeholder="Ex: C+C Zona Leste"
+              [class.is-invalid]="!!errosValidacao()['nomeEquipe']"
+            />
+            @if (errosValidacao()['nomeEquipe']) {
+              <div class="invalid-feedback">{{ errosValidacao()['nomeEquipe'] }}</div>
+            } @else {
+              <small class="form-text text-muted">Deve começar com "C+C". Máx. 20 caracteres.</small>
+            }
+          </div>
+
+          <div class="col-md-4 mb-3">
+            <label for="dataInicioFormacaoEdicao" class="form-label">
+              Data de Início
+            </label>
+            <input
+              type="date"
+              class="form-control"
+              id="dataInicioFormacaoEdicao"
+              formControlName="dataInicioFormacao"
+            />
+          </div>
+        </div>
+
+        <!-- SEÇÃO 2: Configuração da Reunião -->
+        <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Configuração da Reunião</h6>
+
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="diaReuniaoEdicao" class="form-label">
+              Dia da Reunião <span class="text-danger">*</span>
+            </label>
+            <select
+              class="form-select"
+              id="diaReuniaoEdicao"
+              formControlName="diaReuniao"
+              [class.is-invalid]="!!errosValidacao()['diaReuniao']"
+            >
+              <option [ngValue]="null">-- Selecione --</option>
+              <option value="TERCA">Terça-feira</option>
+              <option value="QUARTA">Quarta-feira</option>
+              <option value="QUINTA">Quinta-feira</option>
+              <option value="SEXTA">Sexta-feira</option>
+            </select>
+            @if (errosValidacao()['diaReuniao']) {
+              <div class="invalid-feedback">{{ errosValidacao()['diaReuniao'] }}</div>
+            }
+          </div>
+
+          <div class="col-md-4 mb-3">
+            <label for="horarioReuniaoEdicao" class="form-label">
+              Horário <span class="text-danger">*</span>
+            </label>
+            <select
+              class="form-select"
+              id="horarioReuniaoEdicao"
+              formControlName="horarioReuniao"
+              [class.is-invalid]="!!errosValidacao()['horarioReuniao']"
+            >
+              <option [ngValue]="null">-- Selecione --</option>
+              <option value="08:00:00">08:00</option>
+              <option value="09:00:00">09:00</option>
+              <option value="10:00:00">10:00</option>
+              <option value="11:00:00">11:00</option>
+              <option value="13:00:00">13:00</option>
+              <option value="14:00:00">14:00</option>
+              <option value="15:00:00">15:00</option>
+              <option value="16:00:00">16:00</option>
+              <option value="17:00:00">17:00</option>
+              <option value="18:00:00">18:00</option>
+              <option value="19:00:00">19:00</option>
+              <option value="20:00:00">20:00</option>
+            </select>
+            @if (errosValidacao()['horarioReuniao']) {
+              <div class="invalid-feedback">{{ errosValidacao()['horarioReuniao'] }}</div>
+            }
+          </div>
+
+          <div class="col-md-4 mb-3">
+            <label for="modeloReuniaoEdicao" class="form-label">
+              Modelo <span class="text-danger">*</span>
+            </label>
+            <select
+              class="form-select"
+              id="modeloReuniaoEdicao"
+              formControlName="modeloReuniao"
+              [class.is-invalid]="!!errosValidacao()['modeloReuniao']"
+            >
+              <option [ngValue]="null">-- Selecione --</option>
+              <option value="HIBRIDO">Híbrido (1ª e 3ª presencial)</option>
+              <option value="ONLINE">100% Online</option>
+              <option value="PRESENCIAL">100% Presencial</option>
+            </select>
+            @if (errosValidacao()['modeloReuniao']) {
+              <div class="invalid-feedback">{{ errosValidacao()['modeloReuniao'] }}</div>
+            }
+          </div>
+        </div>
+
+        <!-- SEÇÃO 3: Link Online — só aparece quando modelo foi selecionado E não é PRESENCIAL -->
+        @if (modeloEdicao && modeloEdicao !== 'PRESENCIAL') {
+          <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Link Online</h6>
+
+          <div class="mb-3">
+            <label for="linkZoomEdicao" class="form-label">
+              Link Zoom
+              @if (modeloEdicao === 'ONLINE') {
+                <span class="text-danger">*</span>
+              } @else {
+                <span class="text-muted">(recomendado para reuniões online)</span>
+              }
+            </label>
+            <input
+              type="url"
+              class="form-control"
+              id="linkZoomEdicao"
+              formControlName="linkReuniaoOnline"
+              placeholder="https://zoom.us/j/123456789"
+              [class.is-invalid]="!!errosValidacao()['linkReuniaoOnline']"
+            />
+            @if (errosValidacao()['linkReuniaoOnline']) {
+              <div class="invalid-feedback">{{ errosValidacao()['linkReuniaoOnline'] }}</div>
+            }
+          </div>
+        }
+
+      </form>
+      </div>
+
+      <!-- Botão oculto: ViewChild no component.ts o acessa pela ref #btnFecharModalEditarEquipe -->
+      <button #btnFecharModalEditarEquipe type="button" data-bs-dismiss="modal" style="display:none" aria-hidden="true"></button>
+
+      <!-- RODAPÉ -->
+      <div class="modal-footer flex-column align-items-stretch gap-2">
+
+        @if (erroModalEquipe()) {
+          <div class="alert alert-danger mb-0">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            {{ erroModalEquipe() }}
+          </div>
+        }
+
+        <div class="d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" (click)="resetarFormularioEdicao()">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn btn-salvar-modal"
+            (click)="editarEquipe()"
+            [disabled]="formEdicao.invalid || carregandoModal()"
+          >
+            @if (carregandoModal()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              Salvando...
+            } @else {
+              Salvar Edição
             }
           </button>
         </div>

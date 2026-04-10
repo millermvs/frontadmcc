@@ -619,6 +619,46 @@
 }
 
 /* ================================================
+   BOTÃO SALVAR — MODAL
+   Segue a mesma paleta verde do btn-nova-equipe.
+   Desabilitado via [disabled] do Angular (formEquipe.invalid).
+   ================================================ */
+.btn-salvar-modal {
+  background: #2f855a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
+  box-shadow: 0 3px 10px rgba(47, 133, 90, 0.28);
+}
+
+.btn-salvar-modal:hover:not(:disabled) {
+  background: #276749;
+  box-shadow: 0 5px 16px rgba(47, 133, 90, 0.38);
+}
+
+.btn-salvar-modal:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-salvar-modal:focus-visible {
+  outline: 2px solid #2f855a;
+  outline-offset: 3px;
+}
+
+/* Estado desabilitado — formulário inválido ou salvando */
+.btn-salvar-modal:disabled {
+  background: #a0c4b3;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* ================================================
    RESPONSIVO — MOBILE (575px)
    ================================================ */
 @media (max-width: 575px) {
