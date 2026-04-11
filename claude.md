@@ -529,42 +529,102 @@ A validacao acontece em dois niveis complementares:
 - **Espacamento generoso:** padding e margin suficientes para nao "sufocar" o conteudo.
 - **Feedback imediato:** toda acao do usuario deve ter resposta visual (loading, toast, highlight).
 
-### 11.2 Paleta de Cores (Parametrizavel)
+### 11.2 Paleta de Cores
 
-| Funcao | Variavel | Valor Padrao |
-|--------|----------|-------------|
-| Primaria | `--cor-primaria` | `[PREENCHER — ex: #2f855a]` |
-| Primaria escura | `--cor-primaria-escura` | `[PREENCHER — ex: #1a5632]` |
-| Primaria clara | `--cor-primaria-clara` | `[PREENCHER — ex: #38a169]` |
-| Background | `--cor-background` | `[PREENCHER — ex: #f4f7f5]` |
-| Texto principal | `--cor-texto` | `[PREENCHER — ex: #0f172a]` |
-| Texto secundario | `--cor-texto-secundario` | `[PREENCHER — ex: #64748b]` |
-| Sucesso | `--cor-sucesso` | `[PREENCHER — ex: #38a169]` |
-| Erro | `--cor-erro` | `[PREENCHER — ex: #e53e3e]` |
-| Alerta | `--cor-alerta` | `[PREENCHER — ex: #d69e2e]` |
-| Info | `--cor-info` | `[PREENCHER — ex: #3182ce]` |
+Tokens definidos em `src/styles.css` (bloco `:root`). Use sempre as variaveis — nunca hardcode hex no CSS de componente.
+
+| Funcao | Variavel CSS | Valor |
+|--------|-------------|-------|
+| Primaria | `--cor-primaria` | `#2f855a` |
+| Primaria escura (hover) | `--cor-primaria-escura` | `#276749` |
+| Primaria clara (acento) | `--cor-primaria-clara` | `#48bb78` |
+| Background da app | `--cor-background` | `#f4f7f5` |
+| Superficie (card/modal) | `--cor-surface` | `#ffffff` |
+| Superficie alternada | `--cor-surface-alt` | `#f8fafc` |
+| Borda sutil | `--cor-borda` | `rgba(15,23,42,0.06)` |
+| Texto principal | `--cor-texto` | `#0f172a` |
+| Texto secundario | `--cor-texto-secundario` | `#64748b` |
+| Texto placeholder | `--cor-texto-placeholder` | `#94a3b8` |
+| Sucesso (texto) | `--cor-sucesso` | `#166534` |
+| Sucesso (fundo) | `--cor-sucesso-bg` | `#dcfce7` |
+| Erro (texto) | `--cor-erro` | `#991b1b` |
+| Erro (fundo) | `--cor-erro-bg` | `#fee2e2` |
+| Alerta (texto) | `--cor-alerta` | `#92400e` |
+| Alerta (fundo) | `--cor-alerta-bg` | `#fef3c7` |
+| Info (texto) | `--cor-info` | `#0369a1` |
+| Info (fundo) | `--cor-info-bg` | `#e0f2fe` |
+
+Tokens de forma e sombra:
+
+| Token | Valor | Uso |
+|-------|-------|-----|
+| `--radius-sm` | `8px` | Inputs, botoes pequenos |
+| `--radius-md` | `12px` | Botoes de pagina, avatares |
+| `--radius-lg` | `18px` | KPI cards, filter bar |
+| `--radius-xl` | `22px` | Table cards, modais |
+| `--radius-pill` | `999px` | Chips de status, barras de progresso |
+| `--sombra-card` | `0 10px 28px rgba(15,23,42,0.06)` | Cards principais |
+| `--sombra-sm` | `0 4px 14px rgba(15,23,42,0.04)` | Elementos secundarios |
+| `--sombra-botao` | `0 4px 14px rgba(47,133,90,0.30)` | Botao primario de pagina |
 
 ### 11.3 Tipografia
 
-| Elemento | Propriedade | Valor Padrao |
-|----------|-------------|-------------|
-| Familia | `font-family` | `[PREENCHER — ex: 'Inter', system-ui, sans-serif]` |
-| Titulo pagina | `font-size` | `1.5rem` / `font-weight: 700` |
-| Subtitulo | `font-size` | `1.125rem` / `font-weight: 600` |
-| Corpo | `font-size` | `0.875rem` / `font-weight: 400` |
-| Label | `font-size` | `0.8125rem` / `font-weight: 500` |
-| Caption | `font-size` | `0.75rem` / `font-weight: 400` |
+| Elemento | Propriedade | Valor |
+|----------|-------------|-------|
+| Familia | `font-family` | `'Inter', system-ui, -apple-system, sans-serif` |
+| Base | `font-size` | `15px` (definido no `body`) |
+| Titulo de pagina | `.page-title` | `28px / weight 800` |
+| Subtitulo de pagina | `.page-subtitle` | `14px / weight 400 / cor-texto-secundario` |
+| Cabecalho de tabela | `th` | `12px / weight 700 / uppercase / letter-spacing 0.5px` |
+| Celula de tabela | `td` | `14px / weight 400` |
+| Label de KPI | `.kpi-label` | `12px / weight 500 / uppercase / letter-spacing 0.4px` |
+| Valor de KPI | `.kpi-value` | `26px / weight 800` |
+| Breadcrumb ativo | `.bc-active` | `13px / weight 600 / cor-primaria` |
+| Status chip | `.status-chip` | `12px / weight 600` |
 
-### 11.4 Componentes Visuais Padrao
+### 11.4 Sistema de CSS — Duas Camadas
 
-| Componente | Estilo |
-|------------|--------|
-| Cards | `background: white`, `border-radius: 12px`, `box-shadow` sutil |
-| Botao primario | Cor primaria, texto branco, `border-radius: 8px` |
-| Tabela | Header com fundo claro, linhas alternadas, hover highlight |
-| Badges de status | Cores semanticas (verde=ativo, amarelo=pendente, vermelho=inativo) |
-| Modal | Overlay escuro, modal centralizado, header colorido, footer com acoes |
-| Toast | Posicao fixa (top-right), auto-dismiss apos 4s, cores por tipo |
+**Regra fundamental:** antes de escrever qualquer estilo em um componente, verifique se a classe ja existe em `styles.css`.
+
+**Camada 1 — `src/styles.css` (global, sem encapsulamento)**
+
+Contem tudo que e compartilhado entre paginas. Qualquer padrao que aparece em mais de um componente deve estar aqui.
+
+| Secao | Classes disponiveis |
+|-------|-------------------|
+| Variaveis CSS | `:root` com todos os tokens |
+| Page Layout | `.page-header`, `.page-header-left`, `.breadcrumb-nav`, `.bc-item`, `.bc-active`, `.bc-sep`, `.page-title`, `.page-subtitle` |
+| Botao de pagina | `.btn-acao-pagina` |
+| KPI Cards | `.kpi-card`, `.kpi-icon`, `.kpi-icon-total`, `.kpi-icon-ativo`, `.kpi-icon-pendente`, `.kpi-icon-inativo`, `.kpi-info`, `.kpi-label`, `.kpi-value` |
+| Filter Bar | `.filter-bar`, `.filter-search-wrap`, `.filter-search-icon`, `.filter-search-input`, `.filter-selects`, `.filter-select-wrap`, `.filter-select-icon`, `.filter-select`, `.filter-count` |
+| Table Container | `.table-card`, `.table-wrapper` |
+| Botoes de acao | `.btn-acao`, `.btn-editar`, `.btn-inativar`, `.btn-reativar` |
+| Status Chips | `.status-chip`, `.status-ativa`, `.status-formacao`, `.status-inativa`, `.status-pre-ativo`, `.status-nova`, `.status-andamento`, `.status-fechada`, `.status-nao-fechada` |
+| Agenda Chips | `.agenda-chip`, `.agenda-hoje`, `.agenda-online`, `.agenda-proxima` |
+| Badges conexao | `.badge-quente`, `.badge-morna`, `.badge-fria` |
+| Utilitarios de cor | `.soft-success`, `.soft-primary`, `.soft-warning`, `.soft-info` (e variantes `.icon-soft-*`) |
+| Empty State | `.empty-state`, `.empty-icon`, `.empty-title`, `.empty-subtitle` |
+| Modal save button | `.btn-salvar-modal` |
+| Utilitario | `.text-muted-sm` |
+
+**Camada 2 — `componente.css` (encapsulado pelo Angular)**
+
+Contem apenas o que e exclusivo daquela pagina: background da pagina, estilos internos da tabela (colunas especificas, avatares, barras de progresso), modais proprios, e ajustes responsivos para elementos proprios.
+
+**Proibicao:** nao declare em `componente.css` nenhuma classe que ja existe em `styles.css`. O Angular com `ViewEncapsulation.Emulated` encapsula os estilos via atributo `[_ngcontent-xxx]`, mas isso nao justifica duplicar — aumenta o bundle e cria divergencias de manutencao.
+
+### 11.5 Componentes Visuais Estabelecidos
+
+| Componente | Classe(s) raiz | Notas de uso |
+|------------|---------------|-------------|
+| Card de KPI | `.kpi-card` + `.kpi-icon-*` | Sempre em grid Bootstrap `col-*` |
+| Barra de filtros | `.filter-bar` | Coloca antes da `.table-card` |
+| Container de tabela | `.table-card > .table-wrapper > table` | `overflow-x` no wrapper, nao no card |
+| Chip de status | `.status-chip .status-*` | Nunca altere `padding` por componente |
+| Botao de acao tabela | `.btn-acao .btn-editar` | Sempre dentro de `.acoes-group` |
+| Empty state | `.empty-state` (dentro de `td[colspan]`) | Padding via `!important` intencional |
+| Botao salvar modal | `.btn-salvar-modal` | `[disabled]="!form.dirty \|\| form.invalid \|\| carregando()"` |
+| Botao primario pagina | `.btn-acao-pagina` ou alias local | Sempre no `.page-header` |
 
 ### 11.5 Responsividade
 
@@ -574,13 +634,22 @@ A validacao acontece em dois niveis complementares:
 | `768px - 1200px` | Tablet | Sidebar colapsada, tabela com scroll horizontal |
 | `< 768px` | Mobile | Sidebar oculta (hamburger), cards empilhados |
 
-### 11.6 Regras de CSS
+### 11.6 Responsividade
+
+| Breakpoint | Dispositivo | Comportamento |
+|-----------|-------------|---------------|
+| `> 1200px` | Desktop | Layout completo, sidebar expandida |
+| `768px - 1200px` | Tablet | Sidebar colapsada, tabela com scroll horizontal |
+| `< 768px` | Mobile | Sidebar oculta (hamburger), cards empilhados |
+
+### 11.7 Regras de CSS
 
 - **1 arquivo CSS por componente** — nunca inline styles no template.
-- **Nunca `!important`** — se precisa de `!important`, a cascata esta errada.
-- **BEM ou scoped** — usar encapsulacao de estilos do framework (ViewEncapsulation) ou convencao BEM para evitar vazamento.
-- **Variaveis CSS** — cores, espacamentos e tamanhos em variaveis globais (`styles.css`).
-- **Classes utilitarias** — usar as do framework CSS configurado (Bootstrap, Tailwind) em vez de recriar.
+- **Variaveis sempre** — use `var(--cor-primaria)` em vez de `#2f855a` nos componentes.
+- **Nunca `!important`** — excecao documentada: `.empty-state { padding: 56px 20px !important }` para sobrescrever o `padding` nativo do `td` do Bootstrap.
+- **Encapsulamento respeitado** — com `ViewEncapsulation.Emulated` (padrao Angular), estilos do componente sao automaticamente escopados. Nao use `::ng-deep` sem justificativa documentada.
+- **Nao redeclare em componente** — se a classe existe em `styles.css`, use diretamente no template. Nao a redefina no CSS do componente.
+- **Media queries no componente** — cada componente define apenas os ajustes responsivos dos seus proprios elementos exclusivos. Ajustes do page-layout global ja estao nos media queries do `styles.css`.
 
 ---
 

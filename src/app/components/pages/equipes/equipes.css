@@ -1,272 +1,69 @@
-/* min-height garante que o fundo radial cubra a tela mesmo com pouco conteúdo */
+/*
+ * equipes.css — estilos EXCLUSIVOS da página de Equipes.
+ *
+ * O que NÃO está aqui (e foi para styles.css):
+ *   - Skeleton de página: .page-header, .page-title, .breadcrumb-nav
+ *   - KPI cards: .kpi-card, .kpi-icon, .kpi-value, .kpi-label
+ *   - Filter bar: .filter-bar, .filter-search-input, .filter-select
+ *   - Table wrapper: .table-card, .table-wrapper
+ *   - Action buttons: .btn-acao, .btn-editar, .btn-inativar, .btn-reativar
+ *   - Status chips: .status-chip, .status-ativa, .status-formacao, .status-inativa
+ *   - Empty state: .empty-state, .empty-icon, .empty-title, .empty-subtitle
+ *   - Modal save button: .btn-salvar-modal
+ *   - Utilitário: .text-muted-sm
+ */
+
+/* ================================================
+   PAGE BACKGROUND
+   Gradiente radial sutil diferencia visualmente cada
+   página sem alterar o layout — efeito decorativo apenas.
+   ================================================ */
 .equipes-page {
   padding: 18px;
   background:
     radial-gradient(circle at top right, rgba(47, 133, 90, 0.08), transparent 26%),
-    #f4f7f5;
+    var(--cor-background);
   min-height: 100vh;
 }
 
 /* ================================================
-   PAGE HEADER
+   BOTÃO PRIMÁRIO — NOVA EQUIPE
+   Usa a classe global .btn-acao-pagina como base.
+   Este alias local existe caso a página precise de
+   sobrescritas específicas sem afetar outras páginas.
    ================================================ */
-.page-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 22px;
-}
-
-.page-header-left {
-  flex: 1;
-}
-
-.breadcrumb-nav {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-
-.bc-item {
-  font-size: 13px;
-  color: #64748b;
-  cursor: default;
-}
-
-.bc-active {
-  color: #2f855a;
-  font-weight: 600;
-}
-
-.bc-sep {
-  font-size: 11px;
-  color: #94a3b8;
-}
-
-.page-title {
-  font-size: 28px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 6px;
-  line-height: 1.1;
-}
-
-.page-subtitle {
-  margin: 0;
-  color: #64748b;
-  font-size: 14px;
-}
-
 .btn-nova-equipe {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #2f855a;
+  background: var(--cor-primaria);
   color: #ffffff;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 11px 20px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 14px rgba(47, 133, 90, 0.30);
+  box-shadow: var(--sombra-botao);
   white-space: nowrap;
 }
 
 .btn-nova-equipe:hover {
-  background: #276749;
+  background: var(--cor-primaria-escura);
   box-shadow: 0 6px 20px rgba(47, 133, 90, 0.38);
 }
 
-.btn-nova-equipe:active {
-  transform: scale(0.98);
-}
+.btn-nova-equipe:active  { transform: scale(0.98); }
 
 .btn-nova-equipe:focus-visible {
-  outline: 2px solid #2f855a;
+  outline: 2px solid var(--cor-primaria);
   outline-offset: 3px;
 }
 
 /* ================================================
-   KPI STRIP
+   TABELA DE EQUIPES
    ================================================ */
-.kpi-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 18px;
-  padding: 16px 18px;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
-}
-
-.kpi-icon {
-  width: 46px;
-  height: 46px;
-  min-width: 46px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  flex-shrink: 0;
-}
-
-.kpi-icon-all     { background: #e0f2fe; color: #0369a1; }
-.kpi-icon-ativa   { background: #dcfce7; color: #166534; }
-.kpi-icon-formacao { background: #fef3c7; color: #92400e; }
-.kpi-icon-inativa { background: #fee2e2; color: #991b1b; }
-
-.kpi-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.kpi-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-.kpi-value {
-  font-size: 26px;
-  font-weight: 800;
-  color: #0f172a;
-  line-height: 1.1;
-}
-
-/* ================================================
-   FILTER BAR
-   ================================================ */
-.filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 18px;
-  padding: 14px 18px;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
-  margin-bottom: 14px;
-}
-
-/* flex: 1 faz o campo de busca ocupar o espaço disponível, empurrando os selects para a direita */
-.filter-search-wrap {
-  flex: 1;
-  min-width: 200px;
-  position: relative;
-}
-
-.filter-search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-  font-size: 14px;
-  pointer-events: none;
-}
-
-.filter-search-input {
-  width: 100%;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 9px 12px 9px 36px;
-  font-size: 14px;
-  color: #0f172a;
-  background: #f8fafc;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  outline: none;
-}
-
-.filter-search-input::placeholder {
-  color: #94a3b8;
-}
-
-.filter-search-input:focus {
-  border-color: #2f855a;
-  box-shadow: 0 0 0 3px rgba(47, 133, 90, 0.12);
-  background: #ffffff;
-}
-
-/* Selects */
-.filter-selects {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.filter-select-wrap {
-  position: relative;
-}
-
-.filter-select-icon {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-  font-size: 13px;
-  pointer-events: none;
-}
-
-/* appearance: none remove o chevron nativo do SO; substituído por SVG inline para consistência cross-browser */
-.filter-select {
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 9px 12px 9px 30px;
-  font-size: 13px;
-  color: #334155;
-  background: #f8fafc;
-  cursor: pointer;
-  outline: none;
-  appearance: none;
-  padding-right: 28px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.filter-select:focus {
-  border-color: #2f855a;
-  box-shadow: 0 0 0 3px rgba(47, 133, 90, 0.12);
-  background-color: #ffffff;
-}
-
-/* margin-left: auto empurra o contador para a extremidade direita da filter-bar */
-.filter-count {
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 500;
-  white-space: nowrap;
-  margin-left: auto;
-}
-
-/* ================================================
-   TABELA
-   ================================================ */
-.table-card {
-  background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 22px;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
-  overflow: hidden;
-}
-
-/* overflow-x no wrapper, não no card, para manter border-radius e sombra intactos em telas pequenas */
-.table-wrapper {
-  overflow-x: auto;
-}
-
 .equipes-table {
   width: 100%;
   border-collapse: collapse;
@@ -275,7 +72,7 @@
 
 /* THEAD */
 .equipes-table thead tr {
-  background: #f8fafc;
+  background: var(--cor-surface-alt);
   border-bottom: 1px solid rgba(15, 23, 42, 0.07);
 }
 
@@ -285,7 +82,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #64748b;
+  color: var(--cor-texto-secundario);
   text-align: left;
   white-space: nowrap;
 }
@@ -305,21 +102,24 @@
 }
 
 .equipe-row:hover {
-  background: #f8fafc;
+  background: var(--cor-surface-alt);
 }
 
-/* Reduz opacidade da linha inteira em vez de alterar cor por coluna — mais simples e consistente */
+/* Reduz opacidade da linha inteira — mais simples do que
+   alterar cor coluna a coluna */
 .row-inativa {
   opacity: 0.65;
 }
 
 .equipes-table td {
   padding: 14px 18px;
-  color: #0f172a;
+  color: var(--cor-texto);
   vertical-align: middle;
 }
 
-/* COLUNA — NOME */
+/* ================================================
+   COLUNA — NOME
+   ================================================ */
 .cell-nome {
   display: flex;
   align-items: center;
@@ -332,7 +132,7 @@
   height: 40px;
   min-width: 40px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #2f855a, #48bb78);
+  background: linear-gradient(135deg, var(--cor-primaria), var(--cor-primaria-clara));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -344,17 +144,19 @@
 .equipe-nome-texto {
   display: block;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--cor-texto);
 }
 
 .equipe-desde {
   display: block;
-  color: #64748b;
+  color: var(--cor-texto-secundario);
   font-size: 12px;
   margin-top: 2px;
 }
 
-/* COLUNA — REUNIÃO */
+/* ================================================
+   COLUNA — REUNIÃO
+   ================================================ */
 .cell-reuniao {
   min-width: 180px;
 }
@@ -363,21 +165,23 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #0f172a;
+  color: var(--cor-texto);
   font-size: 13px;
 }
 
 .reuniao-linha i {
-  color: #2f855a;
+  color: var(--cor-primaria);
   font-size: 13px;
 }
 
 .reuniao-secundaria {
   margin-top: 4px;
-  color: #64748b;
+  color: var(--cor-texto-secundario);
 }
 
-/* COLUNA — FORMAÇÃO */
+/* ================================================
+   COLUNA — FORMAÇÃO (barra de progresso)
+   ================================================ */
 .cell-formacao {
   min-width: 160px;
 }
@@ -392,34 +196,37 @@
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: #64748b;
+  color: var(--cor-texto-secundario);
 }
 
 .formacao-pct {
   font-weight: 600;
-  color: #2f855a;
+  color: var(--cor-primaria);
 }
 
 .progress-track {
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: #e2e8f0;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #2f855a, #48bb78);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--cor-primaria), var(--cor-primaria-clara));
   transition: width 0.4s ease;
 }
 
-/* Gradiente mais escuro quando atingiu 100% para reforçar que a meta foi cumprida */
+/* Gradiente mais escuro ao atingir 100% — reforça visualmente
+   que a meta foi cumprida */
 .progress-completo {
   background: linear-gradient(90deg, #15803d, #22c55e);
 }
 
-/* COLUNA — LANÇAMENTO */
+/* ================================================
+   COLUNA — LANÇAMENTO
+   ================================================ */
 .cell-lancamento {
   min-width: 140px;
 }
@@ -433,26 +240,23 @@
 }
 
 .lancamento-wrap i {
-  color: #64748b;
+  color: var(--cor-texto-secundario);
   font-size: 14px;
 }
 
-.lancamento-ok {
-  color: #166534;
-}
-
-.lancamento-ok i {
-  color: #16a34a;
-}
+.lancamento-ok   { color: var(--cor-sucesso); }
+.lancamento-ok i { color: #16a34a; }
 
 .lancamento-label {
   display: block;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--cor-texto-placeholder);
   margin-top: 3px;
 }
 
-/* COLUNA — AÇÕES */
+/* ================================================
+   COLUNA — AÇÕES
+   ================================================ */
 .cell-acoes {
   text-align: center;
 }
@@ -464,134 +268,10 @@
   gap: 6px;
 }
 
-.btn-acao {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
-}
-
-.btn-acao:active {
-  transform: scale(0.95);
-}
-
-.btn-acao:focus-visible {
-  outline: 2px solid #2f855a;
-  outline-offset: 2px;
-}
-
-.btn-editar {
-  background: #f0fdf4;
-  color: #16a34a;
-  border-color: #bbf7d0;
-}
-
-.btn-editar:hover {
-  background: #dcfce7;
-  border-color: #86efac;
-}
-
-.btn-inativar {
-  background: #fff7ed;
-  color: #c2410c;
-  border-color: #fed7aa;
-}
-
-.btn-inativar:hover {
-  background: #ffedd5;
-  border-color: #fb923c;
-}
-
-.btn-reativar {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border-color: #bfdbfe;
-}
-
-.btn-reativar:hover {
-  background: #dbeafe;
-  border-color: #93c5fd;
-}
-
 /* ================================================
-   CHIPS DE STATUS
-   ================================================ */
-.status-chip {
-  border-radius: 999px;
-  padding: 4px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.status-ativa {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-formacao {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.status-inativa {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-/* ================================================
-   TEXTO MUTED
-   ================================================ */
-.text-muted-sm {
-  color: #94a3b8;
-  font-size: 14px;
-}
-
-/* ================================================
-   EMPTY STATE
-   ================================================ */
-.empty-state {
-  text-align: center;
-  padding: 56px 20px !important;
-}
-
-.empty-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 20px;
-  background: #f1f5f9;
-  color: #94a3b8;
-  font-size: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 16px;
-}
-
-.empty-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #334155;
-  margin: 0 0 6px;
-}
-
-.empty-subtitle {
-  font-size: 13px;
-  color: #94a3b8;
-  margin: 0;
-}
-
-/* ================================================
-   COLUNA REUNIÃO — BOTÃO LOCAL PRESENCIAL
-   Aparece apenas para modelos PRESENCIAL e HÍBRIDO.
-   Parece um texto comum, mas revela cursor pointer no hover
-   para sinalizar interatividade sem poluir a tabela.
+   BOTÃO LOCAL PRESENCIAL (na coluna Reunião)
+   Parece texto comum mas revela interatividade no hover,
+   evitando poluir visualmente a tabela com botões explícitos.
    ================================================ */
 .btn-reuniao-local {
   display: inline-flex;
@@ -610,12 +290,12 @@
 }
 
 .btn-reuniao-local:hover {
-  color: #2f855a;
-  text-decoration: underline solid #2f855a;
+  color: var(--cor-primaria);
+  text-decoration: underline solid var(--cor-primaria);
 }
 
 .btn-reuniao-local:focus-visible {
-  outline: 2px solid #2f855a;
+  outline: 2px solid var(--cor-primaria);
   outline-offset: 2px;
 }
 
@@ -623,7 +303,7 @@
    MODAL DE ENDEREÇO — CABEÇALHO
    ================================================ */
 .modal-header-endereco {
-  background: linear-gradient(135deg, #2f855a, #38a169);
+  background: linear-gradient(135deg, var(--cor-primaria), #38a169);
   color: #ffffff;
   border-bottom: none;
 }
@@ -651,11 +331,11 @@
   justify-content: center;
   padding: 32px 0;
   font-size: 14px;
-  color: #64748b;
+  color: var(--cor-texto-secundario);
 }
 
 /* ================================================
-   MODAL DE ENDEREÇO — BOTÃO COPIAR
+   BOTÃO COPIAR ENDEREÇO
    ================================================ */
 .btn-copiar-endereco {
   display: inline-flex;
@@ -663,7 +343,7 @@
   gap: 4px;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 7px 14px;
   font-size: 13px;
   font-weight: 500;
@@ -677,11 +357,11 @@
   color: #1e293b;
 }
 
-/* Estado "copiado" — feedback visual verde por 2s */
+/* Feedback visual verde por ~2s após cópia bem-sucedida */
 .btn-copiar-copiado {
-  background: #dcfce7 !important;
+  background: var(--cor-sucesso-bg) !important;
   border-color: #86efac !important;
-  color: #166534 !important;
+  color: var(--cor-sucesso) !important;
 }
 
 .btn-copiar-endereco:disabled {
@@ -696,68 +376,6 @@
   .equipes-page {
     padding: 14px;
   }
-
-  .page-title {
-    font-size: 22px;
-  }
-
-  .filter-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .filter-search-wrap {
-    min-width: unset;
-  }
-
-  .filter-selects {
-    flex-wrap: nowrap;
-  }
-
-  .filter-count {
-    margin-left: 0;
-    text-align: right;
-  }
-}
-
-/* ================================================
-   BOTÃO SALVAR — MODAL
-   Segue a mesma paleta verde do btn-nova-equipe.
-   Desabilitado via [disabled] do Angular (formEquipe.invalid).
-   ================================================ */
-.btn-salvar-modal {
-  background: #2f855a;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  padding: 9px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
-  box-shadow: 0 3px 10px rgba(47, 133, 90, 0.28);
-}
-
-.btn-salvar-modal:hover:not(:disabled) {
-  background: #276749;
-  box-shadow: 0 5px 16px rgba(47, 133, 90, 0.38);
-}
-
-.btn-salvar-modal:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-.btn-salvar-modal:focus-visible {
-  outline: 2px solid #2f855a;
-  outline-offset: 3px;
-}
-
-/* Estado desabilitado — formulário inválido ou salvando */
-.btn-salvar-modal:disabled {
-  background: #a0c4b3;
-  box-shadow: none;
-  cursor: not-allowed;
-  opacity: 0.7;
 }
 
 /* ================================================
@@ -768,21 +386,8 @@
     padding: 12px;
   }
 
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
   .btn-nova-equipe {
     width: 100%;
     justify-content: center;
-  }
-
-  .filter-selects {
-    flex-direction: column;
-  }
-
-  .kpi-value {
-    font-size: 22px;
   }
 }

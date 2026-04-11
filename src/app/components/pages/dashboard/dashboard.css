@@ -472,114 +472,11 @@
   font-weight: 700;
 }
 
-/* ================================================
-   UTILITÁRIOS DE COR (ícones e chips)
-   ================================================ */
-.icon-soft-success,
-.soft-success {
-  background: #ecfdf3;
-  color: #2f855a;
-}
-
-.icon-soft-primary,
-.soft-primary {
-  background: #ede9fe;
-  color: #6d28d9;
-}
-
-.icon-soft-warning,
-.soft-warning {
-  background: #fef3c7;
-  color: #b45309;
-}
-
-.icon-soft-info,
-.soft-info {
-  background: #e0f2fe;
-  color: #0369a1;
-}
-
-/* ================================================
-   BADGES / CHIPS DE STATUS
-   ================================================ */
-.badge {
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.badge-quente {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.badge-morna {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.badge-fria {
-  background: #e0f2fe;
-  color: #0c4a6e;
-}
-
-.status-chip,
-.agenda-chip {
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* Status de Conexão */
-.status-nova {
-  background: #eff6ff;
-  color: #1d4ed8;
-}
-
-.status-andamento {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.status-fechada {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-nao-fechada {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-/* Status de Equipe */
-.status-ativa {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-formacao {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-/* Status de Agenda */
-.agenda-hoje {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.agenda-online {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.agenda-proxima {
-  background: #f1f5f9;
-  color: #334155;
-}
+/*
+ * Utilitários de cor, status chips, badges e agenda chips
+ * foram migrados para styles.css (design system global).
+ * Não redeclare aqui — use as classes de styles.css diretamente.
+ */
 
 /* ================================================
    RESPONSIVO — TABLET (768px)

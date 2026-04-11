@@ -1,4 +1,49 @@
 /* ================================================
+   DESIGN SYSTEM — VARIÁVEIS GLOBAIS
+   Fonte da verdade de cores, espaçamentos e tokens.
+   Use sempre as variáveis em vez de hardcodar valores.
+   ================================================ */
+:root {
+  /* Paleta primária (verde C+C) */
+  --cor-primaria:        #2f855a;
+  --cor-primaria-escura: #276749;
+  --cor-primaria-clara:  #48bb78;
+
+  /* Superfícies */
+  --cor-background:  #f4f7f5;
+  --cor-surface:     #ffffff;
+  --cor-surface-alt: #f8fafc;
+  --cor-borda:       rgba(15, 23, 42, 0.06);
+
+  /* Texto */
+  --cor-texto:            #0f172a;
+  --cor-texto-secundario: #64748b;
+  --cor-texto-placeholder:#94a3b8;
+
+  /* Semânticas */
+  --cor-sucesso:      #166534;
+  --cor-sucesso-bg:   #dcfce7;
+  --cor-erro:         #991b1b;
+  --cor-erro-bg:      #fee2e2;
+  --cor-alerta:       #92400e;
+  --cor-alerta-bg:    #fef3c7;
+  --cor-info:         #0369a1;
+  --cor-info-bg:      #e0f2fe;
+
+  /* Raios de borda padrão */
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  18px;
+  --radius-xl:  22px;
+  --radius-pill: 999px;
+
+  /* Sombras */
+  --sombra-card:   0 10px 28px rgba(15, 23, 42, 0.06);
+  --sombra-sm:     0 4px 14px rgba(15, 23, 42, 0.04);
+  --sombra-botao:  0 4px 14px rgba(47, 133, 90, 0.30);
+}
+
+/* ================================================
    RESET & BASE GLOBAL
    ================================================ */
 *,
@@ -16,8 +61,8 @@ body {
     Roboto, 'Helvetica Neue', Arial, sans-serif;
   font-size: 15px;
   line-height: 1.5;
-  color: #0f172a;
-  background-color: #f4f7f5;
+  color: var(--cor-texto);
+  background-color: var(--cor-background);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -36,10 +81,540 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: rgba(15, 23, 42, 0.15);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   transition: background 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(15, 23, 42, 0.28);
+}
+
+/* ================================================
+   PAGE LAYOUT SYSTEM
+   Skeleton visual de toda página CRUD do sistema.
+   Usado por: equipes, associados, e qualquer nova tela.
+   ================================================ */
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.page-header-left {
+  flex: 1;
+}
+
+/* Breadcrumb */
+.breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.bc-item {
+  font-size: 13px;
+  color: var(--cor-texto-secundario);
+  cursor: default;
+}
+
+.bc-active {
+  color: var(--cor-primaria);
+  font-weight: 600;
+}
+
+.bc-sep {
+  font-size: 11px;
+  color: var(--cor-texto-placeholder);
+}
+
+/* Títulos */
+.page-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--cor-texto);
+  margin: 0 0 6px;
+  line-height: 1.1;
+}
+
+.page-subtitle {
+  margin: 0;
+  color: var(--cor-texto-secundario);
+  font-size: 14px;
+}
+
+/* ================================================
+   BOTÃO PRIMÁRIO DE PÁGINA (ex: "Nova Equipe")
+   Estilo padrão para o CTA principal do page-header.
+   O componente define o texto; a estética fica aqui.
+   ================================================ */
+.btn-acao-pagina {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--cor-primaria);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  box-shadow: var(--sombra-botao);
+  white-space: nowrap;
+}
+
+.btn-acao-pagina:hover {
+  background: var(--cor-primaria-escura);
+  box-shadow: 0 6px 20px rgba(47, 133, 90, 0.38);
+}
+
+.btn-acao-pagina:active {
+  transform: scale(0.98);
+}
+
+.btn-acao-pagina:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 3px;
+}
+
+/* ================================================
+   KPI CARDS
+   Strip horizontal de métricas no topo de cada página.
+   Estrutura: ícone + label + valor numérico.
+   ================================================ */
+.kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--cor-surface);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  box-shadow: var(--sombra-card);
+}
+
+.kpi-icon {
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* Variantes de cor para ícone — cobertura semântica padrão */
+.kpi-icon-total    { background: var(--cor-info-bg);    color: var(--cor-info); }
+.kpi-icon-ativo    { background: var(--cor-sucesso-bg); color: var(--cor-sucesso); }
+.kpi-icon-pendente { background: var(--cor-alerta-bg);  color: var(--cor-alerta); }
+.kpi-icon-inativo  { background: var(--cor-erro-bg);    color: var(--cor-erro); }
+
+/* Aliases de compatibilidade com nomes anteriores */
+.kpi-icon-all      { background: var(--cor-info-bg);    color: var(--cor-info); }
+.kpi-icon-ativa    { background: var(--cor-sucesso-bg); color: var(--cor-sucesso); }
+.kpi-icon-formacao { background: var(--cor-alerta-bg);  color: var(--cor-alerta); }
+.kpi-icon-inativa  { background: var(--cor-erro-bg);    color: var(--cor-erro); }
+
+.kpi-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cor-texto-secundario);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.kpi-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--cor-texto);
+  line-height: 1.1;
+}
+
+/* ================================================
+   FILTER BAR
+   Barra de busca + selects presente em toda lista.
+   Mantida como bloco independente para fácil reutilização.
+   ================================================ */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--cor-surface);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  box-shadow: var(--sombra-sm);
+  margin-bottom: 14px;
+}
+
+/* flex:1 faz o campo de busca ocupar o espaço disponível,
+   empurrando os selects para a direita */
+.filter-search-wrap {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+}
+
+.filter-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--cor-texto-placeholder);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.filter-search-input {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 9px 12px 9px 36px;
+  font-size: 14px;
+  color: var(--cor-texto);
+  background: var(--cor-surface-alt);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.filter-search-input::placeholder {
+  color: var(--cor-texto-placeholder);
+}
+
+.filter-search-input:focus {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 3px rgba(47, 133, 90, 0.12);
+  background: var(--cor-surface);
+}
+
+/* Grupo de selects de filtro */
+.filter-selects {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-select-wrap {
+  position: relative;
+}
+
+.filter-select-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--cor-texto-placeholder);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* appearance:none remove o chevron nativo do SO;
+   substituído por SVG inline para consistência cross-browser */
+.filter-select {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 9px 12px 9px 30px;
+  font-size: 13px;
+  color: #334155;
+  background: var(--cor-surface-alt);
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filter-select:focus {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 3px rgba(47, 133, 90, 0.12);
+  background-color: var(--cor-surface);
+}
+
+/* margin-left:auto empurra o contador para a extremidade direita */
+.filter-count {
+  font-size: 13px;
+  color: var(--cor-texto-secundario);
+  font-weight: 500;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+/* ================================================
+   TABLE CARD
+   Container branco arredondado que envolve qualquer tabela.
+   O overflow-x fica no .table-wrapper interno para preservar
+   o border-radius e a sombra do card em telas pequenas.
+   ================================================ */
+.table-card {
+  background: var(--cor-surface);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--sombra-card);
+  overflow: hidden;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+/* ================================================
+   BOTÕES DE AÇÃO — TABELA
+   Botões icon-only usados na coluna "Ações" de qualquer tabela.
+   Cada variante (editar, inativar, reativar) tem semântica própria.
+   ================================================ */
+.btn-acao {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.btn-acao:active {
+  transform: scale(0.95);
+}
+
+.btn-acao:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 2px;
+}
+
+/* Verde — edição / detalhes */
+.btn-editar {
+  background: #f0fdf4;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+
+.btn-editar:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+/* Laranja/vermelho — desativar / pausar */
+.btn-inativar {
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+.btn-inativar:hover {
+  background: #ffedd5;
+  border-color: #fb923c;
+}
+
+/* Azul — reativar / restaurar */
+.btn-reativar {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.btn-reativar:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+/* ================================================
+   STATUS CHIPS
+   Pílulas coloridas de status usadas em tabelas e listas.
+   Convenção: fundo claro + texto escuro da mesma família de cor.
+   ================================================ */
+.status-chip,
+.agenda-chip {
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Entidades (Equipe, Associado, etc.) */
+.status-ativa    { background: var(--cor-sucesso-bg); color: var(--cor-sucesso); }
+.status-formacao { background: var(--cor-alerta-bg);  color: var(--cor-alerta); }
+.status-inativa  { background: #f1f5f9;               color: #475569; }
+.status-pre-ativo{ background: #ede9fe;               color: #6d28d9; }
+
+/* Conexões */
+.status-nova         { background: #eff6ff; color: #1d4ed8; }
+.status-andamento    { background: var(--cor-alerta-bg); color: var(--cor-alerta); }
+.status-fechada      { background: var(--cor-sucesso-bg); color: var(--cor-sucesso); }
+.status-nao-fechada  { background: var(--cor-erro-bg);   color: var(--cor-erro); }
+
+/* Agenda */
+.agenda-hoje   { background: var(--cor-sucesso-bg); color: var(--cor-sucesso); }
+.agenda-online { background: #dbeafe; color: #1d4ed8; }
+.agenda-proxima{ background: #f1f5f9; color: #334155; }
+
+/* Conexões por temperatura */
+.badge-quente { background: var(--cor-sucesso-bg); color: var(--cor-sucesso); }
+.badge-morna  { background: var(--cor-alerta-bg);  color: var(--cor-alerta); }
+.badge-fria   { background: var(--cor-info-bg);    color: var(--cor-info); }
+
+/* ================================================
+   UTILITÁRIOS DE COR — ícones e fundos suaves
+   Padrão: .icon-soft-X (ícone dentro de caixa colorida)
+           .soft-X (genérico, inclui fundo + cor de texto)
+   ================================================ */
+.icon-soft-success, .soft-success { background: #ecfdf3; color: var(--cor-primaria); }
+.icon-soft-primary, .soft-primary { background: #ede9fe; color: #6d28d9; }
+.icon-soft-warning, .soft-warning { background: var(--cor-alerta-bg); color: #b45309; }
+.icon-soft-info,    .soft-info    { background: var(--cor-info-bg);   color: var(--cor-info); }
+
+/* ================================================
+   EMPTY STATE
+   Exibido quando uma lista não tem resultados.
+   Usado em tabelas e painéis. Sempre centralizado.
+   ================================================ */
+.empty-state {
+  text-align: center;
+  padding: 56px 20px !important;
+}
+
+.empty-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  color: var(--cor-texto-placeholder);
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #334155;
+  margin: 0 0 6px;
+}
+
+.empty-subtitle {
+  font-size: 13px;
+  color: var(--cor-texto-placeholder);
+  margin: 0;
+}
+
+/* ================================================
+   BOTÃO SALVAR — MODAL
+   CTA principal do footer de qualquer modal de formulário.
+   Estado desabilitado gerenciado via [disabled] do Angular.
+   ================================================ */
+.btn-salvar-modal {
+  background: var(--cor-primaria);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 9px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
+  box-shadow: 0 3px 10px rgba(47, 133, 90, 0.28);
+}
+
+.btn-salvar-modal:hover:not(:disabled) {
+  background: var(--cor-primaria-escura);
+  box-shadow: 0 5px 16px rgba(47, 133, 90, 0.38);
+}
+
+.btn-salvar-modal:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-salvar-modal:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 3px;
+}
+
+/* Formulário inválido ou em processo de salvamento */
+.btn-salvar-modal:disabled {
+  background: #a0c4b3;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* ================================================
+   UTILITÁRIOS DE TEXTO
+   ================================================ */
+.text-muted-sm {
+  color: var(--cor-texto-placeholder);
+  font-size: 14px;
+}
+
+/* ================================================
+   RESPONSIVO — PAGE LAYOUT (768px)
+   Ajustes para o esqueleto de página em tablet.
+   Cada componente pode sobrescrever com seus próprios
+   media queries para elementos específicos.
+   ================================================ */
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 22px;
+  }
+
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-search-wrap {
+    min-width: unset;
+  }
+
+  .filter-selects {
+    flex-wrap: nowrap;
+  }
+
+  .filter-count {
+    margin-left: 0;
+    text-align: right;
+  }
+}
+
+/* ================================================
+   RESPONSIVO — PAGE LAYOUT (575px)
+   ================================================ */
+@media (max-width: 575px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-acao-pagina {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .kpi-value {
+    font-size: 22px;
+  }
+
+  .filter-selects {
+    flex-direction: column;
+  }
 }
