@@ -5,7 +5,7 @@
 // O baseUrl aqui deve apontar para o domínio real da API.
 // ============================================================
 
-const baseUrl = 'https://api.admcc.com.br/api/v1';
+const baseUrl = 'https://apiadmcc.automica.com.br/api/v1';
 
 export const environment = {
   production: true,
