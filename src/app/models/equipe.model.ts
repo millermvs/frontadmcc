@@ -156,9 +156,10 @@ export interface PaginacaoResponseDto<T> {
   items: T[];
   page: number;
   size: number;
-  totalItems: number;
+  totalitems: number;
   totalPages: number;
-  ultimaPagina: boolean;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }
 
 // ============================================================================

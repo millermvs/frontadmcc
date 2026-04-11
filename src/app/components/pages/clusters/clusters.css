@@ -1,0 +1,342 @@
+/*
+ * clusters.css — estilos EXCLUSIVOS da página de Clusters.
+ *
+ * O que NÃO está aqui (já em styles.css global):
+ *   - .page-header, .page-title, .breadcrumb-nav
+ *   - .kpi-card, .kpi-icon, .kpi-value, .kpi-label
+ *   - .filter-bar, .filter-search-input, .filter-select, .filter-count
+ *   - .table-card, .table-wrapper
+ *   - .btn-acao, .btn-editar
+ *   - .empty-state, .empty-icon, .empty-title, .empty-subtitle
+ *   - .btn-salvar-modal
+ */
+
+/* ================================================
+   PAGE BACKGROUND
+   ================================================ */
+.clusters-page {
+  padding: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(47, 133, 90, 0.07), transparent 28%),
+    var(--cor-background);
+  min-height: 100vh;
+}
+
+/* ================================================
+   CABEÇALHO — BOTÕES DE AÇÃO
+   ================================================ */
+.page-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Botão primário — Novo Cluster */
+.btn-nova-entrada {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--cor-primaria);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  box-shadow: var(--sombra-botao);
+  white-space: nowrap;
+}
+
+.btn-nova-entrada:hover {
+  background: var(--cor-primaria-escura);
+  box-shadow: 0 6px 20px rgba(47, 133, 90, 0.38);
+}
+
+.btn-nova-entrada:active { transform: scale(0.98); }
+
+.btn-nova-entrada:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 3px;
+}
+
+/* Botão secundário — Nova Atuação */
+.btn-acao-secundaria {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--cor-primaria);
+  border: 1.5px solid var(--cor-primaria);
+  border-radius: var(--radius-md);
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-acao-secundaria:hover {
+  background: rgba(47, 133, 90, 0.08);
+}
+
+.btn-acao-secundaria:active { transform: scale(0.98); }
+
+.btn-acao-secundaria:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 3px;
+}
+
+/* ================================================
+   SEÇÃO — CABEÇALHO DAS SUBSEÇÕES
+   ================================================ */
+.section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.mt-section {
+  margin-top: 36px;
+}
+
+.section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-icon {
+  font-size: 15px;
+  color: var(--cor-primaria);
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--cor-texto-secundario);
+}
+
+/* ================================================
+   TABELA COMPARTILHADA (clusters e atuações)
+   ================================================ */
+.clusters-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.clusters-table thead tr {
+  background: var(--cor-surface-alt);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+.clusters-table th {
+  padding: 13px 18px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--cor-texto-secundario);
+  text-align: flex;
+  white-space: nowrap;
+}
+
+.clusters-table tbody tr {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+  transition: background-color 0.15s ease;
+}
+
+.clusters-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.cluster-row:hover {
+  background: var(--cor-surface-alt);
+}
+
+.clusters-table td {
+  padding: 14px 18px;
+  color: var(--cor-texto);
+  vertical-align: middle;
+}
+
+.col-centro {
+  /* display flex no td para centralizar elementos inline-flex (badge) sem esticar */
+  display: table-cell;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.col-acoes {
+  text-align: center;
+}
+
+/* ================================================
+   COLUNA — NOME DO CLUSTER
+   ================================================ */
+.cell-nome {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Avatar com a inicial do cluster */
+.cluster-avatar {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--cor-primaria), var(--cor-primaria-clara));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.cluster-nome-texto {
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+
+/* ================================================
+   BADGE — CONTAGEM DE ATUAÇÕES (tabela clusters)
+   ================================================ */
+.badge-atuacoes {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--cor-surface-alt);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-pill);
+  /* padding horizontal reduzido — o conteúdo é curto, não precisa de espaço extra */
+  padding: 3px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cor-texto-secundario);
+  /* garante que o badge não estica para preencher a célula centralizada */
+  width: fit-content;
+}
+
+/* ================================================
+   COLUNA — NOME DA ATUAÇÃO
+   ================================================ */
+.atuacao-nome {
+  font-weight: 500;
+  color: var(--cor-texto);
+}
+
+/* ================================================
+   TAG — CLUSTER (tabela atuações)
+   Sem ícone — o nome do cluster já é suficientemente
+   descritivo numa célula de tabela. Mais limpo.
+   ================================================ */
+.cluster-tag {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(47, 133, 90, 0.09);
+  color: var(--cor-primaria-escura);
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+/* ================================================
+   BOTÃO ADICIONAR ATUAÇÃO (coluna ações da tabela clusters)
+   Usa a paleta primária do projeto (verde) em vez de azul —
+   mantém a consistência visual com o restante da UI.
+   ================================================ */
+.btn-adicionar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1.5px dashed rgba(47, 133, 90, 0.45);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  background: transparent;
+  color: var(--cor-primaria);
+}
+
+.btn-adicionar:hover {
+  background: rgba(47, 133, 90, 0.08);
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria-escura);
+}
+
+.btn-adicionar:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 2px;
+}
+
+/* ================================================
+   COLUNA AÇÕES
+   ================================================ */
+.acoes-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* ================================================
+   SKELETON LOADING
+   ================================================ */
+.skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-nome   { height: 18px; width: 60%; }
+.skeleton-badge  { height: 22px; width: 80px; margin: 0 auto; border-radius: var(--radius-pill); }
+.skeleton-cluster { height: 22px; width: 120px; border-radius: var(--radius-pill); }
+.skeleton-acoes  { height: 28px; width: 64px; margin: 0 auto; }
+
+/* ================================================
+   RESPONSIVO — TABLET (768px)
+   ================================================ */
+@media (max-width: 768px) {
+  .clusters-page {
+    padding: 14px;
+  }
+}
+
+/* ================================================
+   RESPONSIVO — MOBILE (575px)
+   ================================================ */
+@media (max-width: 575px) {
+  .clusters-page {
+    padding: 12px;
+  }
+
+  .page-header-right {
+    width: 100%;
+  }
+
+  .btn-nova-entrada,
+  .btn-acao-secundaria {
+    width: 100%;
+    justify-content: center;
+  }
+}

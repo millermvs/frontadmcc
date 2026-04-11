@@ -1,12 +1,13 @@
 // Espelho dos ResponseDtos do backend
 
 export interface PaginacaoResponseDto<T> {
-  conteudo: T[];
-  numeroPagina: number;
-  tamanhoPagina: number;
-  totalElementos: number;
-  totalPaginas: number;
-  ultimaPagina: boolean;
+  items: T[];
+  page: number;
+  size: number;
+  totalitems: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }
 
 export interface ClusterResponseDto {

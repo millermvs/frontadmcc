@@ -1,0 +1,783 @@
+<div class="clusters-page container-fluid">
+
+  <!-- CABEÇALHO DA PÁGINA -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <nav class="breadcrumb-nav" aria-label="Breadcrumb">
+        <span class="bc-item"><i class="bi bi-house-fill" aria-hidden="true"></i> Dashboard</span>
+        <i class="bi bi-chevron-right bc-sep" aria-hidden="true"></i>
+        <span class="bc-item bc-active">Clusters</span>
+      </nav>
+      <h2 class="page-title">Clusters</h2>
+      <p class="page-subtitle">Gerencie os clusters de atuação e suas especializações.</p>
+    </div>
+
+    <div class="page-header-right">
+      <button
+        class="btn-acao-secundaria"
+        type="button"
+        data-bs-toggle="modal"
+        data-bs-target="#modalNovaAtuacao"
+        (click)="abrirModalNovaAtuacao(null)"
+      >
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        Nova Atuação
+      </button>
+      <button
+        class="btn-nova-entrada"
+        type="button"
+        data-bs-toggle="modal"
+        data-bs-target="#modalNovoCluster"
+        (click)="resetarFormNovoCluster()"
+      >
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        Novo Cluster
+      </button>
+    </div>
+  </div>
+
+  <!-- CARDS DE RESUMO -->
+  <div class="row g-3 mt-0 mb-1">
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-total">
+          <i class="bi bi-diagram-3-fill" aria-hidden="true"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Clusters</span>
+          <strong class="kpi-value">{{ totalClusters() }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-ativo">
+          <i class="bi bi-briefcase-fill" aria-hidden="true"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Atuações</span>
+          <strong class="kpi-value">{{ totalAtuacoes() }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =====================================================================
+       SEÇÃO 1 — CLUSTERS
+       ===================================================================== -->
+
+  <div class="section-header mt-section">
+    <div class="section-title-wrap">
+      <i class="bi bi-diagram-3-fill section-icon" aria-hidden="true"></i>
+      <span class="section-title">Clusters</span>
+    </div>
+  </div>
+
+  <!-- Barra de filtros — Clusters -->
+  <div class="filter-bar">
+    <div class="filter-search-wrap">
+      <i class="bi bi-search filter-search-icon" aria-hidden="true"></i>
+      <input
+        class="filter-search-input"
+        type="text"
+        placeholder="Buscar cluster pelo nome…"
+        [value]="termoBuscaCluster()"
+        (input)="atualizarBuscaCluster($any($event.target).value)"
+        aria-label="Buscar cluster"
+      />
+    </div>
+    <span class="filter-count">
+      {{ clustersFiltrados().length }} resultado{{ clustersFiltrados().length !== 1 ? 's' : '' }}
+    </span>
+  </div>
+
+  <!-- Tabela de Clusters -->
+  <div class="table-card">
+    <div class="table-wrapper">
+      <table class="clusters-table" aria-label="Lista de clusters">
+        <thead>
+          <tr>
+            <th scope="col">Cluster</th>
+            <th scope="col" class="col-centro">Atuações</th>
+            <th scope="col" class="col-acoes">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <!-- Loading state -->
+          @if (carregandoLista()) {
+            @for (i of [1, 2, 3]; track i) {
+              <tr class="cluster-row">
+                <td><div class="skeleton skeleton-nome"></div></td>
+                <td class="col-centro"><div class="skeleton skeleton-badge"></div></td>
+                <td class="col-acoes"><div class="skeleton skeleton-acoes"></div></td>
+              </tr>
+            }
+          }
+
+          <!-- Dados carregados -->
+          @if (!carregandoLista()) {
+            @for (cluster of clustersFiltrados(); track cluster.idCluster) {
+              <tr class="cluster-row">
+
+                <!-- Nome -->
+                <td>
+                  <div class="cell-nome">
+                    <div class="cluster-avatar">
+                      {{ cluster.nome.charAt(0).toUpperCase() }}
+                    </div>
+                    <span class="cluster-nome-texto">{{ cluster.nome }}</span>
+                  </div>
+                </td>
+
+                <!-- Contagem de atuações -->
+                <td class="col-centro">
+                  <span class="badge-atuacoes">
+                    {{ contarAtuacoesPorCluster(cluster.idCluster) }}
+                    {{ contarAtuacoesPorCluster(cluster.idCluster) === 1 ? 'atuação' : 'atuações' }}
+                  </span>
+                </td>
+
+                <!-- Ações -->
+                <td class="col-acoes">
+                  <div class="acoes-group">
+                    <button
+                      class="btn-acao btn-editar"
+                      type="button"
+                      title="Editar cluster"
+                      aria-label="Editar {{ cluster.nome }}"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalEditarCluster"
+                      (click)="abrirModalEditarCluster(cluster)"
+                    >
+                      <i class="bi bi-pencil-fill" aria-hidden="true"></i>
+                    </button>
+
+                    <button
+                      class="btn-acao btn-adicionar"
+                      type="button"
+                      title="Adicionar atuação a este cluster"
+                      aria-label="Adicionar atuação ao cluster {{ cluster.nome }}"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalNovaAtuacao"
+                      (click)="abrirModalNovaAtuacao(cluster.idCluster)"
+                    >
+                      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </td>
+
+              </tr>
+            }
+
+            <!-- Empty state -->
+            @if (clustersFiltrados().length === 0) {
+              <tr>
+                <td colspan="3">
+                  <div class="empty-state">
+                    <i class="bi bi-diagram-3 empty-icon" aria-hidden="true"></i>
+                    <p class="empty-title">Nenhum cluster encontrado</p>
+                    <p class="empty-subtitle">
+                      @if (termoBuscaCluster()) {
+                        Nenhum resultado para "{{ termoBuscaCluster() }}". Tente outro termo.
+                      } @else {
+                        Clique em <strong>Novo Cluster</strong> para começar.
+                      }
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+  <!-- =====================================================================
+       SEÇÃO 2 — ATUAÇÕES ESPECÍFICAS
+       ===================================================================== -->
+
+  <div class="section-header mt-section">
+    <div class="section-title-wrap">
+      <i class="bi bi-briefcase-fill section-icon" aria-hidden="true"></i>
+      <span class="section-title">Atuações Específicas</span>
+    </div>
+  </div>
+
+  <!-- Barra de filtros — Atuações -->
+  <div class="filter-bar">
+    <div class="filter-search-wrap">
+      <i class="bi bi-search filter-search-icon" aria-hidden="true"></i>
+      <input
+        class="filter-search-input"
+        type="text"
+        placeholder="Buscar atuação pelo nome…"
+        [value]="termoBuscaAtuacao()"
+        (input)="atualizarBuscaAtuacao($any($event.target).value)"
+        aria-label="Buscar atuação"
+      />
+    </div>
+
+    <div class="filter-selects">
+      <div class="filter-select-wrap">
+        <i class="bi bi-diagram-3-fill filter-select-icon" aria-hidden="true"></i>
+        <select
+          class="filter-select"
+          [value]="filtroClusterAtuacao() ?? 'Todos'"
+          (change)="atualizarFiltroCluster($any($event.target).value)"
+          aria-label="Filtrar por cluster"
+        >
+          <option value="Todos">Todos os clusters</option>
+          @for (cluster of clusters(); track cluster.idCluster) {
+            <option [value]="cluster.idCluster">{{ cluster.nome }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <span class="filter-count">
+      {{ atuacoesFiltradas().length }} resultado{{ atuacoesFiltradas().length !== 1 ? 's' : '' }}
+    </span>
+  </div>
+
+  <!-- Tabela de Atuações -->
+  <div class="table-card">
+    <div class="table-wrapper">
+      <table class="clusters-table" aria-label="Lista de atuações específicas">
+        <thead>
+          <tr>
+            <th scope="col">Atuação Específica</th>
+            <th scope="col">Cluster</th>
+            <th scope="col" class="col-acoes">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <!-- Loading state -->
+          @if (carregandoLista()) {
+            @for (i of [1, 2, 3, 4]; track i) {
+              <tr class="cluster-row">
+                <td><div class="skeleton skeleton-nome"></div></td>
+                <td><div class="skeleton skeleton-cluster"></div></td>
+                <td class="col-acoes"><div class="skeleton skeleton-acoes"></div></td>
+              </tr>
+            }
+          }
+
+          <!-- Dados carregados -->
+          @if (!carregandoLista()) {
+            @for (atuacao of atuacoesFiltradas(); track atuacao.id) {
+              <tr class="cluster-row">
+
+                <!-- Nome da atuação -->
+                <td>
+                  <span class="atuacao-nome">{{ atuacao.nome }}</span>
+                </td>
+
+                <!-- Cluster de origem -->
+                <td>
+                  <span class="cluster-tag">{{ atuacao.nomeCluster }}</span>
+                </td>
+
+                <!-- Ações -->
+                <td class="col-acoes">
+                  <div class="acoes-group">
+                    <button
+                      class="btn-acao btn-editar"
+                      type="button"
+                      title="Editar atuação"
+                      aria-label="Editar {{ atuacao.nome }}"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalEditarAtuacao"
+                      (click)="abrirModalEditarAtuacao(atuacao)"
+                    >
+                      <i class="bi bi-pencil-fill" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </td>
+
+              </tr>
+            }
+
+            <!-- Empty state -->
+            @if (atuacoesFiltradas().length === 0) {
+              <tr>
+                <td colspan="3">
+                  <div class="empty-state">
+                    <i class="bi bi-briefcase empty-icon" aria-hidden="true"></i>
+                    <p class="empty-title">Nenhuma atuação encontrada</p>
+                    <p class="empty-subtitle">
+                      @if (termoBuscaAtuacao() || filtroClusterAtuacao() !== null) {
+                        Nenhum resultado para o filtro aplicado.
+                      } @else {
+                        Clique em <strong>Nova Atuação</strong> para começar.
+                      }
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ===========================================================================
+     MODAL — NOVO CLUSTER
+     =========================================================================== -->
+<div
+  class="modal fade"
+  id="modalNovoCluster"
+  tabindex="-1"
+  aria-labelledby="modalNovoClusterLabel"
+  aria-modal="true"
+  role="dialog"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalNovoClusterLabel">
+          <i class="bi bi-diagram-3-fill me-2" aria-hidden="true"></i>
+          Novo Cluster
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+          (click)="resetarFormNovoCluster()"
+        ></button>
+      </div>
+
+      <form [formGroup]="formNovoCluster" (ngSubmit)="salvarNovoCluster()" novalidate>
+        <div class="modal-body">
+
+          <!-- Alerta de erro geral -->
+          @if (erroModal()) {
+            <div class="alert alert-danger py-2 mb-3" role="alert">
+              <i class="bi bi-exclamation-circle-fill me-2" aria-hidden="true"></i>
+              {{ erroModal() }}
+            </div>
+          }
+
+          <!-- Nome do cluster -->
+          <div class="mb-3">
+            <label for="nomeNovoCluster" class="form-label fw-semibold">
+              Nome do Cluster <span class="text-danger">*</span>
+            </label>
+            <input
+              id="nomeNovoCluster"
+              type="text"
+              class="form-control"
+              [class.is-invalid]="formNovoCluster.get('nome')?.invalid && formNovoCluster.get('nome')?.touched || errosValidacao()['nome']"
+              formControlName="nome"
+              placeholder="Ex: Construção Civil"
+              maxlength="100"
+              autocomplete="off"
+            />
+            @if (formNovoCluster.get('nome')?.errors?.['required'] && formNovoCluster.get('nome')?.touched) {
+              <div class="invalid-feedback">Nome é obrigatório.</div>
+            }
+            @if (formNovoCluster.get('nome')?.errors?.['maxlength']) {
+              <div class="invalid-feedback">Máximo de 100 caracteres.</div>
+            }
+            @if (errosValidacao()['nome']) {
+              <div class="invalid-feedback d-block">{{ errosValidacao()['nome'] }}</div>
+            }
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm"
+            data-bs-dismiss="modal"
+            (click)="resetarFormNovoCluster()"
+          >
+            Cancelar
+          </button>
+          <!-- Botão oculto usado pelo ViewChild para fechar o modal programaticamente -->
+          <button
+            #btnFecharModalNovoCluster
+            type="button"
+            class="d-none"
+            data-bs-dismiss="modal"
+          ></button>
+          <button
+            type="submit"
+            class="btn-salvar-modal"
+            [disabled]="formNovoCluster.invalid || carregandoModal()"
+          >
+            @if (carregandoModal()) {
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Salvando...
+            } @else {
+              <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+              Salvar Cluster
+            }
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ===========================================================================
+     MODAL — EDITAR CLUSTER
+     =========================================================================== -->
+<div
+  class="modal fade"
+  id="modalEditarCluster"
+  tabindex="-1"
+  aria-labelledby="modalEditarClusterLabel"
+  aria-modal="true"
+  role="dialog"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalEditarClusterLabel">
+          <i class="bi bi-pencil-fill me-2" aria-hidden="true"></i>
+          Editar Cluster
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+          (click)="resetarFormEditarCluster()"
+        ></button>
+      </div>
+
+      <form [formGroup]="formEditarCluster" (ngSubmit)="salvarEditarCluster()" novalidate>
+        <div class="modal-body">
+
+          @if (erroModal()) {
+            <div class="alert alert-danger py-2 mb-3" role="alert">
+              <i class="bi bi-exclamation-circle-fill me-2" aria-hidden="true"></i>
+              {{ erroModal() }}
+            </div>
+          }
+
+          <div class="mb-3">
+            <label for="nomeEditarCluster" class="form-label fw-semibold">
+              Nome do Cluster <span class="text-danger">*</span>
+            </label>
+            <input
+              id="nomeEditarCluster"
+              type="text"
+              class="form-control"
+              [class.is-invalid]="formEditarCluster.get('nome')?.invalid && formEditarCluster.get('nome')?.touched || errosValidacao()['nome']"
+              formControlName="nome"
+              placeholder="Ex: Construção Civil"
+              maxlength="100"
+              autocomplete="off"
+            />
+            @if (formEditarCluster.get('nome')?.errors?.['required'] && formEditarCluster.get('nome')?.touched) {
+              <div class="invalid-feedback">Nome é obrigatório.</div>
+            }
+            @if (formEditarCluster.get('nome')?.errors?.['maxlength']) {
+              <div class="invalid-feedback">Máximo de 100 caracteres.</div>
+            }
+            @if (errosValidacao()['nome']) {
+              <div class="invalid-feedback d-block">{{ errosValidacao()['nome'] }}</div>
+            }
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm"
+            data-bs-dismiss="modal"
+            (click)="resetarFormEditarCluster()"
+          >
+            Cancelar
+          </button>
+          <button
+            #btnFecharModalEditarCluster
+            type="button"
+            class="d-none"
+            data-bs-dismiss="modal"
+          ></button>
+          <button
+            type="submit"
+            class="btn-salvar-modal"
+            [disabled]="!formEditarCluster.dirty || formEditarCluster.invalid || carregandoModal()"
+          >
+            @if (carregandoModal()) {
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Salvando...
+            } @else {
+              <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+              Salvar Alterações
+            }
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ===========================================================================
+     MODAL — NOVA ATUAÇÃO ESPECÍFICA
+     =========================================================================== -->
+<div
+  class="modal fade"
+  id="modalNovaAtuacao"
+  tabindex="-1"
+  aria-labelledby="modalNovaAtuacaoLabel"
+  aria-modal="true"
+  role="dialog"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalNovaAtuacaoLabel">
+          <i class="bi bi-briefcase-fill me-2" aria-hidden="true"></i>
+          Nova Atuação Específica
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+          (click)="resetarFormNovaAtuacao()"
+        ></button>
+      </div>
+
+      <form [formGroup]="formNovaAtuacao" (ngSubmit)="salvarNovaAtuacao()" novalidate>
+        <div class="modal-body">
+
+          @if (erroModal()) {
+            <div class="alert alert-danger py-2 mb-3" role="alert">
+              <i class="bi bi-exclamation-circle-fill me-2" aria-hidden="true"></i>
+              {{ erroModal() }}
+            </div>
+          }
+
+          <!-- Cluster vinculado -->
+          <div class="mb-3">
+            <label for="idClusterNovaAtuacao" class="form-label fw-semibold">
+              Cluster <span class="text-danger">*</span>
+            </label>
+            <select
+              id="idClusterNovaAtuacao"
+              class="form-select"
+              [class.is-invalid]="formNovaAtuacao.get('idCluster')?.invalid && formNovaAtuacao.get('idCluster')?.touched"
+              formControlName="idCluster"
+            >
+              <option [ngValue]="null" disabled>Selecione um cluster…</option>
+              @for (cluster of clusters(); track cluster.idCluster) {
+                <option [ngValue]="cluster.idCluster">{{ cluster.nome }}</option>
+              }
+            </select>
+            @if (formNovaAtuacao.get('idCluster')?.errors?.['required'] && formNovaAtuacao.get('idCluster')?.touched) {
+              <div class="invalid-feedback">Selecione um cluster.</div>
+            }
+          </div>
+
+          <!-- Nome da atuação -->
+          <div class="mb-3">
+            <label for="nomeNovaAtuacao" class="form-label fw-semibold">
+              Nome da Atuação <span class="text-danger">*</span>
+            </label>
+            <input
+              id="nomeNovaAtuacao"
+              type="text"
+              class="form-control"
+              [class.is-invalid]="formNovaAtuacao.get('nome')?.invalid && formNovaAtuacao.get('nome')?.touched || errosValidacao()['nome']"
+              formControlName="nome"
+              placeholder="Ex: Engenharia Civil"
+              maxlength="150"
+              autocomplete="off"
+            />
+            @if (formNovaAtuacao.get('nome')?.errors?.['required'] && formNovaAtuacao.get('nome')?.touched) {
+              <div class="invalid-feedback">Nome é obrigatório.</div>
+            }
+            @if (formNovaAtuacao.get('nome')?.errors?.['maxlength']) {
+              <div class="invalid-feedback">Máximo de 150 caracteres.</div>
+            }
+            @if (errosValidacao()['nome']) {
+              <div class="invalid-feedback d-block">{{ errosValidacao()['nome'] }}</div>
+            }
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm"
+            data-bs-dismiss="modal"
+            (click)="resetarFormNovaAtuacao()"
+          >
+            Cancelar
+          </button>
+          <button
+            #btnFecharModalNovaAtuacao
+            type="button"
+            class="d-none"
+            data-bs-dismiss="modal"
+          ></button>
+          <button
+            type="submit"
+            class="btn-salvar-modal"
+            [disabled]="formNovaAtuacao.invalid || carregandoModal()"
+          >
+            @if (carregandoModal()) {
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Salvando...
+            } @else {
+              <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+              Salvar Atuação
+            }
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ===========================================================================
+     MODAL — EDITAR ATUAÇÃO ESPECÍFICA
+     =========================================================================== -->
+<div
+  class="modal fade"
+  id="modalEditarAtuacao"
+  tabindex="-1"
+  aria-labelledby="modalEditarAtuacaoLabel"
+  aria-modal="true"
+  role="dialog"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalEditarAtuacaoLabel">
+          <i class="bi bi-pencil-fill me-2" aria-hidden="true"></i>
+          Editar Atuação Específica
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+          (click)="resetarFormEditarAtuacao()"
+        ></button>
+      </div>
+
+      <form [formGroup]="formEditarAtuacao" (ngSubmit)="salvarEditarAtuacao()" novalidate>
+        <div class="modal-body">
+
+          @if (erroModal()) {
+            <div class="alert alert-danger py-2 mb-3" role="alert">
+              <i class="bi bi-exclamation-circle-fill me-2" aria-hidden="true"></i>
+              {{ erroModal() }}
+            </div>
+          }
+
+          <!-- Cluster vinculado -->
+          <div class="mb-3">
+            <label for="idClusterEditarAtuacao" class="form-label fw-semibold">
+              Cluster <span class="text-danger">*</span>
+            </label>
+            <select
+              id="idClusterEditarAtuacao"
+              class="form-select"
+              [class.is-invalid]="formEditarAtuacao.get('idCluster')?.invalid && formEditarAtuacao.get('idCluster')?.touched"
+              formControlName="idCluster"
+            >
+              <option [ngValue]="null" disabled>Selecione um cluster…</option>
+              @for (cluster of clusters(); track cluster.idCluster) {
+                <option [ngValue]="cluster.idCluster">{{ cluster.nome }}</option>
+              }
+            </select>
+            @if (formEditarAtuacao.get('idCluster')?.errors?.['required'] && formEditarAtuacao.get('idCluster')?.touched) {
+              <div class="invalid-feedback">Selecione um cluster.</div>
+            }
+          </div>
+
+          <!-- Nome da atuação -->
+          <div class="mb-3">
+            <label for="nomeEditarAtuacao" class="form-label fw-semibold">
+              Nome da Atuação <span class="text-danger">*</span>
+            </label>
+            <input
+              id="nomeEditarAtuacao"
+              type="text"
+              class="form-control"
+              [class.is-invalid]="formEditarAtuacao.get('nome')?.invalid && formEditarAtuacao.get('nome')?.touched || errosValidacao()['nome']"
+              formControlName="nome"
+              placeholder="Ex: Engenharia Civil"
+              maxlength="150"
+              autocomplete="off"
+            />
+            @if (formEditarAtuacao.get('nome')?.errors?.['required'] && formEditarAtuacao.get('nome')?.touched) {
+              <div class="invalid-feedback">Nome é obrigatório.</div>
+            }
+            @if (formEditarAtuacao.get('nome')?.errors?.['maxlength']) {
+              <div class="invalid-feedback">Máximo de 150 caracteres.</div>
+            }
+            @if (errosValidacao()['nome']) {
+              <div class="invalid-feedback d-block">{{ errosValidacao()['nome'] }}</div>
+            }
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm"
+            data-bs-dismiss="modal"
+            (click)="resetarFormEditarAtuacao()"
+          >
+            Cancelar
+          </button>
+          <button
+            #btnFecharModalEditarAtuacao
+            type="button"
+            class="d-none"
+            data-bs-dismiss="modal"
+          ></button>
+          <button
+            type="submit"
+            class="btn-salvar-modal"
+            [disabled]="!formEditarAtuacao.dirty || formEditarAtuacao.invalid || carregandoModal()"
+          >
+            @if (carregandoModal()) {
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Salvando...
+            } @else {
+              <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+              Salvar Alterações
+            }
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
