@@ -370,6 +370,91 @@
 }
 
 /* ================================================
+   PAGINAÇÃO
+   ================================================ */
+
+.paginacao-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid var(--cor-borda);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.paginacao-info {
+  font-size: 13px;
+  color: var(--cor-texto-secundario);
+}
+
+.paginacao-controles {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Botões "Anterior" e "Próxima" */
+.btn-pag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--cor-surface);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-sm);
+  padding: 7px 13px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cor-texto);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-pag:hover:not(:disabled) {
+  background: var(--cor-surface-alt);
+  border-color: rgba(15, 23, 42, 0.14);
+  color: var(--cor-primaria);
+}
+
+.btn-pag:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Botões numéricos de página */
+.btn-pag-num {
+  min-width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cor-surface);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-sm);
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cor-texto-secundario);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-pag-num:hover:not(.ativo) {
+  background: var(--cor-surface-alt);
+  border-color: rgba(15, 23, 42, 0.14);
+  color: var(--cor-texto);
+}
+
+/* Página atual — destaque primário */
+.btn-pag-num.ativo {
+  background: var(--cor-primaria);
+  border-color: var(--cor-primaria);
+  color: #ffffff;
+  font-weight: 700;
+  cursor: default;
+}
+
+/* ================================================
    RESPONSIVO — TABLET (768px)
    ================================================ */
 @media (max-width: 768px) {
@@ -389,5 +474,12 @@
   .btn-nova-equipe {
     width: 100%;
     justify-content: center;
+  }
+
+  .paginacao-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 16px;
+    gap: 10px;
   }
 }

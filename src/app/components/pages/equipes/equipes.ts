@@ -85,12 +85,28 @@ export class Equipes implements OnInit {
   // SIGNALS — LISTAGEM
   // =========================================================================
 
-  termoBusca      = signal('');
-  filtroStatus    = signal<string>('Todos');
-  filtroModelo    = signal<string>('Todos');
-  equipes         = signal<Equipe[]>([]);
-  totalEquipes     = signal(0);
-  carregandoLista = signal(false);
+  termoBusca        = signal('');
+  filtroStatus      = signal<string>('Todos');
+  filtroModelo      = signal<string>('Todos');
+  equipes           = signal<Equipe[]>([]);
+  equipesFiltradas  = signal<Equipe[]>([]);
+  totalEquipes      = signal(0);
+  carregandoLista   = signal(false);
+
+  // =========================================================================
+  // SIGNALS — PAGINAÇÃO
+  // =========================================================================
+
+  /** Página zero-based enviada ao backend. */
+  paginaAtual   = signal(0);
+  tamanhoPagina = signal(100);
+
+  /** Total de páginas retornado pelo backend. */
+  totalPaginas  = signal(0);
+
+  /** Flags que espelham hasNext / hasPrevious do backend. */
+  temProxima    = signal(false);
+  temAnterior   = signal(false);
 
   // =========================================================================
   // SIGNALS — MODAL
@@ -176,22 +192,7 @@ export class Equipes implements OnInit {
   totalEmFormacao = computed(() => this.equipes().filter(e => e.statusEquipe === 'EM_FORMACAO').length);
   totalInativas   = computed(() => this.equipes().filter(e => e.statusEquipe === 'INATIVA').length);
 
-  // =========================================================================
-  // COMPUTED — FILTROS
-  // =========================================================================
 
-  equipesFiltradas = computed(() => {
-    const termo  = this.termoBusca().toLowerCase().trim();
-    const status = this.filtroStatus();
-    const modelo = this.filtroModelo();
-
-    return this.equipes().filter(e => {
-      const baterBusca  = !termo || e.nomeEquipe.toLowerCase().includes(termo);
-      const baterStatus = status === 'Todos' || e.statusEquipe === status;
-      const baterModelo = modelo === 'Todos' || e.modeloReuniao === modelo;
-      return baterBusca && baterStatus && baterModelo;
-    });
-  });
 
   // =========================================================================
   // GETTERS — valor atual do modelo de reunião em cada formulário
@@ -222,9 +223,48 @@ export class Equipes implements OnInit {
   // MÉTODOS PÚBLICOS — FILTROS
   // =========================================================================
 
-  atualizarBusca(valor: string): void         { this.termoBusca.set(valor); }
-  atualizarFiltroStatus(valor: string): void  { this.filtroStatus.set(valor); }
-  atualizarFiltroModelo(valor: string): void  { this.filtroModelo.set(valor); }
+  atualizarBusca(valor: string): void {
+    this.termoBusca.set(valor);
+    this.aplicarFiltros();
+  }
+
+  atualizarFiltroStatus(valor: string): void {
+    this.filtroStatus.set(valor);
+    this.aplicarFiltros();
+  }
+
+  atualizarFiltroModelo(valor: string): void {
+    this.filtroModelo.set(valor);
+    this.aplicarFiltros();
+  }
+
+  // =========================================================================
+  // MÉTODOS PÚBLICOS — PAGINAÇÃO
+  // =========================================================================
+
+  /**
+   * totalPaginasArray()
+   *
+   * Gera um array de índices [0, 1, 2, ... totalPaginas-1].
+   * Usado pelo @for do template para renderizar os botões numéricos de página.
+   */
+  totalPaginasArray(): number[] {
+    return Array.from({ length: this.totalPaginas() }, (_, i) => i);
+  }
+
+  /**
+   * irParaPagina(pagina)
+   *
+   * Único ponto de entrada de navegação — valida os limites antes de agir.
+   * proximaPagina e paginaAnterior delegam para cá.
+   */
+  irParaPagina(pagina: number): void {
+    if (pagina < 0 || pagina >= this.totalPaginas()) return;
+    this.carregarEquipes(pagina);
+  }
+
+  proximaPagina(): void  { this.irParaPagina(this.paginaAtual() + 1); }
+  paginaAnterior(): void { this.irParaPagina(this.paginaAtual() - 1); }
 
   // =========================================================================
   // MÉTODOS PÚBLICOS — RESET DOS MODAIS
@@ -285,7 +325,7 @@ export class Equipes implements OnInit {
         this.btnFecharCadastro.nativeElement.click();
         this.formCadastro.reset({ dataInicioFormacao: this.obterDataHoje() });
         this.errosValidacao.set({});
-        this.carregarEquipes();
+        this.carregarEquipes(0); // novo item: volta à primeira página
         // TODO: toastService.sucesso('Equipe cadastrada com sucesso!');
       },
       error: (err: HttpErrorResponse) => {
@@ -392,7 +432,7 @@ export class Equipes implements OnInit {
         this.formEdicao.reset();
         this.idEquipeParaAtualizar.set(null);
         this.errosValidacao.set({});
-        this.carregarEquipes();
+        this.carregarEquipes(this.paginaAtual()); // edição: permanece na página atual
         // TODO: toastService.sucesso('Equipe atualizada com sucesso!');
       },
       error: (err: HttpErrorResponse) => {
@@ -541,20 +581,23 @@ export class Equipes implements OnInit {
   // MÉTODOS PRIVADOS
   // =========================================================================
 
-  private carregarEquipes(): void {
+  private carregarEquipes(page: number = 0): void {
     this.carregandoLista.set(true);
+    this.paginaAtual.set(page);
 
-    this.equipesService.listarEquipes(0, 8).subscribe({
+    this.equipesService.listarEquipes(page, this.tamanhoPagina()).subscribe({
       next: (response) => {
-        this.totalEquipes.set(response.totalItems);
         const equipesComExtras: Equipe[] = response.items.map(equipe => ({
           ...equipe,
           membros: 0,                           // TODO: usar equipe.numeroComponentes
           minimoLancamento: this.MINIMO_LANCAMENTO,
         }));
         this.equipes.set(equipesComExtras);
-        console.log('Equipes carregadas:', equipesComExtras);
-        console.log(response.totalItems);
+        this.aplicarFiltros();
+        this.totalEquipes.set(response.totalItems);
+        this.totalPaginas.set(response.totalPages);
+        this.temProxima.set(response.hasNext);
+        this.temAnterior.set(response.hasPrevious);
       },
       error: (erro: HttpErrorResponse) => {
         console.error('Erro ao carregar equipes:', erro);
@@ -564,6 +607,32 @@ export class Equipes implements OnInit {
         this.carregandoLista.set(false);
       },
     });
+  }
+
+  /**
+   * aplicarFiltros()
+   *
+   * Recalcula equipesFiltradas a partir do estado atual de equipes e filtros.
+   * Chamado explicitamente após carregar dados (carregarEquipes) e ao trocar filtros.
+   *
+   * Por que não usar computed?
+   * Em contextos de paginação, o computed pode não reagir corretamente ao ciclo
+   * de atualização de signals dentro de um subscribe. O signal explícito garante
+   * que o template recebe o novo array no momento certo.
+   */
+  private aplicarFiltros(): void {
+    const termo  = this.termoBusca().toLowerCase().trim();
+    const status = this.filtroStatus();
+    const modelo = this.filtroModelo();
+
+    this.equipesFiltradas.set(
+      this.equipes().filter(e => {
+        const baterBusca  = !termo || e.nomeEquipe.toLowerCase().includes(termo);
+        const baterStatus = status === 'Todos' || e.statusEquipe === status;
+        const baterModelo = modelo === 'Todos' || e.modeloReuniao === modelo;
+        return baterBusca && baterStatus && baterModelo;
+      })
+    );
   }
 
   /**
