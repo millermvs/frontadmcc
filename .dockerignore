@@ -1,0 +1,58 @@
+# -------------------------------------------------------
+# .dockerignore — Gestão Associados FRONT
+# Tudo aqui é excluído do build context enviado ao Docker.
+# Regra geral: se o Docker não precisa pra fazer o build,
+# fica de fora. Imagem mais leve, build mais rápido.
+# -------------------------------------------------------
+
+# Dependências (o Docker roda npm ci e baixa tudo do zero)
+node_modules/
+
+# Cache de build do Angular (gerado pelo ng build dentro do container)
+.angular/
+dist/
+
+# Controle de versão (o container não precisa do histórico)
+.git/
+.gitignore
+
+# Testes (não rodam na imagem de produção)
+coverage/
+karma.conf.js
+*.spec.ts
+
+# IDEs e editores
+.vscode/
+.idea/
+.history/
+*.sublime-workspace
+
+# Arquivos de ambiente local (segredos nunca entram na imagem)
+.env
+.env.*
+*.env
+*.local
+
+# Documentação e arquivos de referência do projeto
+*.md
+!README.md
+
+# Logs
+logs/
+*.log
+npm-debug.log
+yarn-error.log
+karma-debug.log
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Prettier
+.prettiercache
+.prettier-cache
+
+# Outros arquivos de configuração de CI/CD local
+docker-compose.override.yml

@@ -1,0 +1,36 @@
+version: "3.7"
+# ════════════════════════════════════════════════════════════════════════════════
+# Docker Stack — Gestão de Associados C+C (FRONTEND / PRODUÇÃO)
+#
+# Serve o Angular via nginx com SSL gerenciado pelo Traefik
+# Domínio: sistemaadmcc.automica.com.br
+# ════════════════════════════════════════════════════════════════════════════════
+services:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # FRONTEND — Angular 20 servido pelo nginx
+  # ─────────────────────────────────────────────────────────────────────────────
+  admcc_front:
+    image: millermvs/admcc-front:1.0.0
+    networks:
+      - network_swarm_public
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=true
+        # ── Roteamento HTTPS por domínio ──────────────────────────────────────
+        - traefik.http.routers.admcc_front.rule=Host(`sistemaadmcc.automica.com.br`)
+        - traefik.http.routers.admcc_front.entrypoints=websecure
+        - traefik.http.routers.admcc_front.tls=true
+        # ── Porta interna do nginx ────────────────────────────────────────────
+        - traefik.http.services.admcc_front.loadbalancer.server.port=80
+
+# ════════════════════════════════════════════════════════════════════════════════
+# NETWORKS — Apenas a rede pública (frontend não acessa banco diretamente)
+# ════════════════════════════════════════════════════════════════════════════════
+networks:
+  network_swarm_public:
+    external: true
+    name: network_swarm_public

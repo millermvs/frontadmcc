@@ -10,6 +10,10 @@
 /node_modules
 npm-debug.log
 yarn-error.log
+pnpm-debug.log
+
+# Angular cache (build e language service)
+.angular/
 
 # IDEs and editors
 .idea/
@@ -29,7 +33,6 @@ yarn-error.log
 .history/*
 
 # Miscellaneous
-/.angular/cache
 .sass-cache/
 /connect.lock
 /coverage
@@ -41,3 +44,20 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Variaveis de ambiente e segredos (nunca subir para o Git)
+.env
+.env.*
+*.env
+*.local
+
+# Logs
+logs/
+*.log
+karma-debug.log
+
+# Prettier cache
+.prettiercache
+.prettier-cache
