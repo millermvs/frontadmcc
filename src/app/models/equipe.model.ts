@@ -156,7 +156,7 @@ export interface PaginacaoResponseDto<T> {
   items: T[];
   page: number;
   size: number;
-  totalitems: number;
+  totalItems: number;
   totalPages: number;
   hasNext: boolean;
   hasPrevious: boolean;

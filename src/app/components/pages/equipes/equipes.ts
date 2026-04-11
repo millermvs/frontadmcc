@@ -89,6 +89,7 @@ export class Equipes implements OnInit {
   filtroStatus    = signal<string>('Todos');
   filtroModelo    = signal<string>('Todos');
   equipes         = signal<Equipe[]>([]);
+  totalEquipes     = signal(0);
   carregandoLista = signal(false);
 
   // =========================================================================
@@ -543,14 +544,17 @@ export class Equipes implements OnInit {
   private carregarEquipes(): void {
     this.carregandoLista.set(true);
 
-    this.equipesService.listarEquipes(0, 100).subscribe({
+    this.equipesService.listarEquipes(0, 8).subscribe({
       next: (response) => {
+        this.totalEquipes.set(response.totalItems);
         const equipesComExtras: Equipe[] = response.items.map(equipe => ({
           ...equipe,
           membros: 0,                           // TODO: usar equipe.numeroComponentes
           minimoLancamento: this.MINIMO_LANCAMENTO,
         }));
         this.equipes.set(equipesComExtras);
+        console.log('Equipes carregadas:', equipesComExtras);
+        console.log(response.totalItems);
       },
       error: (erro: HttpErrorResponse) => {
         console.error('Erro ao carregar equipes:', erro);
