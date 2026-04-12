@@ -1,21 +1,20 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, signal, OnInit, inject, ViewChild, ElementRef, DestroyRef } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { EquipeService } from '../../../services/equipe.service';
-import {
-  EquipeResponseDto,
-  EquipeRequestDto,
-  LocalPresencialResponseDto,
-  LocalPresencialRequestDto,
-  ModeloReuniao,
-  LABELS_DIA,
-  LABELS_MODELO,
-  LABELS_HORARIO,
-  LABELS_STATUS,
-} from '../../../models/equipe.model';
+import { Component, computed, DestroyRef, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { formatarEnderecoCompleto } from '../../../helpers/endereco.helper';
+import {
+  EquipeRequestDto,
+  EquipeResponseDto,
+  LABELS_DIA,
+  LABELS_HORARIO,
+  LABELS_MODELO,
+  LABELS_STATUS,
+  LocalPresencialResponseDto,
+  ModeloReuniao
+} from '../../../models/equipe.model';
+import { EquipeService } from '../../../services/equipe.service';
 
 // Tipo interno: estende EquipeResponseDto com campos adicionais do frontend.
 // Sem export — é uma estrutura privada deste componente.
