@@ -405,6 +405,26 @@ export class Clusters implements OnInit {
     });
   }
 
+
+  private carregarAtuacoesPorCluster(idCluster: number): void {
+    this.carregandoLista.set(true);
+
+    this.clusterService.listarAtuacoesPorCluster(idCluster, 0, 20).subscribe({
+      next: (response) => {
+        this.atuacoes.set(response?.items ?? []);
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao carregar atuações por cluster:', err);
+        this.atuacoes.set([]);
+        this.carregandoLista.set(false);
+      },
+      complete: () => {
+        this.carregandoLista.set(false);
+      },
+    });
+  }
+
+
   /**
    * tratarErroModal()
    *

@@ -307,13 +307,14 @@ Toda pagina CRUD deve seguir esta estrutura visual e tecnica:
 Toda listagem usa paginacao. O service envia `HttpParams` com `number` (pagina zero-based) e `size` (itens por pagina). A resposta segue a interface generica:
 
 ```
-PaginacaoResponseDto<T> {
-  conteudo: T[];
-  numeroPagina: number;
-  tamanhoPagina: number;
-  totalElementos: number;
-  totalPaginas: number;
-  ultimaPagina: boolean;
+public class PaginacaoResponseDto<T> {
+	private List<T> items; //dados
+	private Integer page;
+	private Integer size;
+	private Long totalItems;
+	private Integer totalPages;
+	private Boolean hasNext; //tem próxima folha
+	private Boolean hasPrevious; //tem folha anterior
 }
 ```
 
