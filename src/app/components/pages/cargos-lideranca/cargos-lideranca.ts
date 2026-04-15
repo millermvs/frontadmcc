@@ -67,7 +67,7 @@ export class CargosLideranca implements OnInit {
   // =========================================================================
 
   paginaAtual   = signal(0);
-  tamanhoPagina = signal(20);
+  tamanhoPagina = signal(100);
   totalPaginas  = signal(0);
   temProxima    = signal(false);
   temAnterior   = signal(false);
@@ -239,14 +239,15 @@ export class CargosLideranca implements OnInit {
     this.erroModal.set(null);
 
     this.formEditar.patchValue({
-      nomeCargo:              cargo.nomeCargo,
+      nomeCargo:               cargo.nomeCargo,
       classificacaoFinanceira: cargo.classificacaoFinanceira,
-      categoriaPermissao:     cargo.categoriaPermissao ?? '',
-      ativo:                  cargo.ativo,
+      categoriaPermissao:      cargo.categoriaPermissao ?? '',
+      ativo:                   cargo.ativo,
     });
-    // patchValue não marca o form como dirty — fazemos isso manualmente
-    // para que o botão Salvar fique habilitado desde a abertura do modal.
-    this.formEditar.markAsDirty();
+    // Não chamamos markAsDirty() aqui intencionalmente.
+    // O botão "Salvar Alterações" deve ficar desabilitado enquanto
+    // o usuário não modificar nenhum campo — o Angular rastreia isso
+    // automaticamente via formEditar.dirty.
   }
 
   salvarEditar(): void {

@@ -435,7 +435,7 @@ A validacao acontece em dois niveis complementares:
 - Modal complexo (muitos campos): abas internas + scroll dentro do modal.
 - Ao salvar com sucesso: fechar modal + exibir toast de sucesso + recarregar lista.
 - Ao falhar: exibir mensagem de erro **dentro** do modal (nao fechar).
-- **`patchValue()` nao marca o formulario como dirty.** Em modais de edicao, apos popular o formulario com `patchValue()`, chamar `form.markAsDirty()` explicitamente. Sem isso, o botao "Salvar" fica desabilitado porque `form.dirty` e false — o botao depende de `!form.dirty || form.invalid || carregando()`.
+- **`patchValue()` nao marca o formulario como dirty — e isso e o comportamento desejado.** Em modais de edicao, NAO chamar `form.markAsDirty()` apos o `patchValue()`. O modal deve abrir com o botao "Salvar Alteracoes" desabilitado; ele so habilita quando o usuario modificar ao menos um campo. O Angular rastreia isso automaticamente via `form.dirty`. O botao segue o padrao: `[disabled]="!form.dirty || form.invalid || carregando()"`. Chamar `markAsDirty()` manualmente derruba essa protecao e deve ser evitado.
 
 ### 8.4 Feedback ao Usuario
 
@@ -470,7 +470,7 @@ A validacao acontece em dois niveis complementares:
 |-------|---------|
 | **Lazy loading** | Todo componente de pagina carregado via `loadComponent: () => import(...)` |
 | **Guards** | Rotas dentro de `/pages` herdam `authGuard` do pai |
-| **Role guard** | Rotas ADM-only usam `roleGuard('ADM_CC')` |
+| **Controle ADM** | Rotas ADM-only sao protegidas por visibilidade na navbar (`@if (isAdm())`) + `@PreAuthorize` no backend. Nao ha `roleGuard` implementado no frontend. |
 | **Redirect** | Rota raiz e wildcard redirecionam para `/pages/dashboard` |
 | **Login** | Rota `/login` fica **fora** do grupo `/pages` (sem navbar, sem guard) |
 
@@ -491,12 +491,21 @@ A validacao acontece em dois niveis complementares:
 ```
 1. Usuario preenche email + senha na tela /login
 2. AuthService.login() faz POST /api/v1/auth/login
-3. Backend valida credenciais e retorna { token, nome, email, role, idAssociado }
+3. Backend valida credenciais e retorna { token, nome, email, role, perfil, idAssociado }
 4. Frontend armazena token e dados do usuario no localStorage
 5. Signal do AuthService e atualizado → toda a UI reage
 6. Interceptor injeta "Authorization: Bearer <token>" em toda requisicao HTTP
 7. Se backend retorna 401 → interceptor chama logout() → redireciona para /login
 ```
+
+**Distincao critica — `role` vs `perfil`:**
+
+| Campo | Valor exemplo | Dono | Uso |
+|-------|--------------|------|-----|
+| `role` | `'ROLE_ADM'`, `'ROLE_ASSOCIADO'` | Spring Security | Apenas para o mecanismo de autorizacao do backend |
+| `perfil` | `'ADM_CC'`, `'DIRETOR'`, `'ASSOCIADO'` | Logica de negocio | **Unico campo que o frontend deve usar para decisoes de UI** |
+
+`AuthService` expoe dois computeds: `role` (mantido para nao quebrar codigo legado) e `perfil` (fonte de verdade). O metodo `temPermissao(...perfis)` verifica `perfil`, nao `role`. Usar `role` para controle de UI resultara em comportamento incorreto.
 
 ### 10.2 Controle de Acesso Visual
 
@@ -637,15 +646,7 @@ Contem apenas o que e exclusivo daquela pagina: background da pagina, estilos in
 | `768px - 1200px` | Tablet | Sidebar colapsada, tabela com scroll horizontal |
 | `< 768px` | Mobile | Sidebar oculta (hamburger), cards empilhados |
 
-### 11.6 Responsividade
-
-| Breakpoint | Dispositivo | Comportamento |
-|-----------|-------------|---------------|
-| `> 1200px` | Desktop | Layout completo, sidebar expandida |
-| `768px - 1200px` | Tablet | Sidebar colapsada, tabela com scroll horizontal |
-| `< 768px` | Mobile | Sidebar oculta (hamburger), cards empilhados |
-
-### 11.7 Regras de CSS
+### 11.6 Regras de CSS
 
 - **1 arquivo CSS por componente** — nunca inline styles no template.
 - **Variaveis sempre** — use `var(--cor-primaria)` em vez de `#2f855a` nos componentes.
