@@ -305,7 +305,7 @@
         <span class="paginacao-info">
           Página {{ paginaAtual() + 1 }} de {{ totalPaginas() }}
           &nbsp;·&nbsp;
-          {{ totalEquipes() }} {{ totalEquipes() === 1 ? 'equipe' : 'equipes' }} no total
+          {{ totalEquipes() }} {{ totalEquipes() <= 1 ? 'equipe' : 'equipes' }} no total
         </span>
 
         <div class="paginacao-controles">
@@ -644,19 +644,20 @@
         }
 
         <div class="d-flex justify-content-end gap-2">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" (click)="resetarFormulario()">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" (click)="resetarFormulario()">
             Cancelar
           </button>
           <button
             type="button"
-            class="btn btn-salvar-modal"
+            class="btn-salvar-modal"
             (click)="salvarNovaEquipe()"
             [disabled]="formCadastro.invalid || carregandoModal()"
           >
             @if (carregandoModal()) {
-              <span class="spinner-border spinner-border-sm me-2"></span>
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
               Salvando...
             } @else {
+              <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
               Salvar Equipe
             }
           </button>
@@ -1185,20 +1186,21 @@
         }
 
         <div class="d-flex justify-content-end gap-2">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" (click)="resetarFormularioEdicao()">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" (click)="resetarFormularioEdicao()">
             Cancelar
           </button>
           <button
             type="button"
-            class="btn btn-salvar-modal"
+            class="btn-salvar-modal"
             (click)="editarEquipe()"
             [disabled]="!formEdicao.dirty || formEdicao.invalid || carregandoModal()"
           >
             @if (carregandoModal()) {
-              <span class="spinner-border spinner-border-sm me-2"></span>
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
               Salvando...
             } @else {
-              Salvar Edição
+              <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+              Salvar Alterações
             }
           </button>
         </div>

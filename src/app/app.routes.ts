@@ -73,6 +73,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./components/pages/clusters/clusters').then((m) => m.Clusters),
       },
+      {
+        path: 'cargos-lideranca',
+        loadComponent: () =>
+          import('./components/pages/cargos-lideranca/cargos-lideranca').then((m) => m.CargosLideranca),
+      },
     ],
   },
 

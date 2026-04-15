@@ -396,6 +396,7 @@ equipe.model.ts
 ### 7.3 Regras de Observable
 
 - Toda subscription deve ser gerenciada (unsubscribe no destroy, ou usar `takeUntilDestroyed`).
+- **Padrao para `valueChanges`:** assinar mudancas de campos do formulario com `takeUntilDestroyed(this.destroyRef)`. O `DestroyRef` e injetado via `inject(DestroyRef)`. Sem isso, a subscription vaza apos o componente ser destruido, pois `valueChanges` e um Observable infinito.
 - Preferir `async` pipe no template quando possivel (gerencia subscription automaticamente).
 - **Proibido:** `.subscribe()` aninhado (callback hell). Usar operadores RxJS (`switchMap`, `mergeMap`, `forkJoin`).
 
@@ -434,6 +435,7 @@ A validacao acontece em dois niveis complementares:
 - Modal complexo (muitos campos): abas internas + scroll dentro do modal.
 - Ao salvar com sucesso: fechar modal + exibir toast de sucesso + recarregar lista.
 - Ao falhar: exibir mensagem de erro **dentro** do modal (nao fechar).
+- **`patchValue()` nao marca o formulario como dirty.** Em modais de edicao, apos popular o formulario com `patchValue()`, chamar `form.markAsDirty()` explicitamente. Sem isso, o botao "Salvar" fica desabilitado porque `form.dirty` e false — o botao depende de `!form.dirty || form.invalid || carregando()`.
 
 ### 8.4 Feedback ao Usuario
 
@@ -669,7 +671,11 @@ Contem apenas o que e exclusivo daquela pagina: background da pagina, estilos in
 | **500** | Erro interno do servidor | Toast generico: "Erro interno. Tente novamente." |
 | **0 / Network** | Servidor indisponivel | Toast: "Servidor indisponivel. Verifique sua conexao." |
 
-### 12.2 Formato de Erro do Backend
+### 12.2 Normalizacao de Erros de Validacao
+
+O Spring Boot serializa erros de campos aninhados com o caminho completo da propriedade. Ex: um erro no campo `cep` dentro de `localPresencial` vem como `"localPresencial.cep": "mensagem"`. O componente deve normalizar esse objeto antes de usar as chaves para exibicao inline — pegando sempre o ultimo segmento do caminho (`.split('.').pop()`). Assim o template pode acessar `errosValidacao()['cep']` diretamente, sem precisar conhecer o nivel de aninhamento.
+
+### 12.3 Formato de Erro do Backend
 
 O frontend espera respostas de erro no seguinte formato (padrao da API):
 
@@ -695,13 +701,13 @@ Para erros de validacao (400):
 }
 ```
 
-### 12.3 Interceptor de Erros
+### 12.4 Interceptor de Erros
 
 - Erros **401** sao tratados globalmente no `AuthInterceptor` (logout + redirect).
 - Demais erros sao tratados **no componente** que fez a chamada (dentro do `subscribe.error`).
 - O componente decide como exibir o erro (toast, inline, modal).
 
-### 12.4 Regra de Ouro
+### 12.5 Regra de Ouro
 
 - **Nunca** ignore erros com `.subscribe()` vazio ou `.catch(() => {})`.
 - **Nunca** exiba o stack trace ou detalhes tecnicos para o usuario.

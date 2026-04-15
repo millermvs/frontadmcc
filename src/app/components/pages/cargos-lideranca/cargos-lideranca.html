@@ -1,0 +1,712 @@
+<div class="cargos-page container-fluid">
+
+  <!-- CABEÇALHO DA PÁGINA -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <nav class="breadcrumb-nav" aria-label="Breadcrumb">
+        <span class="bc-item"><i class="bi bi-house-fill" aria-hidden="true"></i> Dashboard</span>
+        <i class="bi bi-chevron-right bc-sep" aria-hidden="true"></i>
+        <span class="bc-item bc-active">Cargos de Liderança</span>
+      </nav>
+      <h2 class="page-title">Cargos de Liderança</h2>
+      <p class="page-subtitle">Gerencie o catálogo de cargos, classificações financeiras e níveis de permissão.</p>
+    </div>
+
+    <div class="page-header-right">
+      <button
+        class="btn-acao-pagina"
+        type="button"
+        data-bs-toggle="modal"
+        data-bs-target="#modalNovoCargo"
+        (click)="resetarFormNovo()"
+      >
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        Novo Cargo
+      </button>
+    </div>
+  </div>
+
+
+  <!-- CARDS DE RESUMO -->
+  <div class="row g-3 mt-0 mb-4">
+
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-total">
+          <i class="bi bi-award-fill" aria-hidden="true"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Total de Cargos</span>
+          <strong class="kpi-value">{{ totalItens() }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-ativo">
+          <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Ativos</span>
+          <strong class="kpi-value">{{ totalAtivos() }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-pendente">
+          <i class="bi bi-star-fill" aria-hidden="true"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Isentos</span>
+          <strong class="kpi-value">{{ totalIsentos() }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-inativo">
+          <i class="bi bi-shield-lock-fill" aria-hidden="true"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Com Permissão</span>
+          <strong class="kpi-value">{{ totalComPermissao() }}</strong>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- BARRA DE FILTROS -->
+  <div class="filter-bar">
+
+    <div class="filter-search-wrap">
+      <i class="bi bi-search filter-search-icon" aria-hidden="true"></i>
+      <input
+        class="filter-search-input"
+        type="text"
+        placeholder="Buscar cargo pelo nome…"
+        [value]="termoBusca()"
+        (input)="atualizarBusca($any($event.target).value)"
+        aria-label="Buscar cargo"
+      />
+    </div>
+
+    <div class="filter-selects">
+      <div class="filter-select-wrap">
+        <i class="bi bi-funnel filter-select-icon" aria-hidden="true"></i>
+        <select
+          class="filter-select"
+          [value]="filtroStatus()"
+          (change)="atualizarFiltroStatus($any($event.target).value)"
+          aria-label="Filtrar por status"
+        >
+          <option value="todos">Todos</option>
+          <option value="ativos">Somente ativos</option>
+          <option value="inativos">Somente inativos</option>
+        </select>
+      </div>
+    </div>
+
+    <span class="filter-count">
+      {{ cargosFiltrados().length }} resultado{{ cargosFiltrados().length !== 1 ? 's' : '' }}
+    </span>
+
+  </div>
+
+
+  <!-- TABELA DE CARGOS -->
+  <div class="table-card">
+    <div class="table-wrapper">
+      <table class="cargos-table" aria-label="Lista de cargos de liderança">
+        <thead>
+          <tr>
+            <th scope="col">Cargo</th>
+            <th scope="col" class="col-classificacao">Classificação</th>
+            <th scope="col" class="col-permissao">Permissão</th>
+            <th scope="col" class="col-status">Status</th>
+            <th scope="col" class="col-acoes">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <!-- LOADING STATE -->
+          @if (carregando()) {
+            @for (i of [1, 2, 3, 4, 5]; track i) {
+              <tr class="cargo-row">
+                <td><div class="skeleton skeleton-nome"></div></td>
+                <td class="col-classificacao"><div class="skeleton skeleton-chip"></div></td>
+                <td class="col-permissao"><div class="skeleton skeleton-chip"></div></td>
+                <td class="col-status"><div class="skeleton skeleton-chip"></div></td>
+                <td class="col-acoes"><div class="skeleton skeleton-acoes"></div></td>
+              </tr>
+            }
+          }
+
+          <!-- DADOS CARREGADOS -->
+          @if (!carregando()) {
+
+            @for (cargo of cargosFiltrados(); track cargo.idCargoLideranca) {
+              <tr class="cargo-row" [class.cargo-inativo]="!cargo.ativo">
+
+                <!-- Nome do cargo -->
+                <td>
+                  <div class="cell-nome">
+                    <div class="cargo-avatar" [class.avatar-inativo]="!cargo.ativo">
+                      <i class="bi bi-award-fill" aria-hidden="true"></i>
+                    </div>
+                    <div class="cargo-info">
+                      <span class="cargo-nome">{{ cargo.nomeCargo }}</span>
+                      @if (!cargo.ativo) {
+                        <span class="cargo-inativo-hint">Inativo</span>
+                      }
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Classificação financeira -->
+                <td class="col-classificacao">
+                  @if (cargo.classificacaoFinanceira === 'ISENTO') {
+                    <span class="chip-isento">
+                      <i class="bi bi-star-fill" aria-hidden="true"></i>
+                      Isento
+                    </span>
+                  } @else {
+                    <span class="chip-normal">Normal</span>
+                  }
+                </td>
+
+                <!-- Categoria de permissão -->
+                <td class="col-permissao">
+                  @if (cargo.categoriaPermissao === 'ADM_CC') {
+                    <span class="chip-adm">
+                      <i class="bi bi-shield-fill" aria-hidden="true"></i>
+                      ADM C+C
+                    </span>
+                  } @else if (cargo.categoriaPermissao === 'DIRETOR') {
+                    <span class="chip-diretor">
+                      <i class="bi bi-person-badge-fill" aria-hidden="true"></i>
+                      Diretor
+                    </span>
+                  } @else {
+                    <span class="chip-sem-permissao">—</span>
+                  }
+                </td>
+
+                <!-- Status ativo/inativo -->
+                <td class="col-status">
+                  @if (cargo.ativo) {
+                    <span class="status-chip status-ativa">Ativo</span>
+                  } @else {
+                    <span class="status-chip status-inativa">Inativo</span>
+                  }
+                </td>
+
+                <!-- Ações -->
+                <td class="col-acoes">
+                  <div class="acoes-group">
+
+                    <!-- Editar -->
+                    <button
+                      class="btn-acao btn-editar"
+                      type="button"
+                      title="Editar cargo"
+                      [attr.aria-label]="'Editar ' + cargo.nomeCargo"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalEditarCargo"
+                      (click)="abrirModalEditar(cargo)"
+                    >
+                      <i class="bi bi-pencil-fill" aria-hidden="true"></i>
+                    </button>
+
+                    <!-- Inativar / Reativar -->
+                    @if (cargo.ativo) {
+                      <button
+                        class="btn-acao btn-inativar"
+                        type="button"
+                        title="Inativar cargo"
+                        [attr.aria-label]="'Inativar ' + cargo.nomeCargo"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalConfirmacaoToggle"
+                        (click)="prepararToggleStatus(cargo)"
+                      >
+                        <i class="bi bi-dash-circle-fill" aria-hidden="true"></i>
+                      </button>
+                    } @else {
+                      <button
+                        class="btn-acao btn-reativar"
+                        type="button"
+                        title="Reativar cargo"
+                        [attr.aria-label]="'Reativar ' + cargo.nomeCargo"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalConfirmacaoToggle"
+                        (click)="prepararToggleStatus(cargo)"
+                      >
+                        <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                      </button>
+                    }
+
+                  </div>
+                </td>
+
+              </tr>
+            }
+
+            <!-- EMPTY STATE -->
+            @if (cargosFiltrados().length === 0) {
+              <tr>
+                <td colspan="5">
+                  <div class="empty-state">
+                    <i class="bi bi-award empty-icon" aria-hidden="true"></i>
+                    <p class="empty-title">Nenhum cargo encontrado</p>
+                    <p class="empty-subtitle">
+                      @if (termoBusca()) {
+                        Nenhum resultado para "{{ termoBusca() }}". Tente outro termo.
+                      } @else if (filtroStatus() !== 'todos') {
+                        Nenhum cargo {{ filtroStatus() === 'ativos' ? 'ativo' : 'inativo' }} encontrado.
+                      } @else {
+                        Clique em <strong>Novo Cargo</strong> para começar.
+                      }
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            }
+
+          }
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINAÇÃO -->
+    @if (totalPaginas() > 1) {
+      <div class="paginacao-bar">
+        <button
+          class="btn-pag"
+          [disabled]="!temAnterior()"
+          (click)="paginaAnterior()"
+          aria-label="Página anterior"
+        >
+          <i class="bi bi-chevron-left" aria-hidden="true"></i>
+        </button>
+
+        @for (pagina of totalPaginasArray(); track pagina) {
+          <button
+            class="btn-pag-num"
+            [class.ativo]="pagina === paginaAtual()"
+            (click)="irParaPagina(pagina)"
+            [attr.aria-current]="pagina === paginaAtual() ? 'page' : null"
+          >
+            {{ pagina + 1 }}
+          </button>
+        }
+
+        <button
+          class="btn-pag"
+          [disabled]="!temProxima()"
+          (click)="proximaPagina()"
+          aria-label="Próxima página"
+        >
+          <i class="bi bi-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+    }
+
+    <!-- RODAPÉ -->
+    <div class="table-footer">
+      <i class="bi bi-award-fill table-footer-icon" aria-hidden="true"></i>
+      <span>
+        {{ totalItens() }} cargo{{ totalItens() !== 1 ? 's' : '' }} cadastrado{{ totalItens() !== 1 ? 's' : '' }}
+      </span>
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ===========================================================================
+     MODAL — NOVO CARGO
+     =========================================================================== -->
+<div
+  class="modal fade"
+  id="modalNovoCargo"
+  tabindex="-1"
+  aria-labelledby="modalNovoCargoLabel"
+  aria-modal="true"
+  role="dialog"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalNovoCargoLabel">
+          <i class="bi bi-award-fill me-2" aria-hidden="true"></i>
+          Novo Cargo de Liderança
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+          (click)="resetarFormNovo()"
+        ></button>
+      </div>
+
+      <form [formGroup]="formNovo" (ngSubmit)="salvarNovo()" novalidate>
+        <div class="modal-body">
+
+          @if (erroModal()) {
+            <div class="alert alert-danger py-2 mb-3" role="alert">
+              <i class="bi bi-exclamation-circle-fill me-2" aria-hidden="true"></i>
+              {{ erroModal() }}
+            </div>
+          }
+
+          <!-- Nome do Cargo -->
+          <div class="mb-3">
+            <label for="nomeCargoNovo" class="form-label fw-semibold">
+              Nome do Cargo <span class="text-danger">*</span>
+            </label>
+            <input
+              id="nomeCargoNovo"
+              type="text"
+              class="form-control"
+              [class.is-invalid]="formNovo.get('nomeCargo')?.invalid && formNovo.get('nomeCargo')?.touched || !!errosValidacao()['nomeCargo']"
+              formControlName="nomeCargo"
+              placeholder="Ex: Diretor de Equipe"
+              maxlength="100"
+              autocomplete="off"
+            />
+            @if (formNovo.get('nomeCargo')?.errors?.['required'] && formNovo.get('nomeCargo')?.touched) {
+              <div class="invalid-feedback">Nome é obrigatório.</div>
+            }
+            @if (formNovo.get('nomeCargo')?.errors?.['maxlength']) {
+              <div class="invalid-feedback">Máximo de 100 caracteres.</div>
+            }
+            @if (errosValidacao()['nomeCargo']) {
+              <div class="invalid-feedback d-block">{{ errosValidacao()['nomeCargo'] }}</div>
+            }
+            <div class="form-text text-muted-sm">
+              A API formata automaticamente com a primeira letra maiúscula em cada palavra.
+            </div>
+          </div>
+
+          <!-- Classificação Financeira -->
+          <div class="mb-3">
+            <label for="classificacaoNovo" class="form-label fw-semibold">
+              Classificação Financeira <span class="text-danger">*</span>
+            </label>
+            <select
+              id="classificacaoNovo"
+              class="form-select"
+              [class.is-invalid]="formNovo.get('classificacaoFinanceira')?.invalid && formNovo.get('classificacaoFinanceira')?.touched"
+              formControlName="classificacaoFinanceira"
+            >
+              <option value="NORMAL">Normal</option>
+              <option value="ISENTO">Isento</option>
+            </select>
+            @if (formNovo.get('classificacaoFinanceira')?.errors?.['required'] && formNovo.get('classificacaoFinanceira')?.touched) {
+              <div class="invalid-feedback">Selecione uma classificação.</div>
+            }
+            <div class="form-text text-muted-sm">
+              Cargos <strong>Isentos</strong> dispensam o pagamento de anuidade e da metodologia operacional.
+            </div>
+          </div>
+
+          <!-- Categoria de Permissão -->
+          <div class="mb-3">
+            <label for="categoriaPermissaoNovo" class="form-label fw-semibold">
+              Nível de Permissão
+            </label>
+            <select
+              id="categoriaPermissaoNovo"
+              class="form-select"
+              formControlName="categoriaPermissao"
+            >
+              <option value="">Nenhuma (cargo operacional)</option>
+              <option value="DIRETOR">Diretor — validação de presença e designação</option>
+              <option value="ADM_CC">ADM C+C — acesso total ao painel ADM</option>
+            </select>
+            @if (formNovo.value.categoriaPermissao && formNovo.value.categoriaPermissao !== '') {
+              <div class="aviso-permissao">
+                <i class="bi bi-shield-exclamation" aria-hidden="true"></i>
+                Atenção: associados com este cargo terão acesso elevado ao sistema. Confirme a configuração antes de salvar.
+              </div>
+            }
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm"
+            data-bs-dismiss="modal"
+            (click)="resetarFormNovo()"
+          >
+            Cancelar
+          </button>
+          <button #btnFecharModalNovo type="button" class="d-none" data-bs-dismiss="modal"></button>
+          <button
+            type="submit"
+            class="btn-salvar-modal"
+            [disabled]="formNovo.invalid || carregandoModal()"
+          >
+            @if (carregandoModal()) {
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Salvando...
+            } @else {
+              <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+              Salvar Cargo
+            }
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ===========================================================================
+     MODAL — EDITAR CARGO
+     =========================================================================== -->
+<div
+  class="modal fade"
+  id="modalEditarCargo"
+  tabindex="-1"
+  aria-labelledby="modalEditarCargoLabel"
+  aria-modal="true"
+  role="dialog"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalEditarCargoLabel">
+          <i class="bi bi-pencil-fill me-2" aria-hidden="true"></i>
+          Editar Cargo de Liderança
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+          (click)="resetarFormEditar()"
+        ></button>
+      </div>
+
+      <form [formGroup]="formEditar" (ngSubmit)="salvarEditar()" novalidate>
+        <div class="modal-body">
+
+          @if (erroModal()) {
+            <div class="alert alert-danger py-2 mb-3" role="alert">
+              <i class="bi bi-exclamation-circle-fill me-2" aria-hidden="true"></i>
+              {{ erroModal() }}
+            </div>
+          }
+
+          <!-- Nome do Cargo -->
+          <div class="mb-3">
+            <label for="nomeCargoEditar" class="form-label fw-semibold">
+              Nome do Cargo <span class="text-danger">*</span>
+            </label>
+            <input
+              id="nomeCargoEditar"
+              type="text"
+              class="form-control"
+              [class.is-invalid]="formEditar.get('nomeCargo')?.invalid && formEditar.get('nomeCargo')?.touched || !!errosValidacao()['nomeCargo']"
+              formControlName="nomeCargo"
+              placeholder="Ex: Diretor de Equipe"
+              maxlength="100"
+              autocomplete="off"
+            />
+            @if (formEditar.get('nomeCargo')?.errors?.['required'] && formEditar.get('nomeCargo')?.touched) {
+              <div class="invalid-feedback">Nome é obrigatório.</div>
+            }
+            @if (errosValidacao()['nomeCargo']) {
+              <div class="invalid-feedback d-block">{{ errosValidacao()['nomeCargo'] }}</div>
+            }
+          </div>
+
+          <!-- Classificação Financeira -->
+          <div class="mb-3">
+            <label for="classificacaoEditar" class="form-label fw-semibold">
+              Classificação Financeira <span class="text-danger">*</span>
+            </label>
+            <select
+              id="classificacaoEditar"
+              class="form-select"
+              formControlName="classificacaoFinanceira"
+            >
+              <option value="NORMAL">Normal</option>
+              <option value="ISENTO">Isento</option>
+            </select>
+            <div class="form-text text-muted-sm">
+              Cargos <strong>Isentos</strong> dispensam o pagamento de anuidade e da metodologia operacional.
+            </div>
+          </div>
+
+          <!-- Categoria de Permissão -->
+          <div class="mb-3">
+            <label for="categoriaPermissaoEditar" class="form-label fw-semibold">
+              Nível de Permissão
+            </label>
+            <select
+              id="categoriaPermissaoEditar"
+              class="form-select"
+              formControlName="categoriaPermissao"
+            >
+              <option value="">Nenhuma (cargo operacional)</option>
+              <option value="DIRETOR">Diretor — validação de presença e designação</option>
+              <option value="ADM_CC">ADM C+C — acesso total ao painel ADM</option>
+            </select>
+            @if (formEditar.value.categoriaPermissao && formEditar.value.categoriaPermissao !== '') {
+              <div class="aviso-permissao">
+                <i class="bi bi-shield-exclamation" aria-hidden="true"></i>
+                Atenção: associados com este cargo terão acesso elevado ao sistema. Confirme a configuração antes de salvar.
+              </div>
+            }
+          </div>
+
+          <!-- Status ativo/inativo (editável no form de edição) -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Status</label>
+            <div class="form-check form-switch">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="ativoEditar"
+                formControlName="ativo"
+                role="switch"
+              />
+              <label class="form-check-label" for="ativoEditar">
+                {{ formEditar.value.ativo ? 'Ativo' : 'Inativo' }}
+              </label>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm"
+            data-bs-dismiss="modal"
+            (click)="resetarFormEditar()"
+          >
+            Cancelar
+          </button>
+          <button #btnFecharModalEditar type="button" class="d-none" data-bs-dismiss="modal"></button>
+          <button
+            type="submit"
+            class="btn-salvar-modal"
+            [disabled]="!formEditar.dirty || formEditar.invalid || carregandoModal()"
+          >
+            @if (carregandoModal()) {
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Salvando...
+            } @else {
+              <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+              Salvar Alterações
+            }
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ===========================================================================
+     MODAL — CONFIRMAÇÃO DE INATIVAÇÃO / REATIVAÇÃO
+     =========================================================================== -->
+<div
+  class="modal fade"
+  id="modalConfirmacaoToggle"
+  tabindex="-1"
+  aria-labelledby="modalConfirmacaoToggleLabel"
+  aria-modal="true"
+  role="dialog"
+>
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalConfirmacaoToggleLabel">
+          @if (cargoParaToggle()?.ativo) {
+            <i class="bi bi-dash-circle-fill me-2 text-danger" aria-hidden="true"></i>
+            Inativar Cargo
+          } @else {
+            <i class="bi bi-arrow-counterclockwise me-2 text-success" aria-hidden="true"></i>
+            Reativar Cargo
+          }
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+          id="btnFecharModalConfirmacao"
+        ></button>
+      </div>
+
+      <div class="modal-body text-center">
+        @if (cargoParaToggle()) {
+          <p class="mb-1">
+            @if (cargoParaToggle()!.ativo) {
+              Deseja inativar o cargo
+            } @else {
+              Deseja reativar o cargo
+            }
+          </p>
+          <strong class="cargo-confirmacao-nome">{{ cargoParaToggle()!.nomeCargo }}</strong>
+          <p class="text-muted-sm mt-2 mb-0">
+            @if (cargoParaToggle()!.ativo) {
+              O cargo ficará indisponível para novas designações, mas o histórico será preservado.
+            } @else {
+              O cargo voltará a estar disponível para designações.
+            }
+          </p>
+        }
+      </div>
+
+      <div class="modal-footer justify-content-center gap-2">
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm"
+          data-bs-dismiss="modal"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm"
+          [class.btn-danger]="cargoParaToggle()?.ativo"
+          [class.btn-success]="!cargoParaToggle()?.ativo"
+          [disabled]="carregandoModal()"
+          (click)="confirmarToggleStatus()"
+        >
+          @if (carregandoModal()) {
+            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+            Processando...
+          } @else if (cargoParaToggle()?.ativo) {
+            <i class="bi bi-dash-circle-fill me-1" aria-hidden="true"></i>
+            Sim, inativar
+          } @else {
+            <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>
+            Sim, reativar
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

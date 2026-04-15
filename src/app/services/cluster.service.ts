@@ -24,7 +24,7 @@ export class ClusterService {
    * @param page número da página (começa em 0)
    * @param size tamanho da página
    */
-  listarClusters(page: number = 0, size: number = 10): Observable<PaginacaoCluster<ClusterResponseDto>> {
+  listarClusters(page: number = 0, size: number = 5): Observable<PaginacaoCluster<ClusterResponseDto>> {
     const params = new HttpParams()
       .set('number', page.toString())
       .set('size', size.toString());

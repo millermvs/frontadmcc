@@ -37,7 +37,7 @@
   </div>
 
   <!-- CARDS DE RESUMO -->
-  <div class="row g-3 mt-0 mb-1">
+  <div class="row g-3 mt-0 mb-3">
     <div class="col-6 col-md-3">
       <div class="kpi-card">
         <div class="kpi-icon kpi-icon-total">
@@ -45,7 +45,7 @@
         </div>
         <div class="kpi-info">
           <span class="kpi-label">Clusters</span>
-          <strong class="kpi-value">{{ totalClusters() }}</strong>
+          <strong class="kpi-value">{{ totalItensClusters() }}</strong>
         </div>
       </div>
     </div>
@@ -57,7 +57,7 @@
         </div>
         <div class="kpi-info">
           <span class="kpi-label">Atuações</span>
-          <strong class="kpi-value">{{ totalAtuacoes() }}</strong>
+          <strong class="kpi-value">{{ totalItensAtuacoes() }}</strong>
         </div>
       </div>
     </div>
@@ -65,269 +65,404 @@
 
 
   <!-- =====================================================================
-       SEÇÃO 1 — CLUSTERS
+       LAYOUT PRINCIPAL — DUAS COLUNAS LADO A LADO
        ===================================================================== -->
+  <div class="row g-4 align-items-start">
 
-  <div class="section-header mt-section">
-    <div class="section-title-wrap">
-      <i class="bi bi-diagram-3-fill section-icon" aria-hidden="true"></i>
-      <span class="section-title">Clusters</span>
-    </div>
-  </div>
+    <!-- ==================================================================
+         COLUNA ESQUERDA — CLUSTERS
+         ================================================================== -->
+    <div class="col-12 col-xl-5">
 
-  <!-- Barra de filtros — Clusters -->
-  <div class="filter-bar">
-    <div class="filter-search-wrap">
-      <i class="bi bi-search filter-search-icon" aria-hidden="true"></i>
-      <input
-        class="filter-search-input"
-        type="text"
-        placeholder="Buscar cluster pelo nome…"
-        [value]="termoBuscaCluster()"
-        (input)="atualizarBuscaCluster($any($event.target).value)"
-        aria-label="Buscar cluster"
-      />
-    </div>
-    <span class="filter-count">
-      {{ clustersFiltrados().length }} resultado{{ clustersFiltrados().length !== 1 ? 's' : '' }}
-    </span>
-  </div>
-
-  <!-- Tabela de Clusters -->
-  <div class="table-card">
-    <div class="table-wrapper">
-      <table class="clusters-table" aria-label="Lista de clusters">
-        <thead>
-          <tr>
-            <th scope="col">Cluster</th>
-            <th scope="col" class="col-centro">Atuações</th>
-            <th scope="col" class="col-acoes">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-
-          <!-- Loading state -->
-          @if (carregandoLista()) {
-            @for (i of [1, 2, 3]; track i) {
-              <tr class="cluster-row">
-                <td><div class="skeleton skeleton-nome"></div></td>
-                <td class="col-centro"><div class="skeleton skeleton-badge"></div></td>
-                <td class="col-acoes"><div class="skeleton skeleton-acoes"></div></td>
-              </tr>
-            }
-          }
-
-          <!-- Dados carregados -->
-          @if (!carregandoLista()) {
-            @for (cluster of clustersFiltrados(); track cluster.idCluster) {
-              <tr class="cluster-row">
-
-                <!-- Nome -->
-                <td>
-                  <div class="cell-nome">
-                    <div class="cluster-avatar">
-                      {{ cluster.nome.charAt(0).toUpperCase() }}
-                    </div>
-                    <span class="cluster-nome-texto">{{ cluster.nome }}</span>
-                  </div>
-                </td>
-
-                <!-- Contagem de atuações -->
-                <td class="col-centro">
-                  <span class="badge-atuacoes">
-                    {{ contarAtuacoesPorCluster(cluster.idCluster) }}
-                    {{ contarAtuacoesPorCluster(cluster.idCluster) === 1 ? 'atuação' : 'atuações' }}
-                  </span>
-                </td>
-
-                <!-- Ações -->
-                <td class="col-acoes">
-                  <div class="acoes-group">
-                    <button
-                      class="btn-acao btn-editar"
-                      type="button"
-                      title="Editar cluster"
-                      aria-label="Editar {{ cluster.nome }}"
-                      data-bs-toggle="modal"
-                      data-bs-target="#modalEditarCluster"
-                      (click)="abrirModalEditarCluster(cluster)"
-                    >
-                      <i class="bi bi-pencil-fill" aria-hidden="true"></i>
-                    </button>
-
-                    <button
-                      class="btn-acao btn-adicionar"
-                      type="button"
-                      title="Adicionar atuação a este cluster"
-                      aria-label="Adicionar atuação ao cluster {{ cluster.nome }}"
-                      data-bs-toggle="modal"
-                      data-bs-target="#modalNovaAtuacao"
-                      (click)="abrirModalNovaAtuacao(cluster.idCluster)"
-                    >
-                      <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                    </button>
-                  </div>
-                </td>
-
-              </tr>
-            }
-
-            <!-- Empty state -->
-            @if (clustersFiltrados().length === 0) {
-              <tr>
-                <td colspan="3">
-                  <div class="empty-state">
-                    <i class="bi bi-diagram-3 empty-icon" aria-hidden="true"></i>
-                    <p class="empty-title">Nenhum cluster encontrado</p>
-                    <p class="empty-subtitle">
-                      @if (termoBuscaCluster()) {
-                        Nenhum resultado para "{{ termoBuscaCluster() }}". Tente outro termo.
-                      } @else {
-                        Clique em <strong>Novo Cluster</strong> para começar.
-                      }
-                    </p>
-                  </div>
-                </td>
-              </tr>
-            }
-          }
-
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-
-  <!-- =====================================================================
-       SEÇÃO 2 — ATUAÇÕES ESPECÍFICAS
-       ===================================================================== -->
-
-  <div class="section-header mt-section">
-    <div class="section-title-wrap">
-      <i class="bi bi-briefcase-fill section-icon" aria-hidden="true"></i>
-      <span class="section-title">Atuações Específicas</span>
-    </div>
-  </div>
-
-  <!-- Barra de filtros — Atuações -->
-  <div class="filter-bar">
-    <div class="filter-search-wrap">
-      <i class="bi bi-search filter-search-icon" aria-hidden="true"></i>
-      <input
-        class="filter-search-input"
-        type="text"
-        placeholder="Buscar atuação pelo nome…"
-        [value]="termoBuscaAtuacao()"
-        (input)="atualizarBuscaAtuacao($any($event.target).value)"
-        aria-label="Buscar atuação"
-      />
-    </div>
-
-    <div class="filter-selects">
-      <div class="filter-select-wrap">
-        <i class="bi bi-diagram-3-fill filter-select-icon" aria-hidden="true"></i>
-        <select
-          class="filter-select"
-          [value]="filtroClusterAtuacao() ?? 'Todos'"
-          (change)="atualizarFiltroCluster($any($event.target).value)"
-          aria-label="Filtrar por cluster"
-        >
-          <option value="Todos">Todos os clusters</option>
-          @for (cluster of clusters(); track cluster.idCluster) {
-            <option [value]="cluster.idCluster">{{ cluster.nome }}</option>
-          }
-        </select>
+      <!-- Cabeçalho da coluna -->
+      <div class="coluna-header">
+        <div class="section-title-wrap">
+          <i class="bi bi-diagram-3-fill section-icon" aria-hidden="true"></i>
+          <span class="section-title">Clusters</span>
+        </div>
       </div>
-    </div>
 
-    <span class="filter-count">
-      {{ atuacoesFiltradas().length }} resultado{{ atuacoesFiltradas().length !== 1 ? 's' : '' }}
-    </span>
-  </div>
+      <!-- Barra de filtros — Clusters -->
+      <div class="filter-bar">
+        <div class="filter-search-wrap">
+          <i class="bi bi-search filter-search-icon" aria-hidden="true"></i>
+          <input
+            class="filter-search-input"
+            type="text"
+            placeholder="Buscar cluster pelo nome…"
+            [value]="termoBuscaCluster()"
+            (input)="atualizarBuscaCluster($any($event.target).value)"
+            aria-label="Buscar cluster"
+          />
+        </div>
+        <span class="filter-count">
+          {{ clustersFiltrados().length }} resultado{{ clustersFiltrados().length !== 1 ? 's' : '' }}
+        </span>
+      </div>
 
-  <!-- Tabela de Atuações -->
-  <div class="table-card">
-    <div class="table-wrapper">
-      <table class="clusters-table" aria-label="Lista de atuações específicas">
-        <thead>
-          <tr>
-            <th scope="col">Atuação Específica</th>
-            <th scope="col">Cluster</th>
-            <th scope="col" class="col-acoes">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-
-          <!-- Loading state -->
-          @if (carregandoLista()) {
-            @for (i of [1, 2, 3, 4]; track i) {
-              <tr class="cluster-row">
-                <td><div class="skeleton skeleton-nome"></div></td>
-                <td><div class="skeleton skeleton-cluster"></div></td>
-                <td class="col-acoes"><div class="skeleton skeleton-acoes"></div></td>
-              </tr>
-            }
-          }
-
-          <!-- Dados carregados -->
-          @if (!carregandoLista()) {
-            @for (atuacao of atuacoesFiltradas(); track atuacao.id) {
-              <tr class="cluster-row">
-
-                <!-- Nome da atuação -->
-                <td>
-                  <span class="atuacao-nome">{{ atuacao.nome }}</span>
-                </td>
-
-                <!-- Cluster de origem -->
-                <td>
-                  <span class="cluster-tag">{{ atuacao.nomeCluster }}</span>
-                </td>
-
-                <!-- Ações -->
-                <td class="col-acoes">
-                  <div class="acoes-group">
-                    <button
-                      class="btn-acao btn-editar"
-                      type="button"
-                      title="Editar atuação"
-                      aria-label="Editar {{ atuacao.nome }}"
-                      data-bs-toggle="modal"
-                      data-bs-target="#modalEditarAtuacao"
-                      (click)="abrirModalEditarAtuacao(atuacao)"
-                    >
-                      <i class="bi bi-pencil-fill" aria-hidden="true"></i>
-                    </button>
-                  </div>
-                </td>
-
-              </tr>
-            }
-
-            <!-- Empty state -->
-            @if (atuacoesFiltradas().length === 0) {
+      <!-- Tabela de Clusters -->
+      <div class="table-card">
+        <div class="table-wrapper">
+          <table class="clusters-table" aria-label="Lista de clusters">
+            <thead>
               <tr>
-                <td colspan="3">
-                  <div class="empty-state">
-                    <i class="bi bi-briefcase empty-icon" aria-hidden="true"></i>
-                    <p class="empty-title">Nenhuma atuação encontrada</p>
-                    <p class="empty-subtitle">
-                      @if (termoBuscaAtuacao() || filtroClusterAtuacao() !== null) {
-                        Nenhum resultado para o filtro aplicado.
-                      } @else {
-                        Clique em <strong>Nova Atuação</strong> para começar.
-                      }
-                    </p>
-                  </div>
-                </td>
+                <th scope="col">Cluster</th>
+                <th scope="col" class="col-centro">@if (clusterFiltrado() !== null) {Atuações}</th>
+                <th scope="col" class="col-acoes">Ações</th>
               </tr>
-            }
-          }
+            </thead>
+            <tbody>
 
-        </tbody>
-      </table>
-    </div>
-  </div>
+              <!-- Loading state -->
+              @if (carregandoClusters()) {
+                @for (i of [1, 2, 3]; track i) {
+                  <tr class="cluster-row">
+                    <td><div class="skeleton skeleton-nome"></div></td>
+                    <td class="col-centro"><div class="skeleton skeleton-badge"></div></td>
+                    <td class="col-acoes"><div class="skeleton skeleton-acoes"></div></td>
+                  </tr>
+                }
+              }
+
+              <!-- Dados carregados -->
+              @if (!carregandoClusters()) {
+                @for (cluster of clustersFiltrados(); track cluster.idCluster) {
+                  <tr class="cluster-row">
+
+                    <!-- Nome -->
+                    <td>
+                      <div class="cell-nome">
+                        <div class="cluster-avatar">
+                          {{ cluster.nome.charAt(0).toUpperCase() }}
+                        </div>
+                        <span class="cluster-nome-texto">{{ cluster.nome }}</span>
+                      </div>
+                    </td>
+
+                    <!-- Contagem de atuações -->
+                    <td class="col-centro">
+                      @if (clusterFiltrado() !== null) {
+                        <span class="badge-atuacoes">
+                        {{ contarAtuacoesPorCluster(cluster.idCluster) }}
+                        {{ contarAtuacoesPorCluster(cluster.idCluster) <= 1 ? 'atuação' : 'atuações' }}
+                      </span>
+                      }
+                      
+                    </td>
+
+                    <!-- Ações -->
+                    <td class="col-acoes">
+                      <div class="acoes-group">
+                        <!-- Editar -->
+                        <button
+                          class="btn-acao btn-editar"
+                          type="button"
+                          title="Editar cluster"
+                          aria-label="Editar {{ cluster.nome }}"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalEditarCluster"
+                          (click)="abrirModalEditarCluster(cluster)"
+                        >
+                          <i class="bi bi-pencil-fill" aria-hidden="true"></i>
+                        </button>
+
+                        <!-- Adicionar atuação -->
+                        <button
+                          class="btn-acao btn-adicionar"
+                          type="button"
+                          title="Adicionar atuação a este cluster"
+                          aria-label="Adicionar atuação ao cluster {{ cluster.nome }}"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalNovaAtuacao"
+                          (click)="abrirModalNovaAtuacao(cluster.idCluster)"
+                        >
+                          <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                        </button>
+
+                        <!-- Filtrar atuações por este cluster (backend) -->
+                        @if (clusterFiltrado()?.idCluster !== cluster.idCluster) {
+                          <button
+                            class="btn-acao btn-filtrar"
+                            type="button"
+                            title="Ver atuações deste cluster"
+                            aria-label="Filtrar atuações do cluster {{ cluster.nome }}"
+                            (click)="pesquisarPorCluster(cluster)"
+                          >
+                            <i class="bi bi-briefcase-fill" aria-hidden="true"></i>
+                          </button>
+                        }
+
+                        <!-- Limpar filtro (aparece quando ESTE cluster está ativo) -->
+                        @if (clusterFiltrado()?.idCluster === cluster.idCluster) {
+                          <button
+                            class="btn-acao btn-limpar-filtro"
+                            type="button"
+                            title="Limpar filtro de cluster"
+                            aria-label="Remover filtro do cluster {{ cluster.nome }}"
+                            (click)="limparPesquisaCluster()"
+                          >
+                            <i class="bi bi-x-lg" aria-hidden="true"></i>
+                          </button>
+                        }
+                      </div>
+                    </td>
+
+                  </tr>
+                }
+
+                <!-- Empty state -->
+                @if (clustersFiltrados().length === 0) {
+                  <tr>
+                    <td colspan="3">
+                      <div class="empty-state">
+                        <i class="bi bi-diagram-3 empty-icon" aria-hidden="true"></i>
+                        <p class="empty-title">Nenhum cluster encontrado</p>
+                        <p class="empty-subtitle">
+                          @if (termoBuscaCluster()) {
+                            Nenhum resultado para "{{ termoBuscaCluster() }}". Tente outro termo.
+                          } @else {
+                            Clique em <strong>Novo Cluster</strong> para começar.
+                          }
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginação — visível apenas quando não há filtro de cluster ativo -->
+        @if (totalPaginasClusters() > 1 && clusterFiltrado() === null) {
+          <div class="paginacao-bar">
+            <button
+              class="btn-pag"
+              [disabled]="!temAnteriorClusters()"
+              (click)="paginaAnteriorClusters()"
+              aria-label="Página anterior"
+            >
+              <i class="bi bi-chevron-left" aria-hidden="true"></i>
+            </button>
+
+            @for (pagina of totalPaginasClustersArray(); track pagina) {
+              <button
+                class="btn-pag-num"
+                [class.ativo]="pagina === paginaAtualClusters()"
+                (click)="irParaPaginaClusters(pagina)"
+                [attr.aria-current]="pagina === paginaAtualClusters() ? 'page' : null"
+              >
+                {{ pagina + 1 }}
+              </button>
+            }
+
+            <button
+              class="btn-pag"
+              [disabled]="!temProximaClusters()"
+              (click)="proximaPaginaClusters()"
+              aria-label="Próxima página"
+            >
+              <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        }
+
+        <!-- Rodapé — total de clusters cadastrados -->
+        <div class="table-footer">
+          <i class="bi bi-diagram-3-fill table-footer-icon" aria-hidden="true"></i>
+          <span>
+            {{ totalItensClusters() }} cluster{{ totalItensClusters() !== 1 ? 's' : '' }} cadastrado{{ totalItensClusters() !== 1 ? 's' : '' }}
+          </span>
+        </div>
+      </div>
+
+    </div><!-- /col clusters -->
+
+
+    <!-- ==================================================================
+         COLUNA DIREITA — ATUAÇÕES ESPECÍFICAS
+         ================================================================== -->
+    <div class="col-12 col-xl-7">
+
+      <!-- Cabeçalho da coluna -->
+      <div class="coluna-header">
+        <div class="section-title-wrap">
+          <i class="bi bi-briefcase-fill section-icon" aria-hidden="true"></i>
+          <span class="section-title">Atuações Específicas</span>
+        </div>
+
+        <!-- Chip de filtro ativo — aparece quando um cluster está selecionado -->
+        @if (clusterFiltrado() !== null) {
+          <div class="filtro-ativo-chip">
+            <i class="bi bi-diagram-3-fill" aria-hidden="true"></i>
+            {{ clusterFiltrado()!.nome }}
+            <button
+              class="btn-limpar-chip"
+              type="button"
+              title="Remover filtro"
+              (click)="limparPesquisaCluster()"
+              aria-label="Remover filtro do cluster {{ clusterFiltrado()!.nome }}"
+            >
+              <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+          </div>
+        }
+      </div>
+
+      <!-- Barra de filtros — Atuações (sem select; filtro por cluster via botão na tabela esquerda) -->
+      <div class="filter-bar">
+        <div class="filter-search-wrap">
+          <i class="bi bi-search filter-search-icon" aria-hidden="true"></i>
+          <input
+            class="filter-search-input"
+            type="text"
+            placeholder="Buscar atuação pelo nome…"
+            [value]="termoBuscaAtuacao()"
+            (input)="atualizarBuscaAtuacao($any($event.target).value)"
+            aria-label="Buscar atuação"
+          />
+        </div>
+        <span class="filter-count">
+          {{ atuacoesFiltradas().length }} resultado{{ atuacoesFiltradas().length !== 1 ? 's' : '' }}
+        </span>
+      </div>
+
+      <!-- Tabela de Atuações -->
+      <div class="table-card">
+        <div class="table-wrapper">
+          <table class="clusters-table" aria-label="Lista de atuações específicas">
+            <thead>
+              <tr>
+                <th scope="col">Atuação Específica</th>
+                <th scope="col">Cluster</th>
+                <th scope="col" class="col-acoes">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+
+              <!-- Loading state -->
+              @if (carregandoAtuacoes()) {
+                @for (i of [1, 2, 3, 4]; track i) {
+                  <tr class="cluster-row">
+                    <td><div class="skeleton skeleton-nome"></div></td>
+                    <td><div class="skeleton skeleton-cluster"></div></td>
+                    <td class="col-acoes"><div class="skeleton skeleton-acoes"></div></td>
+                  </tr>
+                }
+              }
+
+              <!-- Dados carregados -->
+              @if (!carregandoAtuacoes()) {
+                @for (atuacao of atuacoesFiltradas(); track atuacao.id) {
+                  <tr class="cluster-row">
+
+                    <!-- Nome da atuação -->
+                    <td>
+                      <span class="atuacao-nome">{{ atuacao.nome }}</span>
+                    </td>
+
+                    <!-- Cluster de origem -->
+                    <td>
+                      <span class="cluster-tag">{{ atuacao.nomeCluster }}</span>
+                    </td>
+
+                    <!-- Ações -->
+                    <td class="col-acoes">
+                      <div class="acoes-group">
+                        <button
+                          class="btn-acao btn-editar"
+                          type="button"
+                          title="Editar atuação"
+                          aria-label="Editar {{ atuacao.nome }}"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalEditarAtuacao"
+                          (click)="abrirModalEditarAtuacao(atuacao)"
+                        >
+                          <i class="bi bi-pencil-fill" aria-hidden="true"></i>
+                        </button>
+                      </div>
+                    </td>
+
+                  </tr>
+                }
+
+                <!-- Empty state -->
+                @if (atuacoesFiltradas().length === 0) {
+                  <tr>
+                    <td colspan="3">
+                      <div class="empty-state">
+                        <i class="bi bi-briefcase empty-icon" aria-hidden="true"></i>
+                        <p class="empty-title">Nenhuma atuação encontrada</p>
+                        <p class="empty-subtitle">
+                          @if (clusterFiltrado() !== null) {
+                            Nenhuma atuação cadastrada para o cluster <strong>{{ clusterFiltrado()!.nome }}</strong>.
+                          } @else if (termoBuscaAtuacao()) {
+                            Nenhum resultado para "{{ termoBuscaAtuacao() }}". Tente outro termo.
+                          } @else {
+                            Clique em <strong>Nova Atuação</strong> para começar.
+                          }
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginação -->
+        @if (totalPaginasAtuacoes() > 1) {
+          <div class="paginacao-bar">
+            <button
+              class="btn-pag"
+              [disabled]="!temAnteriorAtuacoes()"
+              (click)="paginaAnteriorAtuacoes()"
+              aria-label="Página anterior"
+            >
+              <i class="bi bi-chevron-left" aria-hidden="true"></i>
+            </button>
+
+            @for (pagina of totalPaginasAtuacoesArray(); track pagina) {
+              <button
+                class="btn-pag-num"
+                [class.ativo]="pagina === paginaAtualAtuacoes()"
+                (click)="irParaPaginaAtuacoes(pagina)"
+                [attr.aria-current]="pagina === paginaAtualAtuacoes() ? 'page' : null"
+              >
+                {{ pagina + 1 }}
+              </button>
+            }
+
+            <button
+              class="btn-pag"
+              [disabled]="!temProximaAtuacoes()"
+              (click)="proximaPaginaAtuacoes()"
+              aria-label="Próxima página"
+            >
+              <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        }
+
+        <!-- Rodapé — total de atuações (global ou filtrado) -->
+        <div class="table-footer">
+          <i class="bi bi-briefcase-fill table-footer-icon" aria-hidden="true"></i>
+          <span>
+            @if (clusterFiltrado() !== null) {
+              {{ totalItensAtuacoes() }} atuaç{{ totalItensAtuacoes() <= 1 ? 'ão' : 'ões' }} do cluster <strong>{{ clusterFiltrado()!.nome }}</strong>
+            } @else {
+              {{ totalItensAtuacoes() }} atuaç{{ totalItensAtuacoes() <= 1 ? 'ões' : 'ão' }} cadastrada{{ totalItensAtuacoes() !== 1 ? 's' : '' }}
+            }
+          </span>
+        </div>
+      </div>
+
+    </div><!-- /col atuações -->
+
+  </div><!-- /row principal -->
 
 </div>
 
@@ -363,7 +498,6 @@
       <form [formGroup]="formNovoCluster" (ngSubmit)="salvarNovoCluster()" novalidate>
         <div class="modal-body">
 
-          <!-- Alerta de erro geral -->
           @if (erroModal()) {
             <div class="alert alert-danger py-2 mb-3" role="alert">
               <i class="bi bi-exclamation-circle-fill me-2" aria-hidden="true"></i>
@@ -371,7 +505,6 @@
             </div>
           }
 
-          <!-- Nome do cluster -->
           <div class="mb-3">
             <label for="nomeNovoCluster" class="form-label fw-semibold">
               Nome do Cluster <span class="text-danger">*</span>
@@ -408,13 +541,7 @@
           >
             Cancelar
           </button>
-          <!-- Botão oculto usado pelo ViewChild para fechar o modal programaticamente -->
-          <button
-            #btnFecharModalNovoCluster
-            type="button"
-            class="d-none"
-            data-bs-dismiss="modal"
-          ></button>
+          <button #btnFecharModalNovoCluster type="button" class="d-none" data-bs-dismiss="modal"></button>
           <button
             type="submit"
             class="btn-salvar-modal"
@@ -510,12 +637,7 @@
           >
             Cancelar
           </button>
-          <button
-            #btnFecharModalEditarCluster
-            type="button"
-            class="d-none"
-            data-bs-dismiss="modal"
-          ></button>
+          <button #btnFecharModalEditarCluster type="button" class="d-none" data-bs-dismiss="modal"></button>
           <button
             type="submit"
             class="btn-salvar-modal"
@@ -575,7 +697,6 @@
             </div>
           }
 
-          <!-- Cluster vinculado -->
           <div class="mb-3">
             <label for="idClusterNovaAtuacao" class="form-label fw-semibold">
               Cluster <span class="text-danger">*</span>
@@ -596,7 +717,6 @@
             }
           </div>
 
-          <!-- Nome da atuação -->
           <div class="mb-3">
             <label for="nomeNovaAtuacao" class="form-label fw-semibold">
               Nome da Atuação <span class="text-danger">*</span>
@@ -633,12 +753,7 @@
           >
             Cancelar
           </button>
-          <button
-            #btnFecharModalNovaAtuacao
-            type="button"
-            class="d-none"
-            data-bs-dismiss="modal"
-          ></button>
+          <button #btnFecharModalNovaAtuacao type="button" class="d-none" data-bs-dismiss="modal"></button>
           <button
             type="submit"
             class="btn-salvar-modal"
@@ -698,7 +813,6 @@
             </div>
           }
 
-          <!-- Cluster vinculado -->
           <div class="mb-3">
             <label for="idClusterEditarAtuacao" class="form-label fw-semibold">
               Cluster <span class="text-danger">*</span>
@@ -719,7 +833,6 @@
             }
           </div>
 
-          <!-- Nome da atuação -->
           <div class="mb-3">
             <label for="nomeEditarAtuacao" class="form-label fw-semibold">
               Nome da Atuação <span class="text-danger">*</span>
@@ -756,12 +869,7 @@
           >
             Cancelar
           </button>
-          <button
-            #btnFecharModalEditarAtuacao
-            type="button"
-            class="d-none"
-            data-bs-dismiss="modal"
-          ></button>
+          <button #btnFecharModalEditarAtuacao type="button" class="d-none" data-bs-dismiss="modal"></button>
           <button
             type="submit"
             class="btn-salvar-modal"

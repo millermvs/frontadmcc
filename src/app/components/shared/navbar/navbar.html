@@ -47,6 +47,13 @@
       <span class="menu-label">Clusters / Atuações</span>
     </a>
 
+    @if (isAdm()) {
+      <a class="menu-item" routerLink="/pages/cargos-lideranca" routerLinkActive="active-link">
+        <span class="menu-icon"><i class="bi bi-award-fill" aria-hidden="true"></i></span>
+        <span class="menu-label">Cargos</span>
+      </a>
+    }
+
     <a class="menu-item" routerLink="/pages/reunioes" routerLinkActive="active-link">
       <span class="menu-icon"><i class="bi bi-calendar-event-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Reuniões</span>

@@ -15,16 +15,15 @@ import {
  * CLUSTERS PAGE COMPONENT
  *
  * Página de gerenciamento de Clusters e Atuações Específicas.
- * Exibe duas tabelas na mesma página (relação mestre-detalhe):
- *   - Tabela superior: Clusters (CRUD)
- *   - Tabela inferior: Atuações Específicas (CRUD, filtráveis por cluster)
+ * Exibe duas tabelas LADO A LADO (colunas Bootstrap):
+ *   - Coluna esquerda : Clusters (CRUD + paginação independente)
+ *   - Coluna direita  : Atuações Específicas (CRUD + paginação independente)
  *
- * Segue CLAUDE.md SEÇÃO 4 (Componente burro):
- * - Exibe dados vindos do ClusterService
- * - Captura ações do usuário (filtros, cliques, submit)
- * - Delega toda lógica ao Service (sem HTTP direto)
- *
- * Carregamento paralelo via forkJoin (CLAUDE.md §7.3 — proíbe nested subscribes).
+ * Filtro por cluster via backend (endpoint /atuacoes-especificas/cluster/:id).
+ * Ao clicar no botão "briefcase" de um cluster:
+ *   - Apenas aquela linha permanece visível na tabela de clusters.
+ *   - Atuações carregadas do backend filtradas por esse cluster.
+ *   - Botão briefcase é substituído pelo botão "X" para limpar o filtro.
  */
 @Component({
   selector: 'app-clusters',
@@ -44,9 +43,6 @@ export class Clusters implements OnInit {
 
   // =========================================================================
   // VIEWCHILD — referências aos botões ocultos de fechar modal
-  //
-  // Por que ViewChild? CLAUDE.md §2.2 proíbe manipulação direta do DOM.
-  // ViewChild é a forma Angular idiomática de referenciar elementos do template.
   // =========================================================================
 
   @ViewChild('btnFecharModalNovoCluster')
@@ -65,96 +61,117 @@ export class Clusters implements OnInit {
   // SIGNALS — DADOS
   // =========================================================================
 
-  clusters    = signal<ClusterResponseDto[]>([]);
-  atuacoes    = signal<AtuacaoEspecificaResponseDto[]>([]);
-  carregandoLista = signal(false);
+  clusters = signal<ClusterResponseDto[]>([]);
+  atuacoes = signal<AtuacaoEspecificaResponseDto[]>([]);
 
   // =========================================================================
-  // SIGNALS — FILTROS
+  // SIGNALS — LOADING (independentes por tabela)
   // =========================================================================
 
-  termoBuscaCluster    = signal('');
-  termoBuscaAtuacao    = signal('');
+  carregandoClusters = signal(false);
+  carregandoAtuacoes = signal(false);
+
+  // =========================================================================
+  // SIGNALS — FILTROS DE TEXTO
+  // =========================================================================
+
+  termoBuscaCluster = signal('');
+  termoBuscaAtuacao = signal('');
 
   /**
-   * null = "Todos os clusters" (sem filtro).
-   * number = filtra atuações pelo idCluster selecionado.
+   * null  = sem filtro de cluster ativo.
+   * ClusterResponseDto = cluster selecionado para pesquisa de atuações via backend.
+   *
+   * Quando não-null:
+   *  - A tabela de clusters exibe APENAS a linha deste cluster.
+   *  - A tabela de atuações exibe apenas as atuações deste cluster (via backend).
+   *  - O botão "briefcase" da linha é substituído pelo botão "X" (limpar).
    */
-  filtroClusterAtuacao = signal<number | null>(null);
+  clusterFiltrado = signal<ClusterResponseDto | null>(null);
+
+  // =========================================================================
+  // SIGNALS — PAGINAÇÃO CLUSTERS
+  // =========================================================================
+
+  paginaAtualClusters    = signal(0);
+  tamanhoPaginaClusters  = signal(10);
+  totalPaginasClusters   = signal(0);
+  temProximaClusters     = signal(false);
+  temAnteriorClusters    = signal(false);
+  totalItensClusters     = signal(0);
+
+  // =========================================================================
+  // SIGNALS — PAGINAÇÃO ATUAÇÕES
+  // =========================================================================
+
+  paginaAtualAtuacoes    = signal(0);
+  tamanhoPaginaAtuacoes  = signal(10);
+  totalPaginasAtuacoes   = signal(0);
+  temProximaAtuacoes     = signal(false);
+  temAnteriorAtuacoes    = signal(false);
+  totalItensAtuacoes     = signal(0);
 
   // =========================================================================
   // SIGNALS — ESTADO DOS MODAIS
   // =========================================================================
 
-  carregandoModal = signal(false);
-  erroModal       = signal<string | null>(null);
-
-  /**
-   * Erros por campo retornados pelo backend (400).
-   * Chave = nome do campo, valor = mensagem de validação.
-   */
-  errosValidacao  = signal<Record<string, string>>({});
-
-  /**
-   * ID do cluster sendo editado. null = nenhum (modo cadastro).
-   */
+  carregandoModal    = signal(false);
+  erroModal          = signal<string | null>(null);
+  errosValidacao     = signal<Record<string, string>>({});
   idClusterParaAtualizar = signal<number | null>(null);
-
-  /**
-   * ID da atuação sendo editada. null = nenhum (modo cadastro).
-   */
   idAtuacaoParaAtualizar = signal<number | null>(null);
 
   // =========================================================================
   // FORMULÁRIOS REATIVOS
-  //
-  // Cluster: 1 campo (nome). Atuação: 2 campos (nome + idCluster).
-  // Mesmo sendo simples, ReactiveFormsModule mantém consistência com o restante
-  // do projeto e facilita validação programática.
   // =========================================================================
 
-  formNovoCluster:    FormGroup = this.criarFormCluster();
-  formEditarCluster:  FormGroup = this.criarFormCluster();
-  formNovaAtuacao:    FormGroup = this.criarFormAtuacao();
-  formEditarAtuacao:  FormGroup = this.criarFormAtuacao();
-
-  // =========================================================================
-  // COMPUTED — KPI CARDS
-  // =========================================================================
-
-  totalClusters = computed(() => this.clusters().length);
-  totalAtuacoes = computed(() => this.atuacoes().length);
+  formNovoCluster:   FormGroup = this.criarFormCluster();
+  formEditarCluster: FormGroup = this.criarFormCluster();
+  formNovaAtuacao:   FormGroup = this.criarFormAtuacao();
+  formEditarAtuacao: FormGroup = this.criarFormAtuacao();
 
   // =========================================================================
   // COMPUTED — FILTROS DE TABELA
-  //
-  // computed() em vez de métodos: recalcula automaticamente quando qualquer
-  // signal lido internamente mudar (CLAUDE.md §7.2).
   // =========================================================================
 
+  /**
+   * Quando clusterFiltrado() não é null: retorna APENAS aquela linha.
+   * Caso contrário: aplica filtro de texto na página carregada.
+   */
   clustersFiltrados = computed(() => {
+    const filtrado = this.clusterFiltrado();
+    if (filtrado !== null) {
+      return [filtrado];
+    }
     const termo = this.termoBuscaCluster().toLowerCase().trim();
     return this.clusters().filter(c =>
       !termo || c.nome.toLowerCase().includes(termo)
     );
   });
 
+  /**
+   * Filtro de texto local sobre os itens da página atual de atuações.
+   * O filtro por cluster é delegado ao backend via pesquisarPorCluster().
+   */
   atuacoesFiltradas = computed(() => {
-    const termo     = this.termoBuscaAtuacao().toLowerCase().trim();
-    const idCluster = this.filtroClusterAtuacao();
-
-    return this.atuacoes().filter(a => {
-      const baterBusca    = !termo || a.nome.toLowerCase().includes(termo);
-      const baterCluster  = idCluster === null || a.idCluster === idCluster;
-      return baterBusca && baterCluster;
-    });
+    const termo = this.termoBuscaAtuacao().toLowerCase().trim();
+    return this.atuacoes().filter(a =>
+      !termo || a.nome.toLowerCase().includes(termo)
+    );
   });
 
   /**
-   * Conta as atuações de um cluster específico (exibido na tabela de clusters).
-   * Usa computed internamente via chamada direta — derivado de atuacoes().
+   * Contagem de atuações exibida no badge da tabela de clusters.
+   *
+   * Quando o cluster em questão É o filtro ativo, usa o total do backend
+   * (preciso, mesmo com paginação). Caso contrário, conta os itens carregados
+   * na página atual (pode ser parcial — trade-off consciente com paginação).
    */
   contarAtuacoesPorCluster(idCluster: number): number {
+    const filtrado = this.clusterFiltrado();
+    if (filtrado !== null && filtrado.idCluster === idCluster) {
+      return this.totalItensAtuacoes();
+    }
     return this.atuacoes().filter(a => a.idCluster === idCluster).length;
   }
 
@@ -173,9 +190,56 @@ export class Clusters implements OnInit {
   atualizarBuscaCluster(valor: string): void { this.termoBuscaCluster.set(valor); }
   atualizarBuscaAtuacao(valor: string): void { this.termoBuscaAtuacao.set(valor); }
 
-  atualizarFiltroCluster(valor: string): void {
-    this.filtroClusterAtuacao.set(valor === 'Todos' ? null : Number(valor));
+  /**
+   * Ativa a pesquisa de atuações por cluster (via backend).
+   * Apenas o cluster clicado permanece visível na tabela de clusters.
+   * O botão "briefcase" da linha é substituído pelo "X".
+   */
+  pesquisarPorCluster(cluster: ClusterResponseDto): void {
+    this.clusterFiltrado.set(cluster);
+    this.carregarAtuacoes(0);
   }
+
+  /**
+   * Remove o filtro de cluster e recarrega ambas as tabelas a partir da página 0.
+   */
+  limparPesquisaCluster(): void {
+    this.clusterFiltrado.set(null);
+    this.carregarClusters(0);
+    this.carregarAtuacoes(0);
+  }
+
+  // =========================================================================
+  // MÉTODOS PÚBLICOS — PAGINAÇÃO CLUSTERS
+  // =========================================================================
+
+  totalPaginasClustersArray(): number[] {
+    return Array.from({ length: this.totalPaginasClusters() }, (_, i) => i);
+  }
+
+  irParaPaginaClusters(pagina: number): void {
+    if (pagina < 0 || pagina >= this.totalPaginasClusters()) return;
+    this.carregarClusters(pagina);
+  }
+
+  proximaPaginaClusters(): void  { this.irParaPaginaClusters(this.paginaAtualClusters() + 1); }
+  paginaAnteriorClusters(): void { this.irParaPaginaClusters(this.paginaAtualClusters() - 1); }
+
+  // =========================================================================
+  // MÉTODOS PÚBLICOS — PAGINAÇÃO ATUAÇÕES
+  // =========================================================================
+
+  totalPaginasAtuacoesArray(): number[] {
+    return Array.from({ length: this.totalPaginasAtuacoes() }, (_, i) => i);
+  }
+
+  irParaPaginaAtuacoes(pagina: number): void {
+    if (pagina < 0 || pagina >= this.totalPaginasAtuacoes()) return;
+    this.carregarAtuacoes(pagina);
+  }
+
+  proximaPaginaAtuacoes(): void  { this.irParaPaginaAtuacoes(this.paginaAtualAtuacoes() + 1); }
+  paginaAnteriorAtuacoes(): void { this.irParaPaginaAtuacoes(this.paginaAtualAtuacoes() - 1); }
 
   // =========================================================================
   // MÉTODOS PÚBLICOS — RESET DOS MODAIS
@@ -222,16 +286,13 @@ export class Clusters implements OnInit {
       next: () => {
         this.btnFecharNovoCluster.nativeElement.click();
         this.formNovoCluster.reset();
-        this.carregarDados();
-        // TODO: toastService.sucesso('Cluster cadastrado com sucesso!');
+        this.recarregarAposModal();
       },
       error: (err: HttpErrorResponse) => {
         this.tratarErroModal(err);
         this.carregandoModal.set(false);
       },
-      complete: () => {
-        this.carregandoModal.set(false);
-      },
+      complete: () => { this.carregandoModal.set(false); },
     });
   }
 
@@ -239,19 +300,11 @@ export class Clusters implements OnInit {
   // MÉTODOS PÚBLICOS — CLUSTER: EDITAR
   // =========================================================================
 
-  /**
-   * Preenche o formulário de edição e registra qual cluster está sendo editado.
-   * O Bootstrap abre o modal pelo data-bs-toggle no botão da tabela.
-   */
   abrirModalEditarCluster(cluster: ClusterResponseDto): void {
     this.idClusterParaAtualizar.set(cluster.idCluster);
     this.errosValidacao.set({});
     this.erroModal.set(null);
     this.formEditarCluster.patchValue({ nome: cluster.nome });
-    // patchValue() preenche os campos mas NÃO marca o formulário como dirty —
-    // o Angular só considera dirty após interação do usuário.
-    // markAsDirty() força o estado sujo explicitamente, habilitando o botão
-    // "Salvar Alterações" assim que o modal abre com os dados pré-preenchidos.
     this.formEditarCluster.markAsDirty();
   }
 
@@ -267,16 +320,13 @@ export class Clusters implements OnInit {
         this.btnFecharEditarCluster.nativeElement.click();
         this.formEditarCluster.reset();
         this.idClusterParaAtualizar.set(null);
-        this.carregarDados();
-        // TODO: toastService.sucesso('Cluster atualizado com sucesso!');
+        this.recarregarAposModal();
       },
       error: (err: HttpErrorResponse) => {
         this.tratarErroModal(err);
         this.carregandoModal.set(false);
       },
-      complete: () => {
-        this.carregandoModal.set(false);
-      },
+      complete: () => { this.carregandoModal.set(false); },
     });
   }
 
@@ -284,11 +334,6 @@ export class Clusters implements OnInit {
   // MÉTODOS PÚBLICOS — ATUAÇÃO: CADASTRAR
   // =========================================================================
 
-  /**
-   * Pré-seleciona o cluster no formulário de nova atuação quando o usuário
-   * clica em "Nova Atuação" a partir de um cluster específico na tabela.
-   * Aceita null para quando o botão global "Nova Atuação" é usado.
-   */
   abrirModalNovaAtuacao(idClusterPreSelecionado: number | null = null): void {
     this.errosValidacao.set({});
     this.erroModal.set(null);
@@ -309,16 +354,13 @@ export class Clusters implements OnInit {
       next: () => {
         this.btnFecharNovaAtuacao.nativeElement.click();
         this.formNovaAtuacao.reset();
-        this.carregarDados();
-        // TODO: toastService.sucesso('Atuação cadastrada com sucesso!');
+        this.recarregarAposModal();
       },
       error: (err: HttpErrorResponse) => {
         this.tratarErroModal(err);
         this.carregandoModal.set(false);
       },
-      complete: () => {
-        this.carregandoModal.set(false);
-      },
+      complete: () => { this.carregandoModal.set(false); },
     });
   }
 
@@ -334,7 +376,6 @@ export class Clusters implements OnInit {
       nome:      atuacao.nome,
       idCluster: atuacao.idCluster,
     });
-    // Mesmo motivo do abrirModalEditarCluster — patchValue não marca dirty.
     this.formEditarAtuacao.markAsDirty();
   }
 
@@ -350,16 +391,13 @@ export class Clusters implements OnInit {
         this.btnFecharEditarAtuacao.nativeElement.click();
         this.formEditarAtuacao.reset();
         this.idAtuacaoParaAtualizar.set(null);
-        this.carregarDados();
-        // TODO: toastService.sucesso('Atuação atualizada com sucesso!');
+        this.recarregarAposModal();
       },
       error: (err: HttpErrorResponse) => {
         this.tratarErroModal(err);
         this.carregandoModal.set(false);
       },
-      complete: () => {
-        this.carregandoModal.set(false);
-      },
+      complete: () => { this.carregandoModal.set(false); },
     });
   }
 
@@ -370,67 +408,125 @@ export class Clusters implements OnInit {
   /**
    * carregarDados()
    *
-   * Carrega clusters e atuações em paralelo via forkJoin.
-   *
-   * Por que forkJoin?
-   * As duas chamadas são independentes — não há motivo para esperar uma terminar
-   * antes de disparar a outra. forkJoin dispara as duas ao mesmo tempo e emite
-   * um único resultado quando AMBAS completarem (CLAUDE.md §7.3).
+   * Carregamento inicial paralelo via forkJoin — usado apenas no ngOnInit.
+   * Reseta o filtro de cluster ativo para garantir estado limpo na entrada.
    */
   private carregarDados(): void {
-    this.carregandoLista.set(true);
+    this.carregandoClusters.set(true);
+    this.carregandoAtuacoes.set(true);
+    this.clusterFiltrado.set(null);
 
     forkJoin({
-      clusters: this.clusterService.listarClusters(0, 20),
-      atuacoes: this.clusterService.listarAtuacoes(0, 20), 
+      clusters: this.clusterService.listarClusters(0, this.tamanhoPaginaClusters()),
+      atuacoes: this.clusterService.listarAtuacoes(0, this.tamanhoPaginaAtuacoes()),
     }).subscribe({
       next: ({ clusters, atuacoes }) => {
-        // Operador ?. protege contra resposta null/undefined do backend.
-        // ?? [] garante que o signal nunca receba undefined — sem isso,
-        // clustersFiltrados().filter() lançaria TypeError silencioso e
-        // carregandoLista ficaria true para sempre (complete não chegaria a rodar).
+        // Clusters
         this.clusters.set(clusters?.items ?? []);
+        this.paginaAtualClusters.set(clusters?.page ?? 0);
+        this.totalPaginasClusters.set(clusters?.totalPages ?? 0);
+        this.temProximaClusters.set(clusters?.hasNext ?? false);
+        this.temAnteriorClusters.set(clusters?.hasPrevious ?? false);
+        this.totalItensClusters.set(Number(clusters?.totalItems ?? 0));
+
+        // Atuações
         this.atuacoes.set(atuacoes?.items ?? []);
+        this.paginaAtualAtuacoes.set(atuacoes?.page ?? 0);
+        this.totalPaginasAtuacoes.set(atuacoes?.totalPages ?? 0);
+        this.temProximaAtuacoes.set(atuacoes?.hasNext ?? false);
+        this.temAnteriorAtuacoes.set(atuacoes?.hasPrevious ?? false);
+        this.totalItensAtuacoes.set(Number(atuacoes?.totalItems ?? 0));
       },
       error: (err: HttpErrorResponse) => {
         console.error('Erro ao carregar dados:', err);
-        // Garante estado limpo mesmo em caso de erro (ex: 401, 500, rede)
         this.clusters.set([]);
         this.atuacoes.set([]);
-        this.carregandoLista.set(false);
+        this.carregandoClusters.set(false);
+        this.carregandoAtuacoes.set(false);
       },
       complete: () => {
-        this.carregandoLista.set(false);
+        this.carregandoClusters.set(false);
+        this.carregandoAtuacoes.set(false);
       },
     });
   }
-
-
-  private carregarAtuacoesPorCluster(idCluster: number): void {
-    this.carregandoLista.set(true);
-
-    this.clusterService.listarAtuacoesPorCluster(idCluster, 0, 20).subscribe({
-      next: (response) => {
-        this.atuacoes.set(response?.items ?? []);
-      },
-      error: (err: HttpErrorResponse) => {
-        console.error('Erro ao carregar atuações por cluster:', err);
-        this.atuacoes.set([]);
-        this.carregandoLista.set(false);
-      },
-      complete: () => {
-        this.carregandoLista.set(false);
-      },
-    });
-  }
-
 
   /**
-   * tratarErroModal()
+   * recarregarAposModal()
    *
-   * Centraliza o tratamento de erros dos 4 formulários do modal.
-   * Separa erros de validação por campo (400) de erros genéricos.
+   * Chamado após operações de CRUD para recarregar as tabelas.
+   * Preserva o estado de filtro de cluster ativo, ao contrário de carregarDados().
+   * Sempre recarrega ambas as tabelas a partir da página 0.
    */
+  private recarregarAposModal(): void {
+    this.carregarClusters(0);
+    this.carregarAtuacoes(0);
+  }
+
+  /**
+   * carregarClusters()
+   *
+   * Carrega apenas a tabela de clusters (paginação independente).
+   * Não afeta a tabela de atuações nem o filtro de cluster ativo.
+   */
+  private carregarClusters(pagina: number): void {
+    this.carregandoClusters.set(true);
+
+    this.clusterService.listarClusters(pagina, this.tamanhoPaginaClusters()).subscribe({
+      next: (response) => {
+        this.clusters.set(response?.items ?? []);
+        this.paginaAtualClusters.set(response?.page ?? 0);
+        this.totalPaginasClusters.set(response?.totalPages ?? 0);
+        this.temProximaClusters.set(response?.hasNext ?? false);
+        this.temAnteriorClusters.set(response?.hasPrevious ?? false);
+        this.totalItensClusters.set(Number(response?.totalItems ?? 0));
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao carregar clusters:', err);
+        this.clusters.set([]);
+        this.carregandoClusters.set(false);
+      },
+      complete: () => { this.carregandoClusters.set(false); },
+    });
+  }
+
+  /**
+   * carregarAtuacoes()
+   *
+   * Carrega a tabela de atuações respeitando o estado de filtro:
+   *   - Se clusterFiltrado() não é null → usa endpoint por cluster.
+   *   - Se null → usa endpoint geral.
+   *
+   * Por que verificar o signal aqui e não receber o ID como parâmetro?
+   * Porque pesquisarPorCluster() seta o signal ANTES de chamar carregarAtuacoes(),
+   * garantindo consistência entre o estado visual e os dados carregados.
+   */
+  private carregarAtuacoes(pagina: number): void {
+    this.carregandoAtuacoes.set(true);
+
+    const filtrado    = this.clusterFiltrado();
+    const observable  = filtrado !== null
+      ? this.clusterService.listarAtuacoesPorCluster(filtrado.idCluster, pagina, this.tamanhoPaginaAtuacoes())
+      : this.clusterService.listarAtuacoes(pagina, this.tamanhoPaginaAtuacoes());
+
+    observable.subscribe({
+      next: (response) => {
+        this.atuacoes.set(response?.items ?? []);
+        this.paginaAtualAtuacoes.set(response?.page ?? 0);
+        this.totalPaginasAtuacoes.set(response?.totalPages ?? 0);
+        this.temProximaAtuacoes.set(response?.hasNext ?? false);
+        this.temAnteriorAtuacoes.set(response?.hasPrevious ?? false);
+        this.totalItensAtuacoes.set(Number(response?.totalItems ?? 0));
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao carregar atuações:', err);
+        this.atuacoes.set([]);
+        this.carregandoAtuacoes.set(false);
+      },
+      complete: () => { this.carregandoAtuacoes.set(false); },
+    });
+  }
+
   private tratarErroModal(err: HttpErrorResponse): void {
     if (err.status === 400 && err.error?.errors) {
       this.errosValidacao.set(err.error.errors);

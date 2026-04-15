@@ -4,7 +4,7 @@
  * O que NÃO está aqui (já em styles.css global):
  *   - .page-header, .page-title, .breadcrumb-nav
  *   - .kpi-card, .kpi-icon, .kpi-value, .kpi-label
- *   - .filter-bar, .filter-search-input, .filter-select, .filter-count
+ *   - .filter-bar, .filter-search-input, .filter-count
  *   - .table-card, .table-wrapper
  *   - .btn-acao, .btn-editar
  *   - .empty-state, .empty-icon, .empty-title, .empty-subtitle
@@ -79,10 +79,7 @@
   white-space: nowrap;
 }
 
-.btn-acao-secundaria:hover {
-  background: rgba(47, 133, 90, 0.08);
-}
-
+.btn-acao-secundaria:hover { background: rgba(47, 133, 90, 0.08); }
 .btn-acao-secundaria:active { transform: scale(0.98); }
 
 .btn-acao-secundaria:focus-visible {
@@ -91,36 +88,78 @@
 }
 
 /* ================================================
-   SEÇÃO — CABEÇALHO DAS SUBSEÇÕES
+   CABEÇALHO DAS COLUNAS
    ================================================ */
-.section-header {
+.coluna-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   margin-bottom: 12px;
-}
-
-.mt-section {
-  margin-top: 36px;
+  flex-wrap: wrap;
 }
 
 .section-title-wrap {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .section-icon {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--cor-primaria);
 }
 
 .section-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--cor-texto-secundario);
 }
+
+/* ================================================
+   CHIP — FILTRO DE CLUSTER ATIVO (coluna atuações)
+   Aparece no cabeçalho da coluna direita quando um
+   cluster foi selecionado via botão "briefcase".
+   ================================================ */
+.filtro-ativo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(47, 133, 90, 0.10);
+  color: var(--cor-primaria-escura);
+  border: 1px solid rgba(47, 133, 90, 0.28);
+  border-radius: var(--radius-pill);
+  padding: 5px 10px 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Botão X dentro do chip de filtro ativo */
+.btn-limpar-chip {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 2px;
+  color: var(--cor-primaria-escura);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  opacity: 0.65;
+  transition: opacity 0.15s ease;
+  line-height: 1;
+}
+
+.btn-limpar-chip:hover { opacity: 1; }
 
 /* ================================================
    TABELA COMPARTILHADA (clusters e atuações)
@@ -143,7 +182,6 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--cor-texto-secundario);
-  text-align: flex;
   white-space: nowrap;
 }
 
@@ -152,13 +190,9 @@
   transition: background-color 0.15s ease;
 }
 
-.clusters-table tbody tr:last-child {
-  border-bottom: none;
-}
+.clusters-table tbody tr:last-child { border-bottom: none; }
 
-.cluster-row:hover {
-  background: var(--cor-surface-alt);
-}
+.cluster-row:hover { background: var(--cor-surface-alt); }
 
 .clusters-table td {
   padding: 14px 18px;
@@ -167,15 +201,12 @@
 }
 
 .col-centro {
-  /* display flex no td para centralizar elementos inline-flex (badge) sem esticar */
   display: table-cell;
   text-align: center;
   vertical-align: middle;
 }
 
-.col-acoes {
-  text-align: center;
-}
+.col-acoes { text-align: center; }
 
 /* ================================================
    COLUNA — NOME DO CLUSTER
@@ -186,7 +217,6 @@
   gap: 12px;
 }
 
-/* Avatar com a inicial do cluster */
 .cluster-avatar {
   width: 38px;
   height: 38px;
@@ -217,12 +247,10 @@
   background: var(--cor-surface-alt);
   border: 1px solid var(--cor-borda);
   border-radius: var(--radius-pill);
-  /* padding horizontal reduzido — o conteúdo é curto, não precisa de espaço extra */
   padding: 3px 9px;
   font-size: 12px;
   font-weight: 600;
   color: var(--cor-texto-secundario);
-  /* garante que o badge não estica para preencher a célula centralizada */
   width: fit-content;
 }
 
@@ -236,8 +264,6 @@
 
 /* ================================================
    TAG — CLUSTER (tabela atuações)
-   Sem ícone — o nome do cluster já é suficientemente
-   descritivo numa célula de tabela. Mais limpo.
    ================================================ */
 .cluster-tag {
   display: inline-flex;
@@ -252,10 +278,16 @@
 }
 
 /* ================================================
-   BOTÃO ADICIONAR ATUAÇÃO (coluna ações da tabela clusters)
-   Usa a paleta primária do projeto (verde) em vez de azul —
-   mantém a consistência visual com o restante da UI.
+   COLUNA AÇÕES — GRUPO DE BOTÕES
    ================================================ */
+.acoes-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Botão adicionar atuação (+) — dashed, verde sutil */
 .btn-adicionar {
   width: 32px;
   height: 32px;
@@ -283,14 +315,152 @@
   outline-offset: 2px;
 }
 
+/* Botão filtrar por cluster (briefcase) — sólido verde claro */
+.btn-filtrar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid rgba(47, 133, 90, 0.35);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  background: rgba(47, 133, 90, 0.07);
+  color: var(--cor-primaria);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-filtrar:hover {
+  background: rgba(47, 133, 90, 0.16);
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria-escura);
+}
+
+.btn-filtrar:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 2px;
+}
+
+/* Botão limpar filtro (X) — vermelho suave; substitui o briefcase quando filtro ativo */
+.btn-limpar-filtro {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid rgba(185, 28, 28, 0.35);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  background: rgba(254, 226, 226, 0.55);
+  color: var(--cor-erro);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  animation: fadeIn 0.2s ease;
+}
+
+.btn-limpar-filtro:hover {
+  background: rgba(254, 226, 226, 0.9);
+  border-color: var(--cor-erro);
+}
+
+.btn-limpar-filtro:focus-visible {
+  outline: 2px solid var(--cor-erro);
+  outline-offset: 2px;
+}
+
 /* ================================================
-   COLUNA AÇÕES
+   PAGINAÇÃO
    ================================================ */
-.acoes-group {
+.paginacao-bar {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
+  padding: 12px 18px;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+/* Botões prev/next com ícone */
+.btn-pag {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-surface);
+  color: var(--cor-texto-secundario);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-pag:hover:not([disabled]) {
+  background: rgba(47, 133, 90, 0.08);
+  border-color: rgba(47, 133, 90, 0.3);
+  color: var(--cor-primaria);
+}
+
+.btn-pag[disabled] {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Botões numéricos de página */
+.btn-pag-num {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-surface);
+  color: var(--cor-texto-secundario);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-pag-num:hover:not(.ativo) {
+  background: rgba(47, 133, 90, 0.08);
+  border-color: rgba(47, 133, 90, 0.3);
+  color: var(--cor-primaria);
+}
+
+/* Página ativa */
+.btn-pag-num.ativo {
+  background: var(--cor-primaria);
+  border-color: var(--cor-primaria);
+  color: #ffffff;
+  font-weight: 700;
+  cursor: default;
+}
+
+/* ================================================
+   RODAPÉ DA TABELA — TOTAL CADASTRADO
+   ================================================ */
+.table-footer {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  background: var(--cor-surface-alt);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cor-texto-secundario);
+}
+
+.table-footer-icon {
+  font-size: 13px;
+  color: var(--cor-primaria);
+  opacity: 0.7;
 }
 
 /* ================================================
@@ -308,15 +478,15 @@
   100% { background-position: -200% 0; }
 }
 
-.skeleton-nome   { height: 18px; width: 60%; }
-.skeleton-badge  { height: 22px; width: 80px; margin: 0 auto; border-radius: var(--radius-pill); }
+.skeleton-nome    { height: 18px; width: 60%; }
+.skeleton-badge   { height: 22px; width: 80px; margin: 0 auto; border-radius: var(--radius-pill); }
 .skeleton-cluster { height: 22px; width: 120px; border-radius: var(--radius-pill); }
-.skeleton-acoes  { height: 28px; width: 64px; margin: 0 auto; }
+.skeleton-acoes   { height: 28px; width: 80px; margin: 0 auto; }
 
 /* ================================================
-   RESPONSIVO — TABLET (768px)
+   RESPONSIVO — TABLET (1199px) — colunas empilhadas
    ================================================ */
-@media (max-width: 768px) {
+@media (max-width: 1199px) {
   .clusters-page {
     padding: 14px;
   }
@@ -338,5 +508,17 @@
   .btn-acao-secundaria {
     width: 100%;
     justify-content: center;
+  }
+
+  .paginacao-bar {
+    gap: 3px;
+    padding: 10px 12px;
+  }
+
+  .btn-pag-num,
+  .btn-pag {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
   }
 }

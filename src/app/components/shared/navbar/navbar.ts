@@ -50,18 +50,20 @@ export class Navbar {
     return usuario.nome.split(' ')[0];
   });
 
-  /** Role formatada para exibição (ex: 'ADM C+C') */
+  /** true quando o usuário logado é ADM_CC — controla itens exclusivos no menu */
+  isAdm = computed(() => this.authService.temPermissao('ADM_CC'));
+
+  /** Perfil formatado para exibição (ex: 'ADM C+C') */
   roleUsuario = computed(() => {
     const usuario = this.authService.usuario();
     if (!usuario) return '';
-    // O backend envia 'ADM_CC', 'DIRETOR', 'ASSOCIADO'
-    // Formatamos para ficar mais legível na UI
+    // O backend envia perfil: 'ADM_CC' | 'DIRETOR' | 'ASSOCIADO'
     const mapa: Record<string, string> = {
-      'ADM_CC': 'ADM C+C',
-      'DIRETOR': 'Diretor',
+      'ADM_CC':    'ADM C+C',
+      'DIRETOR':   'Diretor',
       'ASSOCIADO': 'Associado',
     };
-    return mapa[usuario.role] ?? usuario.role;
+    return mapa[usuario.perfil] ?? usuario.perfil;
   });
 
   // ── Métodos ───────────────────────────────────────────────

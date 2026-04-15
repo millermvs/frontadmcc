@@ -60,8 +60,11 @@ export class AuthService {
   /** Computed: true se existe usuário logado */
   isAutenticado = computed(() => this._usuario() !== null);
 
-  /** Computed: role do usuário ('ADM_CC', 'DIRETOR', etc.) */
+  /** Computed: role Spring Security ('ROLE_ADM', 'ROLE_ASSOCIADO') */
   role = computed(() => this._usuario()?.role ?? null);
+
+  /** Computed: perfil de negócio ('ADM_CC' | 'DIRETOR' | 'ASSOCIADO') — use este para UI */
+  perfil = computed(() => this._usuario()?.perfil ?? null);
 
   // ── Login ───────────────────────────────────────────────
   /**
@@ -93,6 +96,7 @@ export class AuthService {
             nome: response.nome,
             email: response.email,
             role: response.role,
+            perfil: response.perfil,
             idAssociado: response.idAssociado,
           };
           localStorage.setItem(this.STORAGE_KEY_USUARIO, JSON.stringify(usuario));
@@ -142,10 +146,10 @@ export class AuthService {
    * Aqui é só para a experiência do usuário — esconder botões
    * que ele não pode usar, em vez de deixar ele clicar e receber 403.
    */
-  temPermissao(...rolesPermitidas: string[]): boolean {
-    const roleAtual = this.role();
-    if (!roleAtual) return false;
-    return rolesPermitidas.includes(roleAtual);
+  temPermissao(...perfisPermitidos: string[]): boolean {
+    const perfilAtual = this.perfil();
+    if (!perfilAtual) return false;
+    return perfisPermitidos.includes(perfilAtual);
   }
 
   // ── Helpers privados ────────────────────────────────────
