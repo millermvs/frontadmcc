@@ -78,6 +78,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./components/pages/cargos-lideranca/cargos-lideranca').then((m) => m.CargosLideranca),
       },
+      {
+        path: 'associados',
+        loadComponent: () =>
+          import('./components/pages/associados/associados').then((m) => m.Associados),
+      },
     ],
   },
 

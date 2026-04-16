@@ -64,17 +64,17 @@ export const environment = {
 
     // ========== ENDEREÇOS RESIDENCIAIS ==========
     enderecosResidenciais: {
-      cadastrar: `${baseUrl}/associados-enderecos-residenciais`,
-      editar: (id: number) => `${baseUrl}/associados-enderecos-residenciais/${id}`,
-      porAssociado: (id: number) => `${baseUrl}/associados-enderecos-residenciais/associado/${id}`,
+      cadastrar: (idAssociado: number) => `${baseUrl}/enderecos-residenciais/associado/${idAssociado}`,
+      editar: (id: number) => `${baseUrl}/enderecos-residenciais/${id}`,
+      porAssociado: (id: number) => `${baseUrl}/enderecos-residenciais/associado/${id}`,
     },
 
     // ========== GRUPAMENTOS ==========
     grupamentos: {
-      listar: `${baseUrl}/grupamentos-estrategicos`,
-      cadastrar: `${baseUrl}/grupamentos-estrategicos`,
-      buscarPorId: (id: number) => `${baseUrl}/grupamentos-estrategicos/${id}`,
-      editar: (id: number) => `${baseUrl}/grupamentos-estrategicos/${id}`,
+      listar: `${baseUrl}/grupamentos`,
+      cadastrar: `${baseUrl}/grupamentos`,
+      buscarPorId: (id: number) => `${baseUrl}/grupamentos/${id}`,
+      editar: (id: number) => `${baseUrl}/grupamentos/${id}`,
     },
 
     // ========== ASSOCIADO-GRUPAMENTO ==========
@@ -88,10 +88,10 @@ export const environment = {
 
     // ========== VISIBILIDADE ==========
     visibilidade: {
-      cadastrar: `${baseUrl}/associados-visibilidade`,
-      buscarPorId: (id: number) => `${baseUrl}/associados-visibilidade/${id}`,
-      editar: (id: number) => `${baseUrl}/associados-visibilidade/${id}`,
-      porAssociado: (id: number) => `${baseUrl}/associados-visibilidade/associado/${id}`,
+      cadastrar: `${baseUrl}/visibilidades`,
+      buscarPorId: (id: number) => `${baseUrl}/visibilidades/${id}`,
+      editar: (id: number) => `${baseUrl}/visibilidades/${id}`,
+      porAssociado: (id: number) => `${baseUrl}/visibilidades/associado/${id}`,
     },
 
     // ========== EQUIPES ==========
@@ -180,18 +180,18 @@ export const environment = {
 
     // ========== ENDEREÇOS COMERCIAIS ==========
     enderecosComerciais: {
-      cadastrar: `${baseUrl}/empresas-endereco-comercial`,
-      buscarPorId: (id: number) => `${baseUrl}/empresas-endereco-comercial/${id}`,
-      editar: (id: number) => `${baseUrl}/empresas-endereco-comercial/${id}`,
-      porEmpresa: (id: number) => `${baseUrl}/empresas-endereco-comercial/empresa/${id}`,
+      cadastrar: `${baseUrl}/enderecos-comerciais`,
+      buscarPorId: (id: number) => `${baseUrl}/enderecos-comerciais/${id}`,
+      editar: (id: number) => `${baseUrl}/enderecos-comerciais/${id}`,
+      porEmpresa: (id: number) => `${baseUrl}/enderecos-comerciais/empresa/${id}`,
     },
 
     // ========== PERFIL ASSOCIADO ==========
     perfisAssociado: {
-      cadastrar: `${baseUrl}/perfis-associado`,
-      buscarPorId: (id: number) => `${baseUrl}/perfis-associado/${id}`,
-      editar: (id: number) => `${baseUrl}/perfis-associado/${id}`,
-      porAssociado: (id: number) => `${baseUrl}/perfis-associado/associado/${id}`,
+      cadastrar: `${baseUrl}/perfis`,
+      buscarPorId: (id: number) => `${baseUrl}/perfis/${id}`,
+      editar: (id: number) => `${baseUrl}/perfis/${id}`,
+      porAssociado: (id: number) => `${baseUrl}/perfis/associado/${id}`,
     },
 
     // ========== PRODUTOS (Stripe) ==========
