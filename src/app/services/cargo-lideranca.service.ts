@@ -43,7 +43,7 @@ export class CargoLiderancaService {
     size: number = 20
   ): Observable<PaginacaoResponseDto<CargoLiderancaResponseDto>> {
     const params = new HttpParams()
-      .set('number', page.toString())
+      .set('page', page.toString())
       .set('size', size.toString());
 
     return this.http.get<PaginacaoResponseDto<CargoLiderancaResponseDto>>(

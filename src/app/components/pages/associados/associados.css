@@ -1,1 +1,328 @@
-/* Estilos do componente Associados — implementados no Bloco 2 */
+/*
+ * associados.css — estilos EXCLUSIVOS da página de Associados.
+ *
+ * O que NÃO está aqui (já em styles.css):
+ *   - Skeleton de página: .page-header, .page-title, .breadcrumb-nav
+ *   - KPI cards: .kpi-card, .kpi-icon, .kpi-value, .kpi-label
+ *   - Filter bar: .filter-bar, .filter-search-input, .filter-select
+ *   - Table wrapper: .table-card, .table-wrapper
+ *   - Action buttons: .btn-acao, .btn-editar, .btn-inativar, .btn-reativar
+ *   - Status chips: .status-chip, .status-ativa, .status-pre-ativo, .status-inativa
+ *   - Empty state: .empty-state, .empty-icon, .empty-title, .empty-subtitle
+ *   - Modal save button: .btn-salvar-modal
+ *   - Utilitário: .text-muted-sm
+ */
+
+/* ================================================
+   PAGE BACKGROUND
+   Gradiente radial duplo — sutil diferenciação visual
+   em relação às outras páginas, sem quebrar o padrão.
+   ================================================ */
+.associados-page {
+  padding: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(47, 133, 90, 0.07), transparent 28%),
+    radial-gradient(circle at bottom left, rgba(72, 187, 120, 0.05), transparent 22%),
+    var(--cor-background);
+  min-height: 100vh;
+}
+
+/* ================================================
+   BOTÃO PRIMÁRIO — NOVO ASSOCIADO
+   Mesma anatomia do .btn-nova-equipe em equipes.css.
+   Desabilitado nos blocos iniciais — habilitado no Bloco 3.
+   ================================================ */
+.btn-novo-associado {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--cor-primaria);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  box-shadow: var(--sombra-botao);
+  white-space: nowrap;
+}
+
+.btn-novo-associado:hover:not(:disabled) {
+  background: var(--cor-primaria-escura);
+  box-shadow: 0 6px 20px rgba(47, 133, 90, 0.38);
+}
+
+.btn-novo-associado:active:not(:disabled) { transform: scale(0.98); }
+
+.btn-novo-associado:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 3px;
+}
+
+.btn-novo-associado:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ================================================
+   TABELA DE ASSOCIADOS
+   Implementada no Bloco 2.3. Estilos já presentes
+   aqui para não precisar voltar ao CSS naquele bloco.
+   ================================================ */
+.associados-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+/* THEAD */
+.associados-table thead tr {
+  background: var(--cor-surface-alt);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+.associados-table th {
+  padding: 13px 18px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--cor-texto-secundario);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.col-acoes { text-align: center; }
+
+/* TBODY */
+.associados-table tbody tr {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+  transition: background-color 0.15s ease;
+}
+
+.associados-table tbody tr:last-child { border-bottom: none; }
+
+.associado-row:hover { background: var(--cor-surface-alt); }
+
+/* Linha de associado inativo — opacidade reduzida */
+.row-inativo { opacity: 0.65; }
+
+.associados-table td {
+  padding: 14px 18px;
+  color: var(--cor-texto);
+  vertical-align: middle;
+}
+
+/* ================================================
+   COLUNA — NOME
+   Avatar com iniciais + nome completo + e-mail.
+   ================================================ */
+.cell-nome {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.associado-avatar {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cor-primaria), var(--cor-primaria-clara));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.associado-nome-texto {
+  display: block;
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+
+.associado-email {
+  display: block;
+  color: var(--cor-texto-secundario);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* ================================================
+   COLUNA — EQUIPE / CLUSTER
+   ================================================ */
+.cell-equipe { min-width: 160px; }
+
+.equipe-nome {
+  display: block;
+  font-weight: 500;
+  color: var(--cor-texto);
+  font-size: 13px;
+}
+
+.cluster-nome {
+  display: block;
+  color: var(--cor-texto-secundario);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* ================================================
+   COLUNA — AÇÕES
+   ================================================ */
+.cell-acoes { text-align: center; }
+
+.acoes-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* ================================================
+   PLACEHOLDER DE DESENVOLVIMENTO
+   Visível apenas enquanto a tabela não foi implementada.
+   Removido no Bloco 2.3 quando a tabela real for adicionada.
+   ================================================ */
+.bloco-pendente {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--cor-texto-secundario);
+}
+
+.bloco-pendente i {
+  font-size: 40px;
+  color: var(--cor-primaria-clara);
+  opacity: 0.6;
+}
+
+.bloco-pendente p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.bloco-pendente small {
+  font-size: 12px;
+  color: var(--cor-texto-placeholder);
+}
+
+/* ================================================
+   PAGINAÇÃO
+   Mesmo padrão visual do equipes.css — reutilizado
+   porque o sistema de design é compartilhado.
+   ================================================ */
+.paginacao-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid var(--cor-borda);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.paginacao-info {
+  font-size: 13px;
+  color: var(--cor-texto-secundario);
+}
+
+.paginacao-controles {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-pag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--cor-surface);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-sm);
+  padding: 7px 13px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cor-texto);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-pag:hover:not(:disabled) {
+  background: var(--cor-surface-alt);
+  border-color: rgba(15, 23, 42, 0.14);
+  color: var(--cor-primaria);
+}
+
+.btn-pag:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-pag-num {
+  min-width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cor-surface);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-sm);
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cor-texto-secundario);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-pag-num:hover:not(.ativo) {
+  background: var(--cor-surface-alt);
+  border-color: rgba(15, 23, 42, 0.14);
+  color: var(--cor-texto);
+}
+
+.btn-pag-num.ativo {
+  background: var(--cor-primaria);
+  border-color: var(--cor-primaria);
+  color: #ffffff;
+  font-weight: 700;
+  cursor: default;
+}
+
+/* ================================================
+   RESPONSIVO — TABLET (768px)
+   ================================================ */
+@media (max-width: 768px) {
+  .associados-page { padding: 14px; }
+}
+
+/* ================================================
+   RESPONSIVO — MOBILE (575px)
+   ================================================ */
+@media (max-width: 575px) {
+  .associados-page { padding: 12px; }
+
+  .btn-novo-associado {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .paginacao-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 16px;
+    gap: 10px;
+  }
+}

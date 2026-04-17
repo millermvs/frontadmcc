@@ -1,1 +1,66 @@
-<p>Associados — em construção</p>
+<div class="associados-page">
+
+  <!-- ======================================================================
+       PAGE HEADER
+       Bloco 2.1: estrutura base já presente.
+       Bloco 2.2: KPI cards serão adicionados abaixo.
+       Bloco 2.3: barra de filtros + tabela serão adicionados abaixo.
+       Bloco 2.4: paginação será adicionada ao final.
+       ====================================================================== -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <nav class="breadcrumb-nav" aria-label="breadcrumb">
+        <span class="bc-item">Painel</span>
+        <span class="bc-sep">›</span>
+        <span class="bc-item bc-active">Associados</span>
+      </nav>
+      <h1 class="page-title">Associados</h1>
+      <p class="page-subtitle">
+        @if (carregandoLista()) {
+          Carregando...
+        } @else {
+          {{ totalAssociados() }} associado{{ totalAssociados() !== 1 ? 's' : '' }} cadastrado{{ totalAssociados() !== 1 ? 's' : '' }}
+        }
+      </p>
+    </div>
+
+    <!-- Botão "Novo Associado" — habilitado no Bloco 3 (modal de cadastro) -->
+    <button class="btn-novo-associado" disabled title="Disponível no Bloco 3">
+      <i class="bi bi-person-plus-fill"></i>
+      Novo Associado
+    </button>
+  </div>
+
+  <!-- ======================================================================
+       KPI CARDS — Bloco 2.2
+       ====================================================================== -->
+  <!-- TODO Bloco 2.2: cards aqui -->
+
+  <!-- ======================================================================
+       FILTER BAR + TABLE — Bloco 2.3
+       ====================================================================== -->
+  <!-- TODO Bloco 2.3: filtros e tabela aqui -->
+
+  <!-- ======================================================================
+       PAGINAÇÃO — Bloco 2.4
+       ====================================================================== -->
+  <!-- TODO Bloco 2.4: paginação aqui -->
+
+  <!-- ======================================================================
+       PLACEHOLDER DE DESENVOLVIMENTO
+       Removido nos próximos blocos ao adicionar a tabela real.
+       ====================================================================== -->
+  @if (!carregandoLista()) {
+    <div class="bloco-pendente">
+      <i class="bi bi-layers"></i>
+      <p>Estrutura base pronta. KPI cards, tabela e paginação nos próximos blocos.</p>
+      <small>{{ totalAssociados() }} registros carregados do backend.</small>
+    </div>
+  } @else {
+    <div class="bloco-pendente">
+      <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+      <p>Carregando associados...</p>
+    </div>
+  }
+
+</div>

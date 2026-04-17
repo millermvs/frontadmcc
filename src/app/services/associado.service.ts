@@ -60,14 +60,14 @@ export class AssociadoService {
   /**
    * listarAssociados(page, size)
    * Lista associados com paginação.
-   * HTTP: GET /api/v1/associados?number=0&size=10
+   * HTTP: GET /api/v1/associados?page=0&size=10
    */
   listarAssociados(
     page: number = 0,
     size: number = 10
   ): Observable<PaginacaoResponseDto<AssociadoResponseDto>> {
     const params = new HttpParams()
-      .set('number', page.toString())
+      .set('page', page.toString())
       .set('size', size.toString());
 
     return this.http.get<PaginacaoResponseDto<AssociadoResponseDto>>(

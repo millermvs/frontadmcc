@@ -26,7 +26,7 @@ export class ClusterService {
    */
   listarClusters(page: number = 0, size: number = 5): Observable<PaginacaoCluster<ClusterResponseDto>> {
     const params = new HttpParams()
-      .set('number', page.toString())
+      .set('page', page.toString())
       .set('size', size.toString());
 
     return this.http.get<PaginacaoCluster<ClusterResponseDto>>(this.apiUrlClusters.listar, { params });
@@ -69,7 +69,7 @@ export class ClusterService {
     size: number = 10
   ): Observable<PaginacaoCluster<AtuacaoEspecificaResponseDto>> {
     const params = new HttpParams()
-      .set('number', page.toString())
+      .set('page', page.toString())
       .set('size', size.toString());
 
     return this.http.get<PaginacaoCluster<AtuacaoEspecificaResponseDto>>(
@@ -85,7 +85,7 @@ export class ClusterService {
    */
   listarAtuacoes(page: number = 0, size: number = 10): Observable<PaginacaoCluster<AtuacaoEspecificaResponseDto>> {
     const params = new HttpParams()
-      .set('number', page.toString())
+      .set('page', page.toString())
       .set('size', size.toString());
 
     return this.http.get<PaginacaoCluster<AtuacaoEspecificaResponseDto>>(this.apiUrlAtuacoes.listar, { params });
