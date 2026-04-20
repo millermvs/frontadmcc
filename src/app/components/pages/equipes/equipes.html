@@ -387,6 +387,7 @@
               id="nomeEquipe"
               formControlName="nomeEquipe"
               placeholder="Ex: C+C Zona Leste"
+              maxlength="24"
               [class.is-invalid]="!!errosValidacao()['nomeEquipe']"
             />
             @if (errosValidacao()['nomeEquipe']) {
@@ -930,6 +931,7 @@
               id="nomeEquipeEdicao"
               formControlName="nomeEquipe"
               placeholder="Ex: C+C Zona Leste"
+              maxlength="24"
               [class.is-invalid]="!!errosValidacao()['nomeEquipe']"
             />
             @if (errosValidacao()['nomeEquipe']) {

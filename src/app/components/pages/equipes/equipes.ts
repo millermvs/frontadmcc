@@ -322,7 +322,7 @@ export class Equipes implements OnInit {
     this.equipesService.cadastrarEquipe(equipeDto).subscribe({
       next: () => {
         this.btnFecharCadastro.nativeElement.click();
-        this.formCadastro.reset({ dataInicioFormacao: this.obterDataHoje() });
+        this.formCadastro.reset({ nomeEquipe: 'C+C ', dataInicioFormacao: this.obterDataHoje() });
         this.errosValidacao.set({});
         this.carregarEquipes(0); // novo item: volta à primeira página
         // TODO: toastService.sucesso('Equipe cadastrada com sucesso!');
