@@ -20,8 +20,14 @@
       </p>
     </div>
 
-    <!-- Botão "Novo Associado" — habilitado no Bloco 3 (modal de cadastro) -->
-    <button class="btn-novo-associado" disabled title="Disponível no Bloco 3">
+    <!-- Botão "Novo Associado" — habilitado no Bloco 3 -->
+    <button
+      class="btn-novo-associado"
+      type="button"
+      data-bs-toggle="modal"
+      data-bs-target="#modalNovoAssociado"
+      (click)="abrirModalCadastro()"
+    >
       <i class="bi bi-person-plus-fill"></i>
       Novo Associado
     </button>
@@ -346,4 +352,610 @@
 
   </div>
 
+</div>
+
+
+<!-- ==========================================================================
+     MODAL DE CADASTRO DE NOVO ASSOCIADO — Bloco 3
+     ─────────────────────────────────────────────
+     Bootstrap controla abertura (data-bs-toggle) e fechamento (data-bs-dismiss).
+     Para fechar após salvar com sucesso, o component.ts usa ViewChild
+     (#btnFecharModalNovoAssociado) — CLAUDE.md §2.2 proíbe getElementById.
+
+     Seções do formulário:
+       1. Dados Pessoais       (nome, cpf, e-mail, telefone, nascimento, ingresso)
+       2. Dados Administrativos (1ª anuidade, toggle aniversário)
+       3. Vínculos             (equipe, cluster→atuação, cargo, padrinho)
+       4. Endereço Residencial  (rua, número, complemento, bairro, cidade, UF, CEP)
+     ========================================================================== -->
+<div
+  class="modal fade"
+  id="modalNovoAssociado"
+  tabindex="-1"
+  aria-labelledby="modalNovoAssociadoTitulo"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-content">
+
+      <!-- ── CABEÇALHO ─────────────────────────────────────────────────── -->
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="modalNovoAssociadoTitulo">
+          <i class="bi bi-person-plus-fill me-2 text-success" aria-hidden="true"></i>
+          Novo Associado
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar modal"
+          (click)="resetarFormularioCadastro()"
+        ></button>
+      </div>
+
+      <!-- ── CORPO ─────────────────────────────────────────────────────── -->
+      <div class="modal-body">
+
+        <!-- SPINNER: carregamento inicial dos dados de suporte (forkJoin) -->
+        @if (carregandoDadosModal()) {
+          <div class="text-center py-5">
+            <div class="spinner-border text-success" role="status" aria-label="Carregando formulário"></div>
+            <p class="mt-3 mb-0 text-muted small">Carregando dados do formulário...</p>
+          </div>
+        } @else {
+
+          <form [formGroup]="formCadastro" novalidate autocomplete="off">
+
+            <!-- ============================================================
+                 SEÇÃO 1 — DADOS PESSOAIS
+                 ============================================================ -->
+            <h6 class="section-titulo">Dados Pessoais</h6>
+
+            <div class="row">
+
+              <div class="col-md-6 mb-3">
+                <label for="nomeCompleto" class="form-label">
+                  Nome Completo <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="nomeCompleto"
+                  formControlName="nomeCompleto"
+                  placeholder="Nome completo sem abreviações"
+                  [class.is-invalid]="!!errosValidacao()['nomeCompleto']"
+                />
+                @if (errosValidacao()['nomeCompleto']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['nomeCompleto'] }}</div>
+                }
+              </div>
+
+              <div class="col-md-3 mb-3">
+                <label for="cpf" class="form-label">
+                  CPF <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="cpf"
+                  formControlName="cpf"
+                  placeholder="Somente 11 dígitos"
+                  maxlength="11"
+                  inputmode="numeric"
+                  [class.is-invalid]="!!errosValidacao()['cpf'] || (formCadastro.get('cpf')?.errors?.['pattern'] && formCadastro.get('cpf')?.touched)"
+                />
+                @if (errosValidacao()['cpf']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['cpf'] }}</div>
+                } @else if (formCadastro.get('cpf')?.errors?.['pattern'] && formCadastro.get('cpf')?.touched) {
+                  <div class="invalid-feedback">Digite exatamente 11 dígitos (sem pontuação).</div>
+                }
+              </div>
+
+              <div class="col-md-3 mb-3">
+                <label for="dataNascimento" class="form-label">
+                  Data de Nascimento <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="date"
+                  class="form-control"
+                  id="dataNascimento"
+                  formControlName="dataNascimento"
+                  [class.is-invalid]="!!errosValidacao()['dataNascimento']"
+                />
+                @if (errosValidacao()['dataNascimento']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['dataNascimento'] }}</div>
+                }
+              </div>
+
+            </div>
+
+            <div class="row">
+
+              <div class="col-md-5 mb-3">
+                <label for="emailPrincipal" class="form-label">
+                  E-mail Principal <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="emailPrincipal"
+                  formControlName="emailPrincipal"
+                  placeholder="email@exemplo.com"
+                  [class.is-invalid]="!!errosValidacao()['emailPrincipal'] || (formCadastro.get('emailPrincipal')?.errors?.['email'] && formCadastro.get('emailPrincipal')?.touched)"
+                />
+                @if (errosValidacao()['emailPrincipal']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['emailPrincipal'] }}</div>
+                } @else if (formCadastro.get('emailPrincipal')?.errors?.['email'] && formCadastro.get('emailPrincipal')?.touched) {
+                  <div class="invalid-feedback">E-mail inválido.</div>
+                }
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="telefonePrincipal" class="form-label">
+                  Telefone / WhatsApp <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="telefonePrincipal"
+                  formControlName="telefonePrincipal"
+                  placeholder="10 ou 11 dígitos"
+                  maxlength="11"
+                  inputmode="tel"
+                  [class.is-invalid]="!!errosValidacao()['telefonePrincipal'] || (formCadastro.get('telefonePrincipal')?.errors?.['pattern'] && formCadastro.get('telefonePrincipal')?.touched)"
+                />
+                @if (errosValidacao()['telefonePrincipal']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['telefonePrincipal'] }}</div>
+                } @else if (formCadastro.get('telefonePrincipal')?.errors?.['pattern'] && formCadastro.get('telefonePrincipal')?.touched) {
+                  <div class="invalid-feedback">Digite 10 ou 11 dígitos (sem formatação).</div>
+                }
+              </div>
+
+              <div class="col-md-3 mb-3">
+                <label for="dataIngresso" class="form-label">
+                  Data de Ingresso <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="date"
+                  class="form-control"
+                  id="dataIngresso"
+                  formControlName="dataIngresso"
+                  [class.is-invalid]="!!errosValidacao()['dataIngresso'] || (formCadastro.get('dataIngresso')?.errors?.['dataFutura'] && formCadastro.get('dataIngresso')?.touched)"
+                />
+                @if (errosValidacao()['dataIngresso']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['dataIngresso'] }}</div>
+                } @else if (formCadastro.get('dataIngresso')?.errors?.['dataFutura'] && formCadastro.get('dataIngresso')?.touched) {
+                  <div class="invalid-feedback">A data de ingresso não pode ser futura.</div>
+                }
+              </div>
+
+            </div>
+
+            <!-- ============================================================
+                 SEÇÃO 2 — DADOS ADMINISTRATIVOS
+                 ============================================================ -->
+            <h6 class="section-titulo mt-4">Dados Administrativos</h6>
+
+            <div class="row align-items-end">
+
+              <div class="col-md-4 mb-3">
+                <label for="dataPagamentoPrimeiraAnuidade" class="form-label">
+                  Data da 1ª Anuidade
+                </label>
+                <input
+                  type="date"
+                  class="form-control"
+                  id="dataPagamentoPrimeiraAnuidade"
+                  formControlName="dataPagamentoPrimeiraAnuidade"
+                />
+                <small class="form-text text-muted">Opcional. Deixe em branco se ainda não pago.</small>
+              </div>
+
+              <div class="col-md-8 mb-3">
+                <div class="form-check form-switch mt-2">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="exibirAniversario"
+                    formControlName="exibirAniversario"
+                    role="switch"
+                  />
+                  <label class="form-check-label" for="exibirAniversario">
+                    Exibir aniversário para toda a rede (apenas Dia/Mês)
+                  </label>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- ============================================================
+                 SEÇÃO 3 — VÍNCULOS
+                 Ordem: Equipe | Padrinho | Cluster | Atuação | Cargo | DataCargo
+                 ============================================================ -->
+            <h6 class="section-titulo mt-4">Vínculos</h6>
+
+            <!-- Linha 1: Equipe + Padrinho -->
+            <div class="row">
+
+              <div class="col-md-6 mb-3">
+                <label for="idEquipe" class="form-label">
+                  Equipe <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <select
+                  class="form-select"
+                  id="idEquipe"
+                  formControlName="idEquipe"
+                  [class.is-invalid]="!!errosValidacao()['idEquipe']"
+                >
+                  <option [ngValue]="null">-- Selecione a equipe --</option>
+                  @for (equipe of equipes(); track equipe.idEquipe) {
+                    <option [value]="equipe.idEquipe">{{ equipe.nomeEquipe }}</option>
+                  }
+                </select>
+                @if (errosValidacao()['idEquipe']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['idEquipe'] }}</div>
+                }
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">
+                  Padrinho
+                  <span class="text-muted small fw-normal">(opcional)</span>
+                </label>
+
+                <!-- Autocomplete: o input é de busca (UI), não um formControl.
+                     O dado real é idPadrinhoSelecionado() — um signal separado.
+                     mousedown nas sugestões dispara antes do blur do input. -->
+                <div class="padrinho-autocomplete-wrap">
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Buscar por nome do associado..."
+                    [value]="nomePadrinhoInput()"
+                    [class.is-valid]="!!idPadrinhoSelecionado()"
+                    (input)="atualizarNomePadrinho($any($event.target).value)"
+                    (focus)="mostrarSugestoesPadrinho.set(sugestoesPadrinho().length > 0)"
+                    (blur)="fecharSugestoesPadrinho()"
+                    autocomplete="off"
+                    aria-label="Buscar padrinho pelo nome"
+                    aria-autocomplete="list"
+                  />
+
+                  @if (buscandoPadrinho()) {
+                    <div class="padrinho-loading" aria-hidden="true">
+                      <span class="spinner-border spinner-border-sm text-success"></span>
+                    </div>
+                  }
+
+                  @if (idPadrinhoSelecionado() && !buscandoPadrinho()) {
+                    <button
+                      type="button"
+                      class="btn-limpar-padrinho"
+                      (click)="limparPadrinho()"
+                      title="Remover padrinho selecionado"
+                      aria-label="Remover padrinho"
+                    >
+                      <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
+                    </button>
+                  }
+
+                  @if (mostrarSugestoesPadrinho() && sugestoesPadrinho().length > 0) {
+                    <ul class="padrinho-sugestoes" role="listbox" aria-label="Sugestões de padrinho">
+                      @for (assoc of sugestoesPadrinho(); track assoc.idAssociado) {
+                        <li
+                          class="padrinho-sugestao-item"
+                          role="option"
+                          (mousedown)="selecionarPadrinho(assoc)"
+                        >
+                          <div class="padrinho-avatar" aria-hidden="true">{{ iniciais(assoc.nomeCompleto) }}</div>
+                          <div>
+                            <span class="padrinho-nome">{{ assoc.nomeCompleto }}</span>
+                            <small class="padrinho-equipe">{{ assoc.nomeEquipe }}</small>
+                          </div>
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+
+                @if (idPadrinhoSelecionado()) {
+                  <small class="text-success mt-1 d-block">
+                    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                    Padrinho selecionado.
+                  </small>
+                } @else {
+                  <small class="form-text text-muted">Digite pelo menos 2 letras para buscar.</small>
+                }
+              </div>
+
+            </div>
+
+            <!-- Linha 2: Cluster + Atuação + Cargo -->
+            <div class="row">
+
+              <div class="col-md-4 mb-3">
+                <label for="idCluster" class="form-label">
+                  Cluster <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <select
+                  class="form-select"
+                  id="idCluster"
+                  formControlName="idCluster"
+                  [class.is-invalid]="!!errosValidacao()['idCluster']"
+                >
+                  <option [ngValue]="null">-- Selecione o cluster --</option>
+                  @for (cluster of clusters(); track cluster.idCluster) {
+                    <option [value]="cluster.idCluster">{{ cluster.nome }}</option>
+                  }
+                </select>
+                @if (errosValidacao()['idCluster']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['idCluster'] }}</div>
+                }
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="idAtuacaoEspecifica" class="form-label">
+                  Atuação Específica <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <!-- Desabilitado automaticamente pelo Angular quando o FormControl está disabled
+                     (observarCluster() chama disable()/enable() conforme o cluster selecionado) -->
+                <select
+                  class="form-select"
+                  id="idAtuacaoEspecifica"
+                  formControlName="idAtuacaoEspecifica"
+                  [class.is-invalid]="!!errosValidacao()['idAtuacaoEspecifica']"
+                >
+                  <option [ngValue]="null">
+                    {{ formCadastro.get('idCluster')?.value
+                        ? '-- Selecione a atuação --'
+                        : '-- Selecione um cluster primeiro --' }}
+                  </option>
+                  @for (atuacao of atuacoes(); track atuacao.id) {
+                    <option [value]="atuacao.id">{{ atuacao.nome }}</option>
+                  }
+                </select>
+                @if (errosValidacao()['idAtuacaoEspecifica']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['idAtuacaoEspecifica'] }}</div>
+                }
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="idCargoLideranca" class="form-label">
+                  Cargo de Liderança <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <select
+                  class="form-select"
+                  id="idCargoLideranca"
+                  formControlName="idCargoLideranca"
+                  [class.is-invalid]="!!errosValidacao()['idCargoLideranca']"
+                >
+                  <option [ngValue]="null">-- Selecione o cargo --</option>
+                  @for (cargo of cargos(); track cargo.idCargoLideranca) {
+                    <option [value]="cargo.idCargoLideranca">{{ cargo.nomeCargo }}</option>
+                  }
+                </select>
+                @if (errosValidacao()['idCargoLideranca']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['idCargoLideranca'] }}</div>
+                }
+              </div>
+
+            </div>
+
+            <!-- Linha 3: Data de início do cargo -->
+            <div class="row">
+
+              <div class="col-md-4 mb-3">
+                <label for="dataInicioCargo" class="form-label">
+                  Data de Início do Cargo <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="date"
+                  class="form-control"
+                  id="dataInicioCargo"
+                  formControlName="dataInicioCargo"
+                  [class.is-invalid]="!!errosValidacao()['dataInicioCargo'] || (formCadastro.get('dataInicioCargo')?.errors?.['dataFutura'] && formCadastro.get('dataInicioCargo')?.touched)"
+                />
+                @if (errosValidacao()['dataInicioCargo']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['dataInicioCargo'] }}</div>
+                } @else if (formCadastro.get('dataInicioCargo')?.errors?.['dataFutura'] && formCadastro.get('dataInicioCargo')?.touched) {
+                  <div class="invalid-feedback">A data de início do cargo não pode ser futura.</div>
+                }
+              </div>
+
+            </div>
+
+            <!-- ============================================================
+                 SEÇÃO 4 — ENDEREÇO RESIDENCIAL
+                 ============================================================ -->
+            <h6 class="section-titulo mt-4">Endereço Residencial</h6>
+
+            <!-- Linha 1: Rua + Número -->
+            <div class="row">
+
+              <div class="col-md-8 mb-3">
+                <label for="rua" class="form-label">
+                  Rua / Logradouro <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="rua"
+                  formControlName="rua"
+                  placeholder="Ex: Rua das Flores"
+                  [class.is-invalid]="!!errosValidacao()['rua']"
+                />
+                @if (errosValidacao()['rua']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['rua'] }}</div>
+                }
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="numero" class="form-label">
+                  Número <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="numero"
+                  formControlName="numero"
+                  placeholder="Ex: 123"
+                  [class.is-invalid]="!!errosValidacao()['numero']"
+                />
+                @if (errosValidacao()['numero']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['numero'] }}</div>
+                }
+              </div>
+
+            </div>
+
+            <!-- Linha 2: Complemento + Bairro + CEP -->
+            <div class="row">
+
+              <div class="col-md-4 mb-3">
+                <label for="complemento" class="form-label">Complemento</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="complemento"
+                  formControlName="complemento"
+                  placeholder="Apto, Bloco... (opcional)"
+                />
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="bairro" class="form-label">
+                  Bairro <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="bairro"
+                  formControlName="bairro"
+                  placeholder="Ex: Centro"
+                  [class.is-invalid]="!!errosValidacao()['bairro']"
+                />
+                @if (errosValidacao()['bairro']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['bairro'] }}</div>
+                }
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="cep" class="form-label">
+                  CEP <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="cep"
+                  formControlName="cep"
+                  placeholder="Somente 8 dígitos"
+                  maxlength="8"
+                  inputmode="numeric"
+                  [class.is-invalid]="!!errosValidacao()['cep'] || (formCadastro.get('cep')?.errors?.['pattern'] && formCadastro.get('cep')?.touched)"
+                />
+                @if (errosValidacao()['cep']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['cep'] }}</div>
+                } @else if (formCadastro.get('cep')?.errors?.['pattern'] && formCadastro.get('cep')?.touched) {
+                  <div class="invalid-feedback">Digite exatamente 8 dígitos (sem hífen).</div>
+                }
+              </div>
+
+            </div>
+
+            <!-- Linha 3: Cidade + UF -->
+            <div class="row">
+
+              <div class="col-md-7 mb-3">
+                <label for="cidade" class="form-label">
+                  Cidade <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="cidade"
+                  formControlName="cidade"
+                  placeholder="Ex: São Paulo"
+                  [class.is-invalid]="!!errosValidacao()['cidade']"
+                />
+                @if (errosValidacao()['cidade']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['cidade'] }}</div>
+                }
+              </div>
+
+              <div class="col-md-2 mb-3">
+                <label for="estado" class="form-label">
+                  UF <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="estado"
+                  formControlName="estado"
+                  placeholder="SP"
+                  maxlength="2"
+                  style="text-transform: uppercase"
+                  [class.is-invalid]="!!errosValidacao()['estado']"
+                />
+                @if (errosValidacao()['estado']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['estado'] }}</div>
+                }
+              </div>
+
+            </div>
+
+          </form>
+
+        }
+
+        <!-- ALERTA DE ERRO GERAL (exibido abaixo do form) -->
+        @if (erroModal()) {
+          <div class="alert alert-danger d-flex align-items-center gap-2 mt-3 mb-0" role="alert">
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+            <span>{{ erroModal() }}</span>
+          </div>
+        }
+
+      </div>
+
+      <!-- ── RODAPÉ ─────────────────────────────────────────────────────── -->
+      <div class="modal-footer">
+
+        <!-- Botão OCULTO: acionado via ViewChild após sucesso no submit.
+             O Bootstrap fecha o modal ao disparar data-bs-dismiss. -->
+        <button
+          #btnFecharModalNovoAssociado
+          type="button"
+          class="d-none"
+          data-bs-dismiss="modal"
+          aria-hidden="true"
+        ></button>
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal"
+          (click)="resetarFormularioCadastro()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="btn-salvar-modal"
+          [disabled]="formCadastro.invalid || carregandoModal() || carregandoDadosModal()"
+          (click)="salvarNovoAssociado()"
+        >
+          @if (carregandoModal()) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Salvando...
+          } @else {
+            <i class="bi bi-person-check-fill me-2" aria-hidden="true"></i>
+            Cadastrar Associado
+          }
+        </button>
+
+      </div>
+
+    </div>
+  </div>
 </div>

@@ -148,7 +148,7 @@ export interface AssociadoRequestDto {
   statusAssociado: StatusAssociado; // Sempre 'PREATIVO' no cadastro
 
   // ── Vínculos ──────────────────────────────────────────────
-  idEquipe: number;                 // equipe atual
+  idEquipeAtual: number;                 // equipe atual
   idEquipeOrigem: number;           // no cadastro = mesmo que idEquipe
   idCluster: number;
   idAtuacaoEspecifica: number;
