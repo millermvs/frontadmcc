@@ -52,12 +52,28 @@ Desktop.ini
 .env.*
 *.env
 *.local
+.npmrc
+
+# Certificados e chaves privadas
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
 
 # Logs
 logs/
 *.log
 karma-debug.log
+chrome-debug.log
 
 # Prettier cache
 .prettiercache
 .prettier-cache
+
+# Backups e arquivos temporários de editor
+*.bak
+*.swp
+*.swo
+*~

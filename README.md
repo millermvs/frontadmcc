@@ -1,59 +1,144 @@
-# Admccfront
+# ADM C+C — Painel Administrativo
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.8.
+Painel de back-office da rede **C+C** para gestão completa de associados, equipes, módulos operacionais e indicadores de performance.
 
-## Development server
+---
 
-To start a local development server, run:
+## Sobre o Projeto
+
+A rede C+C é uma organização de networking empresarial estruturada em equipes, onde associados trocam conexões estratégicas, indicações de negócios e realizam reuniões bilaterais periódicas.
+
+Este repositório contém o **Painel Administrativo** (ADM C+C) — a interface web exclusiva para a equipe administrativa, responsável por:
+
+- Cadastro e gestão completa de associados
+- Configuração de equipes e lideranças
+- Controle de status, anuidades e renovações
+- Acompanhamento dos módulos operacionais semanais
+- Visualização de indicadores e relatórios de performance
+
+> O ecossistema completo também inclui uma **API REST** (back-end) e um **Aplicativo Mobile** para os associados — ambos em repositórios separados.
+
+---
+
+## Stack
+
+| Tecnologia | Versão |
+|---|---|
+| Angular | 20.3 |
+| TypeScript | 5.9 |
+| Bootstrap | 5.3 |
+| Bootstrap Icons | 1.13 |
+| RxJS | 7.8 |
+| Node.js | 22+ recomendado |
+
+---
+
+## Pré-requisitos
+
+- [Node.js](https://nodejs.org/) 22 ou superior
+- [Angular CLI](https://angular.dev/tools/cli) 20
 
 ```bash
+npm install -g @angular/cli
+```
+
+---
+
+## Instalação
+
+```bash
+# 1. Clone o repositório
+git clone <url-do-repositorio>
+cd "FRONT - Gestão Associados"
+
+# 2. Instale as dependências
+npm install
+```
+
+---
+
+## Rodando o projeto
+
+```bash
+# Servidor de desenvolvimento (http://localhost:4200)
 ng serve
+
+# Com reload automático ao salvar
+ng build --watch --configuration development
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+---
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
+## Build para produção
 
 ```bash
 ng build
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Os artefatos são gerados na pasta `dist/`. O build de produção já aplica otimizações de performance e tree-shaking.
 
-## Running unit tests
+---
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+## Testes
 
 ```bash
+# Testes unitários (Karma + Jasmine)
 ng test
 ```
 
-## Running end-to-end tests
+---
 
-For end-to-end (e2e) testing, run:
+## Módulos do Sistema
 
-```bash
-ng e2e
+O painel é estruturado em fases de entrega, alinhadas ao PRD do produto:
+
+| Fase | Módulo | Descrição |
+|---|---|---|
+| 1 | Cadastro Inicial | Dados pessoais, empresa, status e classificação do associado |
+| 2 | Seguro | Cadastro de seguro de vida/funeral e beneficiários |
+| 3 | Perfil C+C | Perfil público do associado na rede |
+| 4 | Operacional | Reuniões, Conexões, Parcerias, Visitantes (ciclo semanal) |
+| 5 | Indicadores | Painel de performance, rankings e relatórios |
+
+### Perfis de acesso
+
+| Perfil | Nível | Permissões |
+|---|---|---|
+| ADM C+C | 1 | Acesso total — cria, edita e valida qualquer dado |
+| Diretores | 2 | Acesso gerencial — valida presenças e designa lideranças |
+| Associado | 3 | Acesso via APP mobile — perfil e módulos operacionais |
+
+---
+
+## Estrutura de Pastas
+
+```
+src/
+├── app/
+│   ├── core/           # Serviços globais, guards, interceptors
+│   ├── shared/         # Componentes, pipes e diretivas reutilizáveis
+│   ├── features/       # Módulos funcionais (associados, equipes, etc.)
+│   └── app.routes.ts   # Roteamento principal
+├── assets/             # Imagens e recursos estáticos
+└── styles/             # Estilos globais
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+---
 
-## Additional Resources
+## Padrões de Desenvolvimento
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- Arquitetura baseada em **componentes standalone** (Angular 17+)
+- Formulários reativos com `ReactiveFormsModule`
+- Comunicação com a API via `HttpClient` com interceptors de autenticação
+- Estilo com **Bootstrap 5** + **Bootstrap Icons**
+- Formatação de código com **Prettier** (printWidth: 100, singleQuote)
+- Commits seguindo **Conventional Commits**
+
+---
+
+## Links Úteis
+
+- [Angular Documentation](https://angular.dev)
+- [Angular CLI Reference](https://angular.dev/tools/cli)
+- [Bootstrap 5](https://getbootstrap.com/docs/5.3)
+- [Bootstrap Icons](https://icons.getbootstrap.com)
