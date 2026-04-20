@@ -34,6 +34,7 @@ import {
   AssociadoStatusHistoricoResponseDto,
   EnderecoResidencialResponseDto,
   EnderecoResidencialRequestDto,
+  StatusAssociado,
 } from '../models/associado.model';
 import { PaginacaoResponseDto } from '../models/paginacao.model';
 
@@ -58,22 +59,30 @@ export class AssociadoService {
   // =========================================================================
 
   /**
-   * listarAssociados(page, size)
-   * Lista associados com paginação.
-   * HTTP: GET /api/v1/associados?page=0&size=10
+   * listarAssociados(page, size, filtros?)
+   * Lista associados com paginação e filtros opcionais enviados ao backend.
+   * HTTP: GET /api/v1/associados?page=0&size=20&nome=joao&status=ATIVO&idEquipe=3
+   *
+   * Filtros são opcionais — parâmetros ausentes não são enviados na URL,
+   * fazendo o backend retornar todos os registros para aquela dimensão.
    */
   listarAssociados(
     page: number = 0,
-    size: number = 10
+    size: number = 20,
+    filtros?: { nome?: string; status?: StatusAssociado; idEquipe?: number }
   ): Observable<PaginacaoResponseDto<AssociadoResponseDto>> {
-    const params = new HttpParams()
+    let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
+
+    if (filtros?.nome?.trim())     params = params.set('nome',     filtros.nome.trim());
+    if (filtros?.status)          params = params.set('status',   filtros.status);
+    if (filtros?.idEquipe != null) params = params.set('idEquipe', filtros.idEquipe.toString());
 
     return this.http.get<PaginacaoResponseDto<AssociadoResponseDto>>(
       this.apiAssociados.listar,
       { params }
-    );
+    );    
   }
 
   /**

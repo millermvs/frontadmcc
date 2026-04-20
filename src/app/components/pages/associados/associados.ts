@@ -1,13 +1,18 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { Subject } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 import {
   AssociadoResponseDto,
   LABELS_STATUS_ASSOCIADO,
   STATUS_ASSOCIADO_OPCOES,
   StatusAssociado,
 } from '../../../models/associado.model';
+import { EquipeResponseDto } from '../../../models/equipe.model';
 import { AssociadoService } from '../../../services/associado.service';
+import { EquipeService } from '../../../services/equipe.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 /**
  * ASSOCIADOS PAGE COMPONENT
@@ -40,18 +45,30 @@ export class Associados implements OnInit {
   // =========================================================================
 
   private associadoService = inject(AssociadoService);
+  private equipeService    = inject(EquipeService);
   private destroyRef       = inject(DestroyRef);   // reservado para subscriptions futuras (modais)
 
   // =========================================================================
   // SIGNALS — LISTAGEM
   // =========================================================================
 
-  termoBusca          = signal('');
-  filtroStatus        = signal<string>('Todos');
-  associados          = signal<AssociadoResponseDto[]>([]);
-  associadosFiltrados = signal<AssociadoResponseDto[]>([]);
-  totalAssociados     = signal(0);
-  carregandoLista     = signal(false);
+  termoBusca      = signal('');
+  filtroStatus    = signal<StatusAssociado | 'Todos'>('Todos');
+  filtroEquipeId  = signal<number | null>(null);
+  associados      = signal<AssociadoResponseDto[]>([]);
+  equipes         = signal<EquipeResponseDto[]>([]);
+  totalAssociados = signal(0);
+  carregandoLista = signal(false);
+
+  /**
+   * buscaSubject
+   *
+   * Intermediário RxJS para debounce da busca por texto.
+   * Cada tecla emite para o subject; o pipe debounceTime(400) só
+   * dispara a chamada ao backend 400ms depois da última tecla.
+   * Evita uma requisição por keystroke em campos de texto livre.
+   */
+  private readonly buscaSubject = new Subject<string>();
 
   // =========================================================================
   // SIGNALS — PAGINAÇÃO
@@ -81,7 +98,7 @@ export class Associados implements OnInit {
   // =========================================================================
   // COMPUTED — CONTADORES (KPI cards)
   //
-  // computed() é o mecanismo correto aqui: os valores derivam diretamente
+  // computed(): os valores derivam diretamente
   // do signal associados(), sem efeitos colaterais. Recalculam automaticamente
   // quando a lista muda (nova página carregada ou filtro aplicado).
   // =========================================================================
@@ -97,21 +114,40 @@ export class Associados implements OnInit {
   // =========================================================================
 
   ngOnInit(): void {
+    // Conecta o debounce de busca antes de carregar os dados
+    this.buscaSubject.pipe(
+      debounceTime(1000),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => this.carregarAssociados(0));
+
     this.carregarAssociados();
+    this.carregarEquipes();
   }
 
   // =========================================================================
   // MÉTODOS PÚBLICOS — FILTROS
   // =========================================================================
 
+  /**
+   * atualizarBusca(valor)
+   *
+   * Atualiza o signal para reflexo imediato no input (UX),
+   * mas delega a chamada ao backend para o buscaSubject com debounce.
+   */
   atualizarBusca(valor: string): void {
     this.termoBusca.set(valor);
-    this.aplicarFiltros();
+    this.buscaSubject.next(valor);
   }
 
-  atualizarFiltroStatus(valor: string): void {
+  /** Selects disparam imediatamente — sem debounce (ação discreta, não contínua). */
+  atualizarFiltroStatus(valor: StatusAssociado | 'Todos'): void {
     this.filtroStatus.set(valor);
-    this.aplicarFiltros();
+    this.carregarAssociados(0);
+  }
+
+  atualizarFiltroEquipe(idEquipe: string): void {
+    this.filtroEquipeId.set(idEquipe === 'Todos' ? null : Number(idEquipe));
+    this.carregarAssociados(0);
   }
 
   // =========================================================================
@@ -159,6 +195,30 @@ export class Associados implements OnInit {
   }
 
   /**
+   * mascararCpf(cpf)
+   *
+   * Exibe CPF parcialmente mascarado: primeiros 3 dígitos + *** + último trecho.
+   * Ex: "12345678901" → "123.***.***-01"
+   * Preserva legibilidade suficiente para identificação sem expor o dado completo.
+   */
+  mascararCpf(cpf: string): string {
+    if (!cpf || cpf.length !== 11) return cpf ?? '—';
+    return `${cpf.slice(0, 3)}.***.***-${cpf.slice(9)}`;
+  }
+
+  /**
+   * iniciais(nome)
+   *
+   * Extrai as iniciais do primeiro e último nome para o avatar.
+   * Ex: "João Carlos Silva" → "JS"
+   */
+  iniciais(nome: string): string {
+    const partes = nome.trim().split(/\s+/);
+    if (partes.length === 1) return partes[0].charAt(0).toUpperCase();
+    return (partes[0].charAt(0) + partes[partes.length - 1].charAt(0)).toUpperCase();
+  }
+
+  /**
    * classeStatus(status)
    *
    * Mapeia o enum de status para as classes CSS correspondentes do styles.css global.
@@ -180,18 +240,22 @@ export class Associados implements OnInit {
   /**
    * carregarAssociados(page)
    *
-   * Chama o service e atualiza os signals de listagem e paginação.
-   * Após receber os dados, dispara aplicarFiltros() para que a tabela
-   * exiba apenas o subconjunto correspondente aos filtros ativos.
+   * Chama o service com os filtros ativos no momento da chamada.
+   * É o único ponto que acessa o backend para listagem — filtros,
+   * paginação e recargas de modal sempre passam por aqui.
    */
   private carregarAssociados(page: number = 0): void {
     this.carregandoLista.set(true);
     this.paginaAtual.set(page);
 
-    this.associadoService.listarAssociados(page, this.tamanhoPagina()).subscribe({
+    const status = this.filtroStatus();
+    this.associadoService.listarAssociados(page, this.tamanhoPagina(), {
+      nome:     this.termoBusca(),
+      status:   status !== 'Todos' ? status : undefined,
+      idEquipe: this.filtroEquipeId() ?? undefined,
+    }).subscribe({
       next: (response) => {
         this.associados.set(response.items);
-        this.aplicarFiltros();
         this.totalAssociados.set(response.totalItems);
         this.totalPaginas.set(response.totalPages);
         this.temProxima.set(response.hasNext);
@@ -208,29 +272,17 @@ export class Associados implements OnInit {
   }
 
   /**
-   * aplicarFiltros()
+   * carregarEquipes()
    *
-   * Recalcula associadosFiltrados a partir do estado atual de associados e filtros.
-   * A busca aceita nome completo ou CPF (insensível a maiúsculas/minúsculas).
-   *
-   * Por que signal explícito em vez de computed()?
-   * Em contextos de paginação, o computed pode não reagir corretamente ao ciclo
-   * de atualização de signals dentro de um subscribe. O signal explícito garante
-   * que o template recebe o novo array no momento certo — mesmo padrão do equipes.ts.
+   * Carrega lista de equipes para popular o select de filtro.
+   * Usa size=100 para trazer todas as equipes em uma única requisição.
+   * Não exibe erro para o usuário — o select simplesmente fica sem as opções.
    */
-  private aplicarFiltros(): void {
-    const termo  = this.termoBusca().toLowerCase().trim();
-    const status = this.filtroStatus();
-
-    this.associadosFiltrados.set(
-      this.associados().filter(a => {
-        const baterBusca  = !termo
-          || a.nomeCompleto.toLowerCase().includes(termo)
-          || a.cpf.includes(termo);
-        const baterStatus = status === 'Todos' || a.statusAssociado === status;
-        return baterBusca && baterStatus;
-      })
-    );
+  private carregarEquipes(): void {
+    this.equipeService.listarEquipes(0, 100).subscribe({
+      next: (response) => this.equipes.set(response.items),
+      error: (err) => console.error('Erro ao carregar equipes para filtro:', err),
+    });
   }
 
   /**

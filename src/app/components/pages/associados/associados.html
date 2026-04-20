@@ -2,10 +2,6 @@
 
   <!-- ======================================================================
        PAGE HEADER
-       Bloco 2.1: estrutura base já presente.
-       Bloco 2.2: KPI cards serão adicionados abaixo.
-       Bloco 2.3: barra de filtros + tabela serão adicionados abaixo.
-       Bloco 2.4: paginação será adicionada ao final.
        ====================================================================== -->
   <div class="page-header">
     <div class="page-header-left">
@@ -33,34 +29,321 @@
 
   <!-- ======================================================================
        KPI CARDS — Bloco 2.2
+       Contadores derivados da página atual via computed().
+       Nota: refletirão o total real quando o backend expuser endpoint de
+       contagem por status (/associados/contagem) — Bloco 5 ou posterior.
        ====================================================================== -->
-  <!-- TODO Bloco 2.2: cards aqui -->
+  <div class="row g-3 mt-0 mb-1">
 
-  <!-- ======================================================================
-       FILTER BAR + TABLE — Bloco 2.3
-       ====================================================================== -->
-  <!-- TODO Bloco 2.3: filtros e tabela aqui -->
-
-  <!-- ======================================================================
-       PAGINAÇÃO — Bloco 2.4
-       ====================================================================== -->
-  <!-- TODO Bloco 2.4: paginação aqui -->
-
-  <!-- ======================================================================
-       PLACEHOLDER DE DESENVOLVIMENTO
-       Removido nos próximos blocos ao adicionar a tabela real.
-       ====================================================================== -->
-  @if (!carregandoLista()) {
-    <div class="bloco-pendente">
-      <i class="bi bi-layers"></i>
-      <p>Estrutura base pronta. KPI cards, tabela e paginação nos próximos blocos.</p>
-      <small>{{ totalAssociados() }} registros carregados do backend.</small>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-all">
+          <i class="bi bi-people-fill" aria-hidden="true"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Total cadastrados</span>
+          <strong class="kpi-value">{{ totalAssociados() }}</strong>
+        </div>
+      </div>
     </div>
-  } @else {
-    <div class="bloco-pendente">
-      <div class="spinner-border spinner-border-sm text-success" role="status"></div>
-      <p>Carregando associados...</p>
+
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-ativo">
+          <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Ativos</span>
+          <strong class="kpi-value">{{ totalAtivos() }}</strong>
+        </div>
+      </div>
     </div>
-  }
+
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-pendente">
+          <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Pré-ativos</span>
+          <strong class="kpi-value">{{ totalPreAtivos() }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-inativo">
+          <i class="bi bi-slash-circle-fill" aria-hidden="true"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Inativos</span>
+          <strong class="kpi-value">{{ totalInativos() }}</strong>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ======================================================================
+       FILTER BAR — Bloco 2.3
+       ====================================================================== -->
+  <div class="filter-bar">
+
+    <!-- Busca por nome ou CPF -->
+    <div class="filter-search-wrap">
+      <i class="bi bi-search filter-search-icon" aria-hidden="true"></i>
+      <input
+        class="filter-search-input"
+        type="text"
+        placeholder="Buscar por nome ou CPF…"
+        [value]="termoBusca()"
+        (input)="atualizarBusca($any($event.target).value)"
+        aria-label="Buscar associado por nome ou CPF"
+      />
+    </div>
+
+    <div class="filter-selects">
+
+      <!-- Filtro de status -->
+      <div class="filter-select-wrap">
+        <i class="bi bi-funnel-fill filter-select-icon" aria-hidden="true"></i>
+        <select
+          class="filter-select"
+          [value]="filtroStatus()"
+          (change)="atualizarFiltroStatus($any($event.target).value)"
+          aria-label="Filtrar por status"
+        >
+          <option value="Todos">Todos os status</option>
+          @for (opcao of STATUS_OPCOES; track opcao.valor) {
+            <option [value]="opcao.valor">{{ opcao.label }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Filtro de equipe -->
+      <div class="filter-select-wrap">
+        <i class="bi bi-diagram-3-fill filter-select-icon" aria-hidden="true"></i>
+        <select
+          class="filter-select"
+          [value]="filtroEquipeId() ?? 'Todos'"
+          (change)="atualizarFiltroEquipe($any($event.target).value)"
+          aria-label="Filtrar por equipe"
+        >
+          <option value="Todos">Todas as equipes</option>
+          @for (equipe of equipes(); track equipe.idEquipe) {
+            <option [value]="equipe.idEquipe">{{ equipe.nomeEquipe }}</option>
+          }
+        </select>
+      </div>
+
+    </div>
+
+    <span class="filter-count" aria-live="polite">
+      {{ totalAssociados() }}
+      {{ totalAssociados() === 1 ? 'associado' : 'associados' }}
+    </span>
+
+  </div>
+
+  <!-- ======================================================================
+       TABELA — Bloco 2.3
+       Colunas: Nome | CPF | Equipe | Status | Ingresso | Vencimento | Ações
+       ====================================================================== -->
+  <div class="table-card">
+    <div class="table-wrapper">
+      <table class="associados-table" aria-label="Lista de associados">
+        <thead>
+          <tr>
+            <th scope="col">Nome</th>
+            <th scope="col">CPF</th>
+            <th scope="col" class="cell-equipe">Equipe</th>
+            <th scope="col">Status</th>
+            <th scope="col">Ingresso</th>
+            <th scope="col">Vencimento</th>
+            <th scope="col" class="col-acoes">Ações</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @if (carregandoLista()) {
+            <!-- Skeleton de carregamento — 5 linhas placeholder -->
+            @for (i of [1,2,3,4,5]; track i) {
+              <tr>
+                <td colspan="7">
+                  <div class="placeholder-glow">
+                    <span class="placeholder col-12" style="height: 18px; border-radius: 4px;"></span>
+                  </div>
+                </td>
+              </tr>
+            }
+          } @else {
+            @for (associado of associados(); track associado.idAssociado) {
+              <tr
+                class="associado-row"
+                [class.row-inativo]="associado.statusAssociado.startsWith('INATIVO')"
+              >
+
+                <!-- NOME + EMAIL -->
+                <td>
+                  <div class="cell-nome">
+                    <div class="associado-avatar" aria-hidden="true">
+                      {{ iniciais(associado.nomeCompleto) }}
+                    </div>
+                    <div>
+                      <span class="associado-nome-texto">{{ associado.nomeCompleto }}</span>
+                      <small class="associado-email">{{ associado.emailPrincipal }}</small>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- CPF MASCARADO -->
+                <td>
+                  <span class="text-muted-sm" style="font-family: monospace; font-size: 13px;">
+                    {{ mascararCpf(associado.cpf) }}
+                  </span>
+                </td>
+
+                <!-- EQUIPE + CLUSTER -->
+                <td class="cell-equipe">
+                  <span class="equipe-nome">{{ associado.nomeEquipe }}</span>
+                  <small class="cluster-nome">{{ associado.nomeCluster }}</small>
+                </td>
+
+                <!-- STATUS CHIP -->
+                <td>
+                  <span [class]="classeStatus(associado.statusAssociado)">
+                    {{ LABELS_STATUS[associado.statusAssociado] }}
+                  </span>
+                </td>
+
+                <!-- DATA DE INGRESSO -->
+                <td>
+                  <span class="text-muted-sm">{{ formatarData(associado.dataIngresso) }}</span>
+                </td>
+
+                <!-- DATA DE VENCIMENTO -->
+                <td>
+                  @if (associado.dataVencimento) {
+                    <span class="text-muted-sm">{{ formatarData(associado.dataVencimento) }}</span>
+                  } @else {
+                    <span class="text-muted-sm" title="Associado isento de anuidade">Isento</span>
+                  }
+                </td>
+
+                <!-- AÇÕES — habilitadas nos Blocos 3, 4 e 5 -->
+                <td class="cell-acoes">
+                  <div class="acoes-group">
+                    <!-- Editar — Bloco 4 -->
+                    <button
+                      class="btn-acao btn-editar"
+                      title="Editar associado (Bloco 4)"
+                      type="button"
+                      disabled
+                      aria-label="Editar {{ associado.nomeCompleto }}"
+                    >
+                      <i class="bi bi-pencil-fill" aria-hidden="true"></i>
+                    </button>
+
+                    <!-- Confirmar cadastro — aparece só para PREATIVO — Bloco 5 -->
+                    @if (associado.statusAssociado === 'PREATIVO') {
+                      <button
+                        class="btn-acao btn-reativar"
+                        title="Confirmar cadastro (Bloco 5)"
+                        type="button"
+                        disabled
+                        aria-label="Confirmar cadastro de {{ associado.nomeCompleto }}"
+                      >
+                        <i class="bi bi-person-check-fill" aria-hidden="true"></i>
+                      </button>
+                    }
+
+                    <!-- Alterar status — Bloco 5 -->
+                    <button
+                      class="btn-acao btn-inativar"
+                      title="Alterar status (Bloco 5)"
+                      type="button"
+                      disabled
+                      aria-label="Alterar status de {{ associado.nomeCompleto }}"
+                    >
+                      <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </td>
+
+              </tr>
+            }
+
+            @empty {
+              <tr>
+                <td colspan="7" class="empty-state">
+                  <div class="empty-icon">
+                    <i class="bi bi-person-x" aria-hidden="true"></i>
+                  </div>
+                  <p class="empty-title">Nenhum associado encontrado</p>
+                  <p class="empty-subtitle">Tente ajustar os filtros ou cadastre um novo associado.</p>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ====================================================================
+         PAGINAÇÃO — Bloco 2.4
+         Mesmo padrão do equipes.html. Só exibida quando há mais de 1 página.
+         ==================================================================== -->
+    @if (totalPaginas() > 1) {
+      <div class="paginacao-bar">
+
+        <span class="paginacao-info">
+          Página {{ paginaAtual() + 1 }} de {{ totalPaginas() }}
+          &nbsp;·&nbsp;
+          {{ totalAssociados() }} {{ totalAssociados() === 1 ? 'associado' : 'associados' }} no total
+        </span>
+
+        <div class="paginacao-controles">
+
+          <button
+            class="btn-pag"
+            type="button"
+            [disabled]="paginaAtual() === 0 || carregandoLista()"
+            (click)="paginaAnterior()"
+            aria-label="Página anterior"
+          >
+            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+            Anterior
+          </button>
+
+          @for (pagina of totalPaginasArray(); track pagina) {
+            <button
+              class="btn-pag-num"
+              type="button"
+              [class.ativo]="pagina === paginaAtual()"
+              (click)="irParaPagina(pagina)"
+              [attr.aria-current]="pagina === paginaAtual() ? 'page' : null"
+              [attr.aria-label]="'Ir para página ' + (pagina + 1)"
+            >
+              {{ pagina + 1 }}
+            </button>
+          }
+
+          <button
+            class="btn-pag"
+            type="button"
+            [disabled]="paginaAtual() >= totalPaginas() - 1 || carregandoLista()"
+            (click)="proximaPagina()"
+            aria-label="Próxima página"
+          >
+            Próxima
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+          </button>
+
+        </div>
+      </div>
+    }
+
+  </div>
 
 </div>
