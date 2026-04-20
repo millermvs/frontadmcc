@@ -1,12 +1,12 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   CargoLiderancaResponseDto,
   CargoLiderancaRequestDto,
-  PaginacaoResponseDto,
 } from '../models/cargo-lideranca.model';
+import { PaginacaoResponseDto } from '../models/paginacao.model';
 
 // ============================================================
 // CargoLiderancaService
@@ -27,9 +27,9 @@ import {
 })
 export class CargoLiderancaService {
 
-  private api = environment.api.cargosLideranca;
+  private http = inject(HttpClient);
 
-  constructor(private http: HttpClient) {}
+  private api = environment.api.cargosLideranca;
 
   /**
    * Lista cargos com paginação.

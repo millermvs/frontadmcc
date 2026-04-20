@@ -305,7 +305,6 @@ export class Clusters implements OnInit {
     this.errosValidacao.set({});
     this.erroModal.set(null);
     this.formEditarCluster.patchValue({ nome: cluster.nome });
-    this.formEditarCluster.markAsDirty();
   }
 
   salvarEditarCluster(): void {
@@ -376,7 +375,6 @@ export class Clusters implements OnInit {
       nome:      atuacao.nome,
       idCluster: atuacao.idCluster,
     });
-    this.formEditarAtuacao.markAsDirty();
   }
 
   salvarEditarAtuacao(): void {

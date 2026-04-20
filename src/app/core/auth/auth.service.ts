@@ -5,93 +5,56 @@ import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { LoginRequest, LoginResponse, UsuarioLogado } from './auth.model';
 
-// ============================================================
-// AuthService
-// ============================================================
-// Analogia backend:
-//
-//   Backend                          Frontend (este arquivo)
-//   ─────────────────────────────    ─────────────────────────
-//   AuthService.autenticar()     →   login()
-//   TokenService.gerarToken()    →   o backend gera, a gente só GUARDA
-//   TokenService.validarToken()  →   isAutenticado() (verifica se existe)
-//   SecurityFilter               →   AuthInterceptor (próximo arquivo)
-//   SecurityContextHolder        →   localStorage + signals
-//
-// O backend GERA e VALIDA o token.
-// O frontend ARMAZENA e ENVIA o token em cada requisição.
-//
-// Usamos signals (Angular 16+) para reatividade:
-// quando o usuário loga/desloga, qualquer componente que
-// lê "usuario()" ou "isAutenticado()" atualiza automaticamente.
-// É como um @Observable do Spring, mas no frontend.
-// ============================================================
-
-@Injectable({
-  providedIn: 'root',
-})
+/**
+ * AuthService
+ *
+ * Responsavel por autenticar, armazenar a identidade do usuario logado
+ * e expor signals reativos consumidos pela UI.
+ *
+ * Ver CLAUDE.md secao 10 (Autenticacao e Seguranca) e 10.5 (Analogias
+ * Backend <-> Frontend) — este arquivo implementa diretamente o que
+ * esta descrito nessas secoes.
+ *
+ * Distincao critica role vs perfil (secao 10.1):
+ *   - role   → mecanismo do Spring Security ('ROLE_ADM', 'ROLE_ASSOCIADO')
+ *   - perfil → logica de negocio ('ADM_CC', 'DIRETOR', 'ASSOCIADO')
+ * A UI deve decidir visibilidade com `perfil`, nunca com `role`.
+ */
+@Injectable({ providedIn: 'root' })
 export class AuthService {
 
   private http = inject(HttpClient);
   private router = inject(Router);
 
-  // ── Chaves do localStorage ──────────────────────────────
-  // O localStorage é o "banco de dados" do navegador.
-  // Persiste mesmo se o usuário fechar a aba e voltar depois.
-  // Analogia: é como a session do servidor, mas no cliente.
   private readonly STORAGE_KEY_TOKEN = 'admcc_token';
   private readonly STORAGE_KEY_USUARIO = 'admcc_usuario';
 
-  // ── Signals reativos ────────────────────────────────────
-  // Signals são a forma moderna do Angular de "avisar" os
-  // componentes que algo mudou. Quando o valor muda, tudo
-  // que depende dele re-renderiza automaticamente.
-  //
-  // Analogia backend: imagine que o SecurityContextHolder
-  // pudesse notificar todos os controllers quando o usuário
-  // muda — signals fazem isso no frontend.
-
-  /** Dados do usuário logado (null se não logado) */
+  /** Estado interno mutavel — nao exposto diretamente. */
   private _usuario = signal<UsuarioLogado | null>(this.carregarUsuario());
 
-  /** Signal público (somente leitura) do usuário */
+  /** Usuario logado (null quando nao autenticado). */
   usuario = this._usuario.asReadonly();
 
-  /** Computed: true se existe usuário logado */
+  /** True quando ha usuario armazenado. */
   isAutenticado = computed(() => this._usuario() !== null);
 
-  /** Computed: role Spring Security ('ROLE_ADM', 'ROLE_ASSOCIADO') */
+  /** Role Spring Security — usar SOMENTE para integracao com o backend. */
   role = computed(() => this._usuario()?.role ?? null);
 
-  /** Computed: perfil de negócio ('ADM_CC' | 'DIRETOR' | 'ASSOCIADO') — use este para UI */
+  /** Perfil de negocio — fonte de verdade para decisoes de UI. */
   perfil = computed(() => this._usuario()?.perfil ?? null);
 
-  // ── Login ───────────────────────────────────────────────
   /**
-   * Chama POST /auth/login e armazena o resultado.
-   *
-   * Fluxo completo:
-   * 1. Frontend envia { email, senha } para o backend
-   * 2. Backend valida com AuthenticationManager + BCrypt
-   * 3. Backend gera JWT com TokenService.gerarToken()
-   * 4. Backend retorna { token, nome, email, role, idAssociado }
-   * 5. Frontend guarda tudo no localStorage
-   * 6. Frontend atualiza o signal _usuario
-   * 7. A partir daqui, o AuthInterceptor injeta o token em toda requisição
-   *
-   * O tap() é um operador RxJS que executa um "efeito colateral"
-   * sem alterar o fluxo de dados. Analogia: é como um @AfterReturning
-   * do AOP — roda depois que a resposta chega, mas não muda ela.
+   * POST /auth/login. Ao receber a resposta, persiste token + usuario
+   * e atualiza o signal — a UI reage automaticamente.
    */
   login(credenciais: LoginRequest): Observable<LoginResponse> {
     return this.http
       .post<LoginResponse>(environment.api.auth.login, credenciais)
       .pipe(
         tap((response) => {
-          // Guarda o token separado (o interceptor só precisa dele)
           localStorage.setItem(this.STORAGE_KEY_TOKEN, response.token);
 
-          // Guarda os dados do usuário (sem o token, por segurança)
           const usuario: UsuarioLogado = {
             nome: response.nome,
             email: response.email,
@@ -101,22 +64,14 @@ export class AuthService {
           };
           localStorage.setItem(this.STORAGE_KEY_USUARIO, JSON.stringify(usuario));
 
-          // Atualiza o signal → todos os componentes que dependem são notificados
           this._usuario.set(usuario);
         })
       );
   }
 
-  // ── Logout ──────────────────────────────────────────────
   /**
-   * Remove tudo do localStorage e redireciona para /login.
-   *
-   * Não precisa chamar o backend — o JWT é stateless.
-   * O servidor não guarda sessão, então "deslogar" é apenas
-   * apagar o token do lado do cliente.
-   *
-   * Analogia: é como se o SecurityContextHolder.clearContext()
-   * apagasse a autenticação, mas aqui é no navegador.
+   * Logout: limpa storage, zera o signal e redireciona.
+   * Nao chama o backend — o JWT e stateless (ver CLAUDE.md 10.5).
    */
   logout(): void {
     localStorage.removeItem(this.STORAGE_KEY_TOKEN);
@@ -125,26 +80,15 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
-  // ── Getters ─────────────────────────────────────────────
-
-  /** Retorna o token JWT puro (usado pelo AuthInterceptor) */
+  /** Token bruto para uso do interceptor. */
   getToken(): string | null {
     return localStorage.getItem(this.STORAGE_KEY_TOKEN);
   }
 
   /**
-   * Verifica se o usuário tem uma das roles permitidas.
-   *
-   * Uso: authService.temPermissao('ADM_CC')
-   *      authService.temPermissao('ADM_CC', 'DIRETOR')
-   *
-   * Analogia backend: é como o hasRole('ADM') do @PreAuthorize,
-   * mas rodando no cliente para decidir o que MOSTRAR na tela.
-   *
-   * IMPORTANTE: isso NÃO substitui a validação do backend.
-   * O backend continua fazendo @PreAuthorize em cada endpoint.
-   * Aqui é só para a experiência do usuário — esconder botões
-   * que ele não pode usar, em vez de deixar ele clicar e receber 403.
+   * Verifica se o perfil atual esta entre os permitidos.
+   * Use apenas para visibilidade de UI — o backend continua sendo a
+   * autoridade de autorizacao (ver CLAUDE.md 10.5).
    */
   temPermissao(...perfisPermitidos: string[]): boolean {
     const perfilAtual = this.perfil();
@@ -152,15 +96,9 @@ export class AuthService {
     return perfisPermitidos.includes(perfilAtual);
   }
 
-  // ── Helpers privados ────────────────────────────────────
-
   /**
-   * Carrega o usuário do localStorage ao iniciar o service.
-   * Chamado no construtor do signal _usuario.
-   *
-   * Isso permite que, se o usuário fechar o navegador e voltar,
-   * ele continue logado (desde que o token não tenha expirado
-   * no backend — 8h conforme o TokenService).
+   * Rehidrata o usuario ao subir a aplicacao. Se o JSON estiver corrompido,
+   * limpa tudo e comeca deslogado.
    */
   private carregarUsuario(): UsuarioLogado | null {
     const json = localStorage.getItem(this.STORAGE_KEY_USUARIO);
@@ -169,7 +107,6 @@ export class AuthService {
     try {
       return JSON.parse(json) as UsuarioLogado;
     } catch {
-      // Se o JSON estiver corrompido, limpa tudo
       localStorage.removeItem(this.STORAGE_KEY_USUARIO);
       localStorage.removeItem(this.STORAGE_KEY_TOKEN);
       return null;

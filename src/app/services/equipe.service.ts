@@ -7,8 +7,8 @@ import {
   EquipeRequestDto,
   LocalPresencialRequestDto,
   LocalPresencialResponseDto,
-  PaginacaoResponseDto,
 } from '../models/equipe.model';
+import { PaginacaoResponseDto } from '../models/paginacao.model';
 
 /**
  * EQUIPE.SERVICE

@@ -34,8 +34,8 @@ import {
   AssociadoStatusHistoricoResponseDto,
   EnderecoResidencialResponseDto,
   EnderecoResidencialRequestDto,
-  PaginacaoResponseDto,
 } from '../models/associado.model';
+import { PaginacaoResponseDto } from '../models/paginacao.model';
 
 @Injectable({ providedIn: 'root' })
 export class AssociadoService {

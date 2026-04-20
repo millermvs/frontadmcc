@@ -274,7 +274,7 @@ export class Equipes implements OnInit {
    * Chamado pelo botão Cancelar e pelo ícone X do modal de criação.
    */
   resetarFormulario(): void {
-    this.formCadastro.reset({ dataInicioFormacao: this.obterDataHoje() });
+    this.formCadastro.reset({ nomeEquipe: 'C+C ', dataInicioFormacao: this.obterDataHoje() });
     this.errosValidacao.set({});
     this.erroModalEquipe.set(null);
   }
@@ -698,7 +698,7 @@ export class Equipes implements OnInit {
    */
   private criarFormCadastro(): FormGroup {
     return this.fb.group({
-      nomeEquipe:            ['', [Validators.required, Validators.maxLength(24)]],
+      nomeEquipe:            ['C+C ', [Validators.required, Validators.maxLength(24)]],
       dataInicioFormacao:    [this.obterDataHoje()],
       dataEfetivaLancamento: [null],
       diaReuniao:            [null, Validators.required],
@@ -816,7 +816,7 @@ export class Equipes implements OnInit {
    */
   private criarFormEdicao(): FormGroup {
     return this.fb.group({
-      nomeEquipe:            ['', [Validators.required, Validators.maxLength(24)]],
+      nomeEquipe:            ['C+C ', [Validators.required, Validators.maxLength(24)]],
       dataInicioFormacao:    [null],
       dataEfetivaLancamento: [null],
       diaReuniao:            [null, Validators.required],

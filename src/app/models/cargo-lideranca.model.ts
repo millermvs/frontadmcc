@@ -45,15 +45,3 @@ export interface CargoLiderancaRequestDto {
   ativo: boolean;
 }
 
-// ── Paginação genérica ───────────────────────────────────────
-// Mesma estrutura usada em todos os domínios do projeto.
-
-export interface PaginacaoResponseDto<T> {
-  items: T[];
-  page: number;
-  size: number;
-  totalItems: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrevious: boolean;
-}

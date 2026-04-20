@@ -530,6 +530,30 @@ A validacao acontece em dois niveis complementares:
 - **Proibido:** usar proxy local em producao ou desabilitar checagem de certificados.
 - Em desenvolvimento, o Angular CLI pode usar proxy (`proxy.conf.json`) se necessario.
 
+### 10.5 Analogias Backend ↔ Frontend (mental model)
+
+Concentrado aqui para nao poluir os arquivos de `core/auth` com comentarios longos. Use como referencia quando for tocar no fluxo de autenticacao.
+
+| Backend (Spring Security)       | Frontend (Angular + signals)                |
+|---------------------------------|---------------------------------------------|
+| `AuthService.autenticar()`      | `AuthService.login()`                       |
+| `TokenService.gerarToken()`     | Frontend NAO gera — apenas armazena         |
+| `TokenService.validarToken()`   | `AuthService.isAutenticado()` (existe token?) |
+| `SecurityFilter`                | `authInterceptor` (functional interceptor) |
+| `SecurityContextHolder`         | `localStorage` + `signal<UsuarioLogado>`    |
+| `@PreAuthorize("hasRole(...)")` | `AuthService.temPermissao(...perfis)` (UI apenas) |
+| `SecurityContextHolder.clearContext()` | `AuthService.logout()` (limpa storage) |
+
+**Direcionalidade do token.** O `SecurityFilter` do backend RECEBE o token no header, valida, e injeta no contexto de seguranca. O `authInterceptor` do frontend faz o oposto: PEGA o token do localStorage e COLOCA no header. Um e porteiro que verifica quem entra; o outro e a carteirinha que se apresenta.
+
+**Stateless.** O backend nao mantem sessao; o JWT carrega a identidade. Por isso `logout()` nao chama endpoint — basta apagar o token local. Token expira em 8h (valor definido no `TokenService` do backend).
+
+**Imutabilidade do HttpRequest.** No interceptor, requisicoes sao imutaveis (como records em Java) — para adicionar o header, clona-se o request com `req.clone({ setHeaders: { ... } })`.
+
+**Reatividade via signal.** O `signal<UsuarioLogado | null>` substitui o papel do `SecurityContextHolder`: quando muda, qualquer `@if (authService.isAutenticado())` no template re-renderiza automaticamente.
+
+**Permissao no frontend e ESTETICA, nao seguranca.** `temPermissao()` decide o que MOSTRAR; o backend ainda valida cada endpoint com `@PreAuthorize`. Se o frontend esquecer de esconder um botao, o backend responde 403 — nao ha vazamento de autorizacao.
+
 ---
 
 ## SECAO 11 — ESTILO VISUAL E UX

@@ -149,20 +149,6 @@ export interface EquipeResponseDto {
 }
 
 // ============================================================================
-// PAGINAÇÃO (genérico — usado por todos os módulos)
-// ============================================================================
-
-export interface PaginacaoResponseDto<T> {
-  items: T[];
-  page: number;
-  size: number;
-  totalItems: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrevious: boolean;
-}
-
-// ============================================================================
 // CONSTANTES E LABELS (para uso no template)
 // ============================================================================
 

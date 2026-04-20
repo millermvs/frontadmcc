@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -7,29 +7,30 @@ import {
   ClusterRequestDto,
   AtuacaoEspecificaResponseDto,
   AtuacaoEspecificaRequestDto,
-  PaginacaoResponseDto as PaginacaoCluster,
 } from '../models/cluster.model';
+import { PaginacaoResponseDto } from '../models/paginacao.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ClusterService {
+
+  private http = inject(HttpClient);
+
   private apiUrlClusters = environment.api.clusters;
   private apiUrlAtuacoes = environment.api.atuacoesEspecificas;
-
-  constructor(private http: HttpClient) {}
 
   /**
    * Lista todos os clusters com paginação
    * @param page número da página (começa em 0)
    * @param size tamanho da página
    */
-  listarClusters(page: number = 0, size: number = 5): Observable<PaginacaoCluster<ClusterResponseDto>> {
+  listarClusters(page: number = 0, size: number = 5): Observable<PaginacaoResponseDto<ClusterResponseDto>> {
     const params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
 
-    return this.http.get<PaginacaoCluster<ClusterResponseDto>>(this.apiUrlClusters.listar, { params });
+    return this.http.get<PaginacaoResponseDto<ClusterResponseDto>>(this.apiUrlClusters.listar, { params });
   }
 
   /**
@@ -67,12 +68,12 @@ export class ClusterService {
     idCluster: number,
     page: number = 0,
     size: number = 10
-  ): Observable<PaginacaoCluster<AtuacaoEspecificaResponseDto>> {
+  ): Observable<PaginacaoResponseDto<AtuacaoEspecificaResponseDto>> {
     const params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
 
-    return this.http.get<PaginacaoCluster<AtuacaoEspecificaResponseDto>>(
+    return this.http.get<PaginacaoResponseDto<AtuacaoEspecificaResponseDto>>(
       this.apiUrlAtuacoes.porCluster(idCluster),
       { params }
     );
@@ -83,12 +84,12 @@ export class ClusterService {
    * @param page número da página (começa em 0)
    * @param size tamanho da página
    */
-  listarAtuacoes(page: number = 0, size: number = 10): Observable<PaginacaoCluster<AtuacaoEspecificaResponseDto>> {
+  listarAtuacoes(page: number = 0, size: number = 10): Observable<PaginacaoResponseDto<AtuacaoEspecificaResponseDto>> {
     const params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
 
-    return this.http.get<PaginacaoCluster<AtuacaoEspecificaResponseDto>>(this.apiUrlAtuacoes.listar, { params });
+    return this.http.get<PaginacaoResponseDto<AtuacaoEspecificaResponseDto>>(this.apiUrlAtuacoes.listar, { params });
   }
 
   /**

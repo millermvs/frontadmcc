@@ -84,20 +84,6 @@ export const TIPOS_ORIGEM_EQUIPE: Array<{ valor: TipoOrigemEquipe; label: string
 ];
 
 // ============================================================================
-// PAGINAÇÃO GENÉRICA
-// ============================================================================
-
-export interface PaginacaoResponseDto<T> {
-  items: T[];
-  page: number;
-  size: number;
-  totalItems: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrevious: boolean;
-}
-
-// ============================================================================
 // ASSOCIADO — RESPONSE DTO (leitura)
 // ============================================================================
 
