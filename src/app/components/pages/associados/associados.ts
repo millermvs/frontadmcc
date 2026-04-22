@@ -30,8 +30,13 @@ import {
 } from '../../../models/associado.model';
 import { AtuacaoEspecificaResponseDto, ClusterResponseDto } from '../../../models/cluster.model';
 import { CargoLiderancaResponseDto } from '../../../models/cargo-lideranca.model';
+import {
+  AssociadoCargoLiderancaRequestDto,
+  AssociadoCargoLiderancaResponseDto,
+} from '../../../models/associado-cargo.model';
 import { EquipeResponseDto } from '../../../models/equipe.model';
 import { AssociadoService } from '../../../services/associado.service';
+import { AssociadoCargoService } from '../../../services/associado-cargo.service';
 import { CargoLiderancaService } from '../../../services/cargo-lideranca.service';
 import { ClusterService } from '../../../services/cluster.service';
 import { EquipeService } from '../../../services/equipe.service';
@@ -79,12 +84,13 @@ export class Associados implements OnInit {
   // INJEÇÕES
   // =========================================================================
 
-  private associadoService = inject(AssociadoService);
-  private equipeService    = inject(EquipeService);
-  private cargoService     = inject(CargoLiderancaService);
-  private clusterService   = inject(ClusterService);
-  private fb               = inject(FormBuilder);
-  private destroyRef       = inject(DestroyRef);
+  private associadoService      = inject(AssociadoService);
+  private associadoCargoService = inject(AssociadoCargoService);
+  private equipeService         = inject(EquipeService);
+  private cargoService          = inject(CargoLiderancaService);
+  private clusterService        = inject(ClusterService);
+  private fb                    = inject(FormBuilder);
+  private destroyRef            = inject(DestroyRef);
 
   // =========================================================================
   // VIEWCHILD — referência ao botão oculto que fecha o modal de cadastro
@@ -158,6 +164,73 @@ export class Associados implements OnInit {
   errosValidacao       = signal<Record<string, string>>({});
 
   // =========================================================================
+  // SIGNALS — MODAL DE CARGO (Bloco 4)
+  //
+  // Gerencia a abertura do modal de atribuição de cargos por associado.
+  // O associadoParaCargo guarda a linha clicada na tabela — é a fonte de
+  // verdade para o idAssociado enviado no POST.
+  // =========================================================================
+
+  /**
+   * associadoParaCargo
+   * Associado da linha clicada. Exposto ao template para exibir o nome
+   * no título do modal. Null enquanto nenhum modal estiver aberto.
+   */
+  associadoParaCargo = signal<AssociadoResponseDto | null>(null);
+
+  /**
+   * cargosDoAssociado
+   * Lista de AssociadoCargoLiderancaResponseDto carregada via
+   * GET /api/v1/associados-cargos/associado/{id} ao abrir o modal.
+   * Inclui ativos e histórico (ativo: false com dataFim preenchida).
+   */
+  cargosDoAssociado = signal<AssociadoCargoLiderancaResponseDto[]>([]);
+
+  /** Controla o spinner enquanto o forkJoin inicial carrega os dados do modal. */
+  carregandoCargos = signal(false);
+
+  /** Controla o spinner do botão "Atribuir Cargo" durante o POST. */
+  carregandoModalCargo = signal(false);
+
+  /** Mensagem de erro exibida no rodapé do modal de cargo. */
+  erroModalCargo = signal<string | null>(null);
+
+  /**
+   * errosValidacaoCargo
+   * Erros por campo retornados pelo backend (400).
+   * Mesma estratégia do modal de cadastro: normaliza chaves aninhadas.
+   */
+  errosValidacaoCargo = signal<Record<string, string>>({});
+
+  /**
+   * formCargo
+   * Formulário do modal de cargo — apenas dois campos:
+   * idCargoLideranca (select) e dataInicio (date).
+   */
+  formCargo: FormGroup = this.criarFormCargo();
+
+  /**
+   * cargosDisponiveis
+   * Computed: catálogo de cargos ativos filtrado para remover os que o
+   * associado já exerce ativamente. Comparação por nomeCargo normalizado
+   * (trim + lowercase) — o ResponseDto de cargo do associado não expõe
+   * idCargoLideranca, então nome é a única chave comparável.
+   *
+   * Recalcula automaticamente sempre que cargos() ou cargosDoAssociado()
+   * mudam (ex: após um POST bem-sucedido que adiciona à lista).
+   */
+  cargosDisponiveis = computed(() => {
+    const nomesAtivos = new Set(
+      this.cargosDoAssociado()
+        .filter(c => c.ativo)
+        .map(c => c.nomeCargo.trim().toLowerCase())
+    );
+    return this.cargos().filter(
+      c => !nomesAtivos.has(c.nomeCargo.trim().toLowerCase())
+    );
+  });
+
+  // =========================================================================
   // SIGNALS — DADOS DE SUPORTE (dropdowns do modal)
   //
   // Carregados via forkJoin ao abrir o modal (Tarefa 3.1).
@@ -165,6 +238,8 @@ export class Associados implements OnInit {
   // =========================================================================
 
   clusters = signal<ClusterResponseDto[]>([]);
+  
+  
   cargos   = signal<CargoLiderancaResponseDto[]>([]);
 
   /**
@@ -400,6 +475,11 @@ export class Associados implements OnInit {
     this.sugestoesPadrinho.set([]);
     this.mostrarSugestoesPadrinho.set(false);
     this.atuacoes.set([]);
+
+    // Reaplica o cargo Associado após o reset — o reset() zera todos os
+    // controles, incluindo os disabled. Se os cargos já estão em memória
+    // (reabertura do modal), restaura imediatamente sem nova requisição.
+    this.aplicarCargoAssociado();
   }
 
   /**
@@ -475,6 +555,104 @@ export class Associados implements OnInit {
       complete: () => {
         this.carregandoModal.set(false);
       },
+    });
+  }
+
+  // =========================================================================
+  // MÉTODOS PÚBLICOS — MODAL DE CARGO (Bloco 4)
+  // =========================================================================
+
+  /**
+   * abrirModalCargo(associado)
+   *
+   * Chamado pelo (click) do botão de cargo na tabela, antes do Bootstrap
+   * exibir o modal. Registra o associado clicado, reseta o formulário e
+   * carrega em paralelo:
+   *   - Cargos do associado (sempre frescos — GET por associado)
+   *   - Catálogo de cargos (só se ainda não estiver em memória)
+   *
+   * Por que forkJoin com of(null)?
+   * Se o catálogo já foi carregado (ex: modal de cadastro aberto antes),
+   * of(null) completa imediatamente — o forkJoin não bloqueia para um GET
+   * desnecessário. O bloco next verifica catalogo !== null antes de setar.
+   */
+  abrirModalCargo(associado: AssociadoResponseDto): void {
+    this.associadoParaCargo.set(associado);
+    this.erroModalCargo.set(null);
+    this.errosValidacaoCargo.set({});
+    this.formCargo.reset({ dataInicio: this.obterDataHoje() });
+    this.carregandoCargos.set(true);
+
+    forkJoin({
+      cargosAssociado: this.associadoCargoService.listarPorAssociado(associado.idAssociado),
+      catalogo: this.cargos().length > 0
+        ? of(null)
+        : this.cargoService.listar(0, 100),
+    }).subscribe({
+      next: ({ cargosAssociado, catalogo }) => {
+        this.cargosDoAssociado.set(cargosAssociado);
+        if (catalogo) {
+          // Filtra apenas ativos para os selects (mesmo critério do modal de cadastro)
+          this.cargos.set(catalogo.items.filter((c: CargoLiderancaResponseDto) => c.ativo));
+        }
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao carregar dados do modal de cargo:', err);
+        this.erroModalCargo.set('Erro ao carregar dados. Feche e tente novamente.');
+        this.carregandoCargos.set(false);
+      },
+      complete: () => this.carregandoCargos.set(false),
+    });
+  }
+
+  /**
+   * salvarCargo()
+   *
+   * Monta o AssociadoCargoLiderancaRequestDto e faz POST.
+   * Após sucesso: atualiza cargosDoAssociado() com o novo cargo retornado
+   * e reseta o formulário — o modal permanece aberto para atribuições adicionais.
+   * O computed cargosDisponiveis() se atualiza automaticamente, removendo
+   * o cargo recém-atribuído do select.
+   */
+  salvarCargo(): void {
+    const associado = this.associadoParaCargo();
+    if (!associado) return;
+
+    this.carregandoModalCargo.set(true);
+    this.erroModalCargo.set(null);
+    this.errosValidacaoCargo.set({});
+
+    const val = this.formCargo.getRawValue();
+
+    const dto: AssociadoCargoLiderancaRequestDto = {
+      idAssociado:      associado.idAssociado,
+      idCargoLideranca: Number(val.idCargoLideranca),
+      dataInicio:       val.dataInicio,
+      dataFim:          null,  // indeterminado — encerramento é operação separada
+      ativo:            true,
+    };
+
+    this.associadoCargoService.designarCargo(dto).subscribe({
+      next: (novoCargo) => {
+        // Adiciona ao final da lista sem recarregar — o computed recalcula em seguida
+        this.cargosDoAssociado.update(lista => [...lista, novoCargo]);
+        this.formCargo.reset({ dataInicio: this.obterDataHoje() });
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao atribuir cargo:', err);
+        if (err.status === 400 && err.error?.errors) {
+          this.errosValidacaoCargo.set(this.normalizarErros(err.error.errors));
+          this.erroModalCargo.set('Corrija os campos destacados.');
+        } else if (err.status === 409) {
+          this.erroModalCargo.set(
+            err.error?.message ?? 'Este associado já possui este cargo ativo.'
+          );
+        } else {
+          this.erroModalCargo.set(this.extrairMensagemErro(err));
+        }
+        this.carregandoModalCargo.set(false);
+      },
+      complete: () => this.carregandoModalCargo.set(false),
     });
   }
 
@@ -608,6 +786,8 @@ export class Associados implements OnInit {
         this.clusters.set(clusters.items);
         // Filtra apenas cargos ativos para o select
         this.cargos.set(cargos.items.filter(c => c.ativo));
+        // Pré-seleciona "Associado" automaticamente no campo fixo
+        this.aplicarCargoAssociado();
       },
       error: (err: HttpErrorResponse) => {
         this.erroModal.set('Erro ao carregar os dados do formulário. Feche e tente novamente.');
@@ -714,6 +894,20 @@ export class Associados implements OnInit {
   // =========================================================================
 
   /**
+   * criarFormCargo()
+   *
+   * Factory do FormGroup do modal de atribuição de cargo.
+   * Dois campos apenas: cargo (select obrigatório) e data de início.
+   * dataInicio segue a mesma regra do cadastro: não pode ser futura.
+   */
+  private criarFormCargo(): FormGroup {
+    return this.fb.group({
+      idCargoLideranca: [null, Validators.required],
+      dataInicio:       [this.obterDataHoje(), [Validators.required, validarDataNaoFutura]],
+    });
+  }
+
+  /**
    * criarFormCadastro()
    *
    * Factory do FormGroup do modal de cadastro. Chamado na inicialização
@@ -741,7 +935,12 @@ export class Associados implements OnInit {
       idEquipe:            [null, Validators.required],
       idCluster:           [null, Validators.required],
       idAtuacaoEspecifica: [null, Validators.required], // disable/enable via observarCluster()
-      idCargoLideranca:    [null, Validators.required],
+
+      // Cargo sempre fixo como "Associado" no cadastro — habilitado só na edição.
+      // Começa disabled: Angular exclui da validade do form, mas getRawValue()
+      // ainda lê o valor para o DTO. Valor preenchido por aplicarCargoAssociado()
+      // após o forkJoin carregar os cargos.
+      idCargoLideranca:    [{ value: null, disabled: true }, Validators.required],
       dataInicioCargo:     [this.obterDataHoje(), [Validators.required, validarDataNaoFutura]],
       exibirAniversario:   [false],
 
@@ -813,5 +1012,27 @@ export class Associados implements OnInit {
     };
 
     return mensagens[err.status] ?? 'Erro desconhecido. Tente novamente.';
+  }
+
+  /**
+   * aplicarCargoAssociado()
+   *
+   * Localiza o cargo de nome "Associado" na lista já carregada e o define
+   * como valor do controle idCargoLideranca (que fica disabled no cadastro).
+   *
+   * Chamado em dois momentos:
+   *   1. Após o forkJoin em carregarDadosModal() — primeira abertura.
+   *   2. Em resetarFormularioCadastro() — reabertura (cargos já em memória).
+   *
+   * Se o cargo não for encontrado (configuração incorreta no banco),
+   * o campo fica nulo e o operador receberá erro 400 do backend — intencionalmente
+   * não silenciamos: é uma falha de dados que precisa ser corrigida na origem.
+   */
+  private aplicarCargoAssociado(): void {
+    const cargo = this.cargos().find(
+      c => c.nomeCargo.trim().toLowerCase() === 'associado'
+    );
+    if (!cargo) return;
+    this.formCadastro.get('idCargoLideranca')?.setValue(cargo.idCargoLideranca);
   }
 }

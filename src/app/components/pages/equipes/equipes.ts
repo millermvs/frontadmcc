@@ -2,7 +2,9 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, DestroyRef, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { forkJoin, of, Subject } from 'rxjs';
+import { catchError, debounceTime, switchMap } from 'rxjs/operators';
 import { formatarEnderecoCompleto } from '../../../helpers/endereco.helper';
 import {
   EquipeRequestDto,
@@ -14,7 +16,49 @@ import {
   LocalPresencialResponseDto,
   ModeloReuniao
 } from '../../../models/equipe.model';
+import {
+  EquipeDiretorEquipeRequestDto,
+  EquipeDiretorEquipeResponseDto,
+  EquipeDiretorTerritorioRequestDto,
+  EquipeDiretorTerritorioResponseDto,
+  LABELS_NIVEL,
+  NIVEIS_TERRITORIO,
+  NivelDiretorTerritorio,
+} from '../../../models/equipe-diretor.model';
+import { AssociadoResponseDto } from '../../../models/associado.model';
 import { EquipeService } from '../../../services/equipe.service';
+import { EquipeDiretorService } from '../../../services/equipe-diretor.service';
+import { AssociadoService } from '../../../services/associado.service';
+
+// ============================================================================
+// SHIM DE TIPO — bootstrap (global JS carregado via angular.json)
+//
+// O bundle bootstrap.bundle.min.js é importado no angular.json como script
+// global, então `bootstrap` existe em runtime como `window.bootstrap`. Não
+// instalamos @types/bootstrap (dependência extra desnecessária para um único
+// uso); declaramos aqui apenas o contrato mínimo que precisamos: a API estática
+// Modal.getOrCreateInstance(el).show()/hide(). Isso preserva a tipagem forte
+// (CLAUDE.md §2.4) sem cair em `any`.
+// ============================================================================
+declare const bootstrap: {
+  Modal: {
+    getOrCreateInstance(el: Element): { show(): void; hide(): void };
+  };
+};
+
+// ============================================================================
+// VALIDADOR CUSTOMIZADO — Data não pode ser futura
+//
+// Mesmo validador de associados.ts (definido aqui fora da classe — helper
+// puro, sem efeitos colaterais, sem dependência de this).
+// ============================================================================
+function validarDataNaoFutura(control: AbstractControl): ValidationErrors | null {
+  if (!control.value) return null;
+  const data = new Date(control.value + 'T00:00:00');
+  const hoje  = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  return data > hoje ? { dataFutura: true } : null;
+}
 
 // Tipo interno: estende EquipeResponseDto com campos adicionais do frontend.
 // Sem export — é uma estrutura privada deste componente.
@@ -59,9 +103,11 @@ export class Equipes implements OnInit {
   // INJEÇÕES
   // =========================================================================
 
-  private equipesService = inject(EquipeService);
-  private fb             = inject(FormBuilder);
-  private destroyRef     = inject(DestroyRef);
+  private equipesService       = inject(EquipeService);
+  private equipeDiretorService = inject(EquipeDiretorService);
+  private associadoService     = inject(AssociadoService);
+  private fb                   = inject(FormBuilder);
+  private destroyRef           = inject(DestroyRef);
 
   // =========================================================================
   // VIEWCHILD — referências aos botões ocultos de fechar modal
@@ -79,6 +125,16 @@ export class Equipes implements OnInit {
 
   @ViewChild('btnFecharModalEndereco')
   private btnFecharEndereco!: ElementRef<HTMLButtonElement>;
+
+  /**
+   * Referência ao elemento DOM do modal de diretores.
+   * Usada em abrirModalDiretores() para chamar bootstrap.Modal.getOrCreateInstance(el).show()
+   * diretamente — bypass da delegação de eventos do Bootstrap, que causava
+   * race condition quando signals do Angular eram atualizados antes do
+   * construtor da Modal rodar (erro 'backdrop' por this._config undefined).
+   */
+  @ViewChild('modalDiretoresEl')
+  private modalDiretoresEl!: ElementRef<HTMLElement>;
 
   // =========================================================================
   // SIGNALS — LISTAGEM
@@ -160,6 +216,122 @@ export class Equipes implements OnInit {
   enderecoCopiado       = signal(false);
 
   // =========================================================================
+  // SIGNALS — MODAL DE DIRETORES
+  //
+  // Gerencia o modal de designação de Diretor de Equipe (DE) e Diretor de
+  // Território (DT). A equipe clicada na tabela é a fonte de verdade para
+  // o idEquipe enviado nos POSTs.
+  // =========================================================================
+
+  /**
+   * equipeSelecionadaDiretores
+   * Equipe da linha clicada — exposta ao template para exibir o nome no header.
+   */
+  equipeSelecionadaDiretores = signal<Equipe | null>(null);
+
+  /** Histórico completo de DEs da equipe (ativos e encerrados). */
+  diretoresEquipe     = signal<EquipeDiretorEquipeResponseDto[]>([]);
+
+  /** Histórico completo de DTs da equipe (ativos e encerrados). */
+  diretoresTerritorio = signal<EquipeDiretorTerritorioResponseDto[]>([]);
+
+  /** Spinner enquanto o forkJoin inicial carrega DE + DT. */
+  carregandoDiretores     = signal(false);
+
+  /** Spinner do botão "Designar" durante o POST. */
+  carregandoModalDiretor  = signal(false);
+
+  /** Mensagem de erro geral no rodapé do modal. */
+  erroModalDiretor        = signal<string | null>(null);
+
+  /** Erros por campo (400) normalizados pelo backend. */
+  errosValidacaoDiretor   = signal<Record<string, string>>({});
+
+  // =========================================================================
+  // SIGNALS — AUTOCOMPLETE DE ASSOCIADO (modal de diretores)
+  //
+  // Mesmo padrão do padrinho em associados.ts:
+  // Subject + debounceTime + switchMap para evitar requisições desnecessárias.
+  // O idAssociadoSelecionado é o dado real enviado no DTO — o texto do input
+  // é apenas um intermediário de UI.
+  // =========================================================================
+
+  nomeAssociadoDiretorInput     = signal('');
+  sugestoesAssociadoDiretor     = signal<AssociadoResponseDto[]>([]);
+  idAssociadoDiretorSelecionado = signal<number | null>(null);
+  mostrarSugestoesDiretor       = signal(false);
+  buscandoAssociadoDiretor      = signal(false);
+
+  private readonly diretorSubject = new Subject<string>();
+
+  // =========================================================================
+  // FORMULÁRIO REATIVO — DESIGNAÇÃO DE DIRETOR
+  // =========================================================================
+
+  formDiretor: FormGroup = this.criarFormDiretor();
+
+  // =========================================================================
+  // CONSTANTES — DIRETORES
+  // =========================================================================
+
+  readonly LABELS_NIVEL     = LABELS_NIVEL;
+  readonly NIVEIS_TERRITORIO = NIVEIS_TERRITORIO;
+
+  // =========================================================================
+  // COMPUTED — DIRETORIA ATIVA E NÍVEIS DISPONÍVEIS
+  // =========================================================================
+
+  /**
+   * diretorEquipeAtivo
+   * DE ativo da equipe selecionada (dataFim === null) ou null se não houver.
+   */
+  diretorEquipeAtivo = computed(() =>
+    this.diretoresEquipe().find(d => d.dataFim === null) ?? null
+  );
+
+  /**
+   * diretoresTeritorioAtivos
+   * DTs ativos agrupados — pode haver DT1, DT2 e DT3 simultaneamente.
+   */
+  diretoresTeritorioAtivos = computed(() =>
+    this.diretoresTerritorio().filter(d => d.dataFim === null)
+  );
+
+  /**
+   * mapaDiretoresTerritorioAtivos
+   * Indexa os DTs ativos por nível para lookup O(1) no template.
+   *
+   * Por que um Map em vez de .find() no template?
+   * CLAUDE.md §2.6 (Reatividade Declarativa) e §7.2: estado derivado deve usar
+   * computed(). Chamar .find() no template re-executa a busca a cada ciclo de
+   * change detection — com Map.get(nivel), a busca é constante e o cálculo só
+   * roda quando diretoresTeritorioAtivos() muda.
+   *
+   * Bônus: evita o conflito do parser do Angular com arrow function dentro de
+   * @let (NG5002 — "Bindings cannot contain assignments").
+   */
+  mapaDiretoresTerritorioAtivos = computed(() => {
+    const mapa = new Map<NivelDiretorTerritorio, EquipeDiretorTerritorioResponseDto>();
+    for (const dt of this.diretoresTeritorioAtivos()) {
+      mapa.set(dt.nivel, dt);
+    }
+    return mapa;
+  });
+
+  /**
+   * niveisDisponiveis
+   * Níveis de DT que ainda não têm um vínculo ativo nesta equipe.
+   * Filtra NIVEL_1/2/3 removendo os que já têm ativo (dataFim === null).
+   * Recalcula automaticamente após cada POST bem-sucedido.
+   */
+  niveisDisponiveis = computed(() => {
+    const ativosSet = new Set(
+      this.diretoresTeritorioAtivos().map(d => d.nivel)
+    );
+    return NIVEIS_TERRITORIO.filter(n => !ativosSet.has(n));
+  });
+
+  // =========================================================================
   // FORMULÁRIOS REATIVOS
   //
   // Por que ReactiveFormsModule?
@@ -216,6 +388,8 @@ export class Equipes implements OnInit {
     this.carregarEquipes();
     this.observarModeloCadastro();
     this.observarModeloEdicao();
+    this.observarTipoCargo();
+    this.observarBuscaDiretor();
   }
 
   // =========================================================================
@@ -455,6 +629,141 @@ export class Equipes implements OnInit {
   }
 
   // =========================================================================
+  // MÉTODOS PÚBLICOS — MODAL DE DIRETORES
+  // =========================================================================
+
+  /**
+   * abrirModalDiretores(equipe)
+   *
+   * Chamado pelo (click) do botão .btn-cargo na tabela.
+   * Registra a equipe clicada, reseta o estado do formulário e carrega
+   * em paralelo o histórico completo de DE e DT via forkJoin.
+   */
+  abrirModalDiretores(equipe: Equipe): void {
+    this.equipeSelecionadaDiretores.set(equipe);
+    this.erroModalDiretor.set(null);
+    this.errosValidacaoDiretor.set({});
+    this.formDiretor.reset({ tipoCargo: 'DE', dataInicio: this.obterDataHoje() });
+    this.nomeAssociadoDiretorInput.set('');
+    this.idAssociadoDiretorSelecionado.set(null);
+    this.sugestoesAssociadoDiretor.set([]);
+    this.mostrarSugestoesDiretor.set(false);
+    this.carregandoDiretores.set(true);
+
+    // Abre o modal via API JS do Bootstrap. getOrCreateInstance reaproveita a
+    // instância se já existir; caso contrário, cria uma nova e a vincula ao
+    // elemento. show() é síncrono — ao retornar, o modal já está visível com
+    // o spinner; o forkJoin abaixo continua em background e popula os signals
+    // quando concluir.
+    bootstrap.Modal.getOrCreateInstance(this.modalDiretoresEl.nativeElement).show();
+
+    forkJoin({
+      diretoresEquipe:     this.equipeDiretorService.listarDiretoresEquipe(equipe.idEquipe),
+      diretoresTerritorio: this.equipeDiretorService.listarDiretoresTerritorio(equipe.idEquipe),
+    }).subscribe({
+      next: ({ diretoresEquipe, diretoresTerritorio }) => {
+        this.diretoresEquipe.set(diretoresEquipe);
+        this.diretoresTerritorio.set(diretoresTerritorio);
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao carregar diretores:', err);
+        this.erroModalDiretor.set('Erro ao carregar dados. Feche e tente novamente.');
+        this.carregandoDiretores.set(false);
+      },
+      complete: () => this.carregandoDiretores.set(false),
+    });
+  }
+
+  /**
+   * salvarDiretor()
+   *
+   * Monta o DTO e chama o endpoint correto conforme o tipoCargo selecionado.
+   * Após sucesso: adiciona o novo registro ao signal correspondente (sem fechar
+   * o modal) e reseta o formulário para uma possível designação em sequência.
+   * Os computeds diretorEquipeAtivo e niveisDisponiveis recalculam automaticamente.
+   */
+  salvarDiretor(): void {
+    const equipe     = this.equipeSelecionadaDiretores();
+    const idAssociado = this.idAssociadoDiretorSelecionado();
+
+    if (!equipe || !idAssociado) return;
+
+    this.carregandoModalDiretor.set(true);
+    this.erroModalDiretor.set(null);
+    this.errosValidacaoDiretor.set({});
+
+    const val = this.formDiretor.getRawValue();
+
+    if (val.tipoCargo === 'DE') {
+      const dto: EquipeDiretorEquipeRequestDto = {
+        idEquipe:    equipe.idEquipe,
+        idAssociado,
+        dataInicio:  val.dataInicio,
+        dataFim:     null,
+      };
+      this.equipeDiretorService.cadastrarDiretorEquipe(dto).subscribe({
+        next: (novo) => {
+          this.diretoresEquipe.update(lista => [...lista, novo]);
+          this.resetarFormDiretor();
+        },
+        error: (err: HttpErrorResponse) => this.tratarErroDiretor(err),
+        complete: () => this.carregandoModalDiretor.set(false),
+      });
+
+    } else {
+      const dto: EquipeDiretorTerritorioRequestDto = {
+        idEquipe:    equipe.idEquipe,
+        idAssociado,
+        nivel:       val.nivel as NivelDiretorTerritorio,
+        dataInicio:  val.dataInicio,
+        dataFim:     null,
+      };
+      this.equipeDiretorService.cadastrarDiretorTerritorio(dto).subscribe({
+        next: (novo) => {
+          this.diretoresTerritorio.update(lista => [...lista, novo]);
+          this.resetarFormDiretor();
+        },
+        error: (err: HttpErrorResponse) => this.tratarErroDiretor(err),
+        complete: () => this.carregandoModalDiretor.set(false),
+      });
+    }
+  }
+
+  // =========================================================================
+  // MÉTODOS PÚBLICOS — AUTOCOMPLETE DE ASSOCIADO (diretores)
+  // =========================================================================
+
+  atualizarNomeAssociadoDiretor(valor: string): void {
+    this.nomeAssociadoDiretorInput.set(valor);
+    this.idAssociadoDiretorSelecionado.set(null);
+    this.diretorSubject.next(valor);
+  }
+
+  selecionarAssociadoDiretor(assoc: AssociadoResponseDto): void {
+    this.idAssociadoDiretorSelecionado.set(assoc.idAssociado);
+    this.nomeAssociadoDiretorInput.set(assoc.nomeCompleto);
+    this.sugestoesAssociadoDiretor.set([]);
+    this.mostrarSugestoesDiretor.set(false);
+  }
+
+  fecharSugestoesDiretor(): void {
+    setTimeout(() => this.mostrarSugestoesDiretor.set(false), 200);
+  }
+
+  limparAssociadoDiretor(): void {
+    this.idAssociadoDiretorSelecionado.set(null);
+    this.nomeAssociadoDiretorInput.set('');
+    this.sugestoesAssociadoDiretor.set([]);
+    this.mostrarSugestoesDiretor.set(false);
+  }
+
+  iniciais(nome: string): string {
+    const partes = nome.trim().split(/\s+/);
+    if (partes.length === 1) return partes[0].charAt(0).toUpperCase();
+    return (partes[0].charAt(0) + partes[partes.length - 1].charAt(0)).toUpperCase();
+  }
+
+  // =========================================================================
   // MÉTODOS PÚBLICOS — MODAL DE ENDEREÇO PRESENCIAL
   // =========================================================================
 
@@ -577,6 +886,117 @@ export class Equipes implements OnInit {
   }
 
   // =========================================================================
+  // MÉTODOS PRIVADOS — MODAL DE DIRETORES
+  // =========================================================================
+
+  /**
+   * criarFormDiretor()
+   *
+   * FormGroup do modal de designação.
+   * tipoCargo: 'DE' (Diretor de Equipe) ou 'DT' (Diretor de Território).
+   * nivel: habilitado/desabilitado dinamicamente por observarTipoCargo().
+   * dataInicio: obrigatória, não pode ser futura.
+   */
+  private criarFormDiretor(): FormGroup {
+    return this.fb.group({
+      tipoCargo:  ['DE', Validators.required],
+      nivel:      [{ value: null, disabled: true }],
+      dataInicio: [this.obterDataHoje(), [Validators.required, validarDataNaoFutura]],
+    });
+  }
+
+  /**
+   * observarTipoCargo()
+   *
+   * Habilita/desabilita o controle de nivel com base no tipoCargo selecionado.
+   * Quando DE: nivel é irrelevante — desabilitado e sem validator.
+   * Quando DT: nivel é obrigatório — habilitado com Validators.required.
+   */
+  private observarTipoCargo(): void {
+    const nivelControl = this.formDiretor.get('nivel')!;
+
+    this.formDiretor.get('tipoCargo')!.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((tipo: string | null) => {
+        if (tipo === 'DT') {
+          nivelControl.enable();
+          nivelControl.setValidators(Validators.required);
+        } else {
+          nivelControl.reset(null);
+          nivelControl.disable();
+          nivelControl.clearValidators();
+        }
+        nivelControl.updateValueAndValidity({ emitEvent: false });
+      });
+  }
+
+  /**
+   * observarBuscaDiretor()
+   *
+   * Autocomplete do campo associado no modal de diretores.
+   * Mesmo padrão de padrinhoSubject em associados.ts:
+   * Subject → debounceTime(300) → switchMap → cancela requisição anterior.
+   */
+  private observarBuscaDiretor(): void {
+    this.diretorSubject.pipe(
+      debounceTime(300),
+      switchMap((termo: string) => {
+        const termLimpo = termo.trim();
+        if (termLimpo.length < 2) {
+          this.buscandoAssociadoDiretor.set(false);
+          this.mostrarSugestoesDiretor.set(false);
+          this.sugestoesAssociadoDiretor.set([]);
+          return of(null);
+        }
+        this.buscandoAssociadoDiretor.set(true);
+        return this.associadoService
+          .listarAssociados(0, 8, { nome: termLimpo })
+          .pipe(catchError(() => of(null)));
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(response => {
+      if (response === null) {
+        this.buscandoAssociadoDiretor.set(false);
+        return;
+      }
+      this.sugestoesAssociadoDiretor.set(response.items);
+      this.mostrarSugestoesDiretor.set(response.items.length > 0);
+      this.buscandoAssociadoDiretor.set(false);
+    });
+  }
+
+  /**
+   * resetarFormDiretor()
+   *
+   * Reseta o formulário de designação mantendo tipoCargo = 'DE' e
+   * dataInicio = hoje. Limpa o autocomplete de associado.
+   */
+  private resetarFormDiretor(): void {
+    this.formDiretor.reset({ tipoCargo: 'DE', dataInicio: this.obterDataHoje() });
+    this.nomeAssociadoDiretorInput.set('');
+    this.idAssociadoDiretorSelecionado.set(null);
+    this.sugestoesAssociadoDiretor.set([]);
+    this.mostrarSugestoesDiretor.set(false);
+  }
+
+  /**
+   * tratarErroDiretor(err)
+   *
+   * Centraliza o tratamento de erros HTTP do modal de diretores.
+   * Segue CLAUDE.md SEÇÃO 12 — extrairMensagemErro já cobre os status padrão.
+   */
+  private tratarErroDiretor(err: HttpErrorResponse): void {
+    console.error('Erro ao designar diretor:', err);
+    if (err.status === 400 && err.error?.errors) {
+      this.errosValidacaoDiretor.set(this.normalizarErros(err.error.errors));
+      this.erroModalDiretor.set('Corrija os campos destacados.');
+    } else {
+      this.erroModalDiretor.set(this.extrairMensagemErro(err));
+    }
+    this.carregandoModalDiretor.set(false);
+  }
+
+  // =========================================================================
   // MÉTODOS PRIVADOS
   // =========================================================================
 
@@ -587,8 +1007,8 @@ export class Equipes implements OnInit {
     this.equipesService.listarEquipes(page, this.tamanhoPagina()).subscribe({
       next: (response) => {
         const equipesComExtras: Equipe[] = response.items.map(equipe => ({
-          ...equipe,
-          membros: 0,                           // TODO: usar equipe.numeroComponentes
+          ...equipe,          
+          membros: equipe.numeroComponentes,
           minimoLancamento: this.MINIMO_LANCAMENTO,
         }));
         this.equipes.set(equipesComExtras);

@@ -264,6 +264,19 @@
                       </button>
                     }
 
+                    <!-- Atribuir / gerenciar cargos -->
+                    <button
+                      class="btn-acao btn-cargo"
+                      title="Gerenciar cargos"
+                      type="button"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalCargosAssociado"
+                      (click)="abrirModalCargo(associado)"
+                      aria-label="Gerenciar cargos de {{ associado.nomeCompleto }}"
+                    >
+                      <i class="bi bi-briefcase-fill" aria-hidden="true"></i>
+                    </button>
+
                     <!-- Alterar status — Bloco 5 -->
                     <button
                       class="btn-acao btn-inativar"
@@ -720,23 +733,15 @@
               </div>
 
               <div class="col-md-4 mb-3">
-                <label for="idCargoLideranca" class="form-label">
-                  Cargo de Liderança <span class="text-danger" aria-hidden="true">*</span>
-                </label>
-                <select
-                  class="form-select"
-                  id="idCargoLideranca"
-                  formControlName="idCargoLideranca"
-                  [class.is-invalid]="!!errosValidacao()['idCargoLideranca']"
+                <label class="form-label">Cargo</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  value="Associado"
+                  readonly
+                  aria-label="Cargo atribuído automaticamente: Associado"
                 >
-                  <option [ngValue]="null">-- Selecione o cargo --</option>
-                  @for (cargo of cargos(); track cargo.idCargoLideranca) {
-                    <option [value]="cargo.idCargoLideranca">{{ cargo.nomeCargo }}</option>
-                  }
-                </select>
-                @if (errosValidacao()['idCargoLideranca']) {
-                  <div class="invalid-feedback">{{ errosValidacao()['idCargoLideranca'] }}</div>
-                }
+                <small class="text-muted-sm">Atribuído automaticamente. Altere após o cadastro.</small>
               </div>
 
             </div>
@@ -954,6 +959,185 @@
           }
         </button>
 
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================================
+     MODAL — GERENCIAR CARGOS DO ASSOCIADO
+     Aberto pelo botão .btn-cargo na tabela. Exibe os cargos atuais e permite
+     atribuir novos. O modal permanece aberto após salvar para facilitar
+     múltiplas atribuições em sequência.
+     ============================================================================ -->
+<div
+  class="modal fade"
+  id="modalCargosAssociado"
+  tabindex="-1"
+  aria-labelledby="modalCargosAssociadoLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <!-- HEADER -->
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalCargosAssociadoLabel">
+          <i class="bi bi-briefcase-fill me-2"></i>
+          Cargos —
+          @if (associadoParaCargo()) {
+            {{ associadoParaCargo()!.nomeCompleto }}
+          }
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body">
+
+        <!-- ── SPINNER de carregamento inicial ── -->
+        @if (carregandoCargos()) {
+          <div class="text-center py-5">
+            <div class="spinner-border text-success" role="status" aria-hidden="true"></div>
+            <p class="mt-3 text-muted-sm">Carregando cargos...</p>
+          </div>
+
+        } @else {
+
+          <!-- ── SEÇÃO 1: Cargos cadastrados ── -->
+          <h6 class="section-titulo">Cargos cadastrados</h6>
+
+          @if (cargosDoAssociado().length === 0) {
+            <p class="text-muted-sm mb-4">Este associado ainda não possui cargos cadastrados.</p>
+          } @else {
+            <div class="table-responsive mb-4">
+              <table class="table table-sm table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Cargo</th>
+                    <th>Início</th>
+                    <th>Término</th>
+                    <th>Situação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (cargo of cargosDoAssociado(); track cargo.idAssociadoCargo) {
+                    <tr>
+                      <td>{{ cargo.nomeCargo }}</td>
+                      <td>{{ formatarData(cargo.dataInicio) }}</td>
+                      <td>{{ formatarData(cargo.dataFim) }}</td>
+                      <td>
+                        <span [class]="cargo.ativo
+                          ? 'status-chip status-ativa'
+                          : 'status-chip status-inativa'">
+                          {{ cargo.ativo ? 'Ativo' : 'Encerrado' }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          <hr class="my-3">
+
+          <!-- ── SEÇÃO 2: Atribuir novo cargo ── -->
+          <h6 class="section-titulo">Atribuir novo cargo</h6>
+
+          @if (cargosDisponiveis().length === 0) {
+            <p class="text-muted-sm">
+              O associado já exerce todos os cargos disponíveis no catálogo.
+            </p>
+          } @else {
+            <form [formGroup]="formCargo">
+              <div class="row g-3 align-items-end">
+
+                <!-- Select de cargo -->
+                <div class="col-md-7">
+                  <label for="idCargoLiderancaModal" class="form-label">
+                    Cargo <span class="text-danger" aria-hidden="true">*</span>
+                  </label>
+                  <select
+                    class="form-select"
+                    id="idCargoLiderancaModal"
+                    formControlName="idCargoLideranca"
+                    [class.is-invalid]="!!errosValidacaoCargo()['idCargoLideranca']"
+                  >
+                    <option [ngValue]="null" disabled>Selecione um cargo</option>
+                    @for (cargo of cargosDisponiveis(); track cargo.idCargoLideranca) {
+                      <option [value]="cargo.idCargoLideranca">{{ cargo.nomeCargo }}</option>
+                    }
+                  </select>
+                  @if (errosValidacaoCargo()['idCargoLideranca']) {
+                    <div class="invalid-feedback">{{ errosValidacaoCargo()['idCargoLideranca'] }}</div>
+                  }
+                </div>
+
+                <!-- Data de início -->
+                <div class="col-md-5">
+                  <label for="dataInicioCargo" class="form-label">
+                    Data de início <span class="text-danger" aria-hidden="true">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="dataInicioCargo"
+                    formControlName="dataInicio"
+                    [class.is-invalid]="!!errosValidacaoCargo()['dataInicio']"
+                  />
+                  @if (errosValidacaoCargo()['dataInicio']) {
+                    <div class="invalid-feedback">{{ errosValidacaoCargo()['dataInicio'] }}</div>
+                  }
+                  @if (formCargo.get('dataInicio')?.hasError('dataFutura') && formCargo.get('dataInicio')?.touched) {
+                    <div class="invalid-feedback d-block">A data de início não pode ser futura.</div>
+                  }
+                </div>
+
+              </div>
+            </form>
+          }
+
+          <!-- ── Alerta de erro geral ── -->
+          @if (erroModalCargo()) {
+            <div class="alert alert-danger d-flex align-items-center gap-2 mt-3 mb-0" role="alert">
+              <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+              {{ erroModalCargo() }}
+            </div>
+          }
+
+        }
+
+      </div>
+
+      <!-- FOOTER -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          Fechar
+        </button>
+
+        @if (!carregandoCargos() && cargosDisponiveis().length > 0) {
+          <button
+            type="button"
+            class="btn-salvar-modal"
+            [disabled]="formCargo.invalid || carregandoModalCargo()"
+            (click)="salvarCargo()"
+          >
+            @if (carregandoModalCargo()) {
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Salvando...
+            } @else {
+              <i class="bi bi-briefcase-fill me-2" aria-hidden="true"></i>
+              Atribuir Cargo
+            }
+          </button>
+        }
       </div>
 
     </div>

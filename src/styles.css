@@ -436,6 +436,18 @@ body {
   border-color: #93c5fd;
 }
 
+/* Roxo — atribuir / gerenciar cargo */
+.btn-cargo {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border-color: #ddd6fe;
+}
+
+.btn-cargo:hover {
+  background: #ede9fe;
+  border-color: #c4b5fd;
+}
+
 /* ================================================
    STATUS CHIPS
    Pílulas coloridas de status usadas em tabelas e listas.

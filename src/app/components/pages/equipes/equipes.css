@@ -455,6 +455,200 @@
 }
 
 /* ================================================
+   MODAL DIRETORES — Título de seção
+   ================================================ */
+.section-titulo {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--cor-texto-secundario);
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+/* ================================================
+   MODAL DIRETORES — Card de diretoria atual
+   ================================================ */
+.diretoria-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-md);
+  background: var(--cor-surface-alt);
+}
+
+/* Badge de sigla (D.E. / DT1 / DT2 / DT3) */
+.diretoria-sigla {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  flex-shrink: 0;
+}
+
+/* Verde — Diretor de Equipe */
+.diretoria-sigla.de {
+  background: var(--cor-sucesso-bg);
+  color: var(--cor-sucesso);
+}
+
+/* Roxo — Diretor de Território */
+.diretoria-sigla.dt {
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+/* Variante pequena para uso na tabela de histórico */
+.diretoria-sigla.sm {
+  min-width: 32px;
+  height: 28px;
+  font-size: 10px;
+  border-radius: 6px;
+}
+
+/* Coluna de texto ao lado da sigla */
+.diretoria-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.diretoria-cargo {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--cor-texto-secundario);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.diretoria-nome {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cor-texto);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.diretoria-data {
+  font-size: 12px;
+  color: var(--cor-texto-secundario);
+}
+
+.diretoria-vago {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--cor-texto-placeholder);
+}
+
+/* ================================================
+   AUTOCOMPLETE DE ASSOCIADO (padrão padrinho)
+   ================================================ */
+.padrinho-autocomplete-wrap {
+  position: relative;
+}
+
+.padrinho-loading {
+  position: absolute;
+  right: 38px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.btn-limpar-padrinho {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 0 4px;
+  font-size: 13px;
+  color: var(--cor-texto-secundario);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.btn-limpar-padrinho:hover {
+  color: var(--cor-erro);
+}
+
+.padrinho-sugestoes {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1060;
+  background: var(--cor-surface);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-md);
+  box-shadow: var(--sombra-card);
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.padrinho-sugestao-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.padrinho-sugestao-item:hover {
+  background: var(--cor-surface-alt);
+}
+
+.padrinho-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--cor-primaria-clara);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.padrinho-dados {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.padrinho-dados strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cor-texto);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.padrinho-dados small {
+  font-size: 11px;
+  color: var(--cor-texto-secundario);
+}
+
+/* ================================================
    RESPONSIVO — TABLET (768px)
    ================================================ */
 @media (max-width: 768px) {

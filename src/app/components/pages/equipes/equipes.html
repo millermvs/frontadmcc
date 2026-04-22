@@ -245,6 +245,17 @@
 
               <td class="cell-acoes">
                 <div class="acoes-group">
+                  <!-- Gerenciar diretores (DE + DT) -->
+                  <button
+                    class="btn-acao btn-cargo"
+                    (click)="abrirModalDiretores(equipe)"
+                    title="Gerenciar diretores"
+                    type="button"
+                    aria-label="Gerenciar diretores de {{ equipe.nomeEquipe }}"
+                  >
+                    <i class="bi bi-briefcase-fill" aria-hidden="true"></i>
+                  </button>
+
                   <button
                     class="btn-acao btn-editar"
                     (click)="abrirModalEditarEquipe(equipe)"
@@ -1207,6 +1218,299 @@
           </button>
         </div>
 
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================================
+     MODAL — DIRETORES DA EQUIPE (DE + DT)
+     Aberto por Modal.getOrCreateInstance(nativeElement).show() via ViewChild.
+     Exibe a diretoria ativa, o histórico completo e o formulário de designação.
+     O modal permanece aberto após salvar para permitir designações em sequência.
+     ============================================================================ -->
+<div
+  #modalDiretoresEl
+  class="modal fade"
+  id="modalDiretoresEquipe"
+  tabindex="-1"
+  aria-labelledby="modalDiretoresEquipeLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <!-- HEADER -->
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalDiretoresEquipeLabel">
+          <i class="bi bi-briefcase-fill me-2"></i>
+          Diretores —
+          @if (equipeSelecionadaDiretores()) {
+            {{ equipeSelecionadaDiretores()!.nomeEquipe }}
+          }
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body">
+
+        <!-- ── SPINNER de carregamento inicial ── -->
+        @if (carregandoDiretores()) {
+          <div class="text-center py-5">
+            <div class="spinner-border text-success" role="status" aria-hidden="true"></div>
+            <p class="mt-3 text-muted-sm">Carregando diretores...</p>
+          </div>
+
+        } @else {
+
+          <!-- ── SEÇÃO 1: Diretoria Atual ── -->
+          <h6 class="section-titulo">Diretoria Atual</h6>
+
+          <div class="row g-2 mb-4">
+
+            <!-- D.E. ativo -->
+            <div class="col-12">
+              <div class="diretoria-card">
+                <span class="diretoria-sigla de">D.E.</span>
+                <div class="diretoria-info">
+                  <span class="diretoria-cargo">Diretor de Equipe</span>
+                  @if (diretorEquipeAtivo()) {
+                    <span class="diretoria-nome">{{ diretorEquipeAtivo()!.nomeAssociado }}</span>
+                    <span class="diretoria-data">desde {{ formatarData(diretorEquipeAtivo()!.dataInicio) }}</span>
+                  } @else {
+                    <span class="diretoria-vago">Cargo sem titular ativo</span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- DT por nível -->
+            @for (nivel of NIVEIS_TERRITORIO; track nivel) {
+              <div class="col-12 col-md-4">
+                <div class="diretoria-card">
+                  <span class="diretoria-sigla dt">{{ LABELS_NIVEL[nivel].split(' ')[2].replace('(', '').replace(')', '') }}</span>
+                  <div class="diretoria-info">
+                    <span class="diretoria-cargo">{{ LABELS_NIVEL[nivel] }}</span>
+                    @if (mapaDiretoresTerritorioAtivos().get(nivel); as dtAtivo) {
+                      <span class="diretoria-nome">{{ dtAtivo.nomeAssociado }}</span>
+                      <span class="diretoria-data">desde {{ formatarData(dtAtivo.dataInicio) }}</span>
+                    } @else {
+                      <span class="diretoria-vago">Cargo sem titular ativo</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+          </div>
+
+          <!-- ── SEÇÃO 2: Histórico completo ── -->
+          @if (diretoresEquipe().length > 0 || diretoresTerritorio().length > 0) {
+            <h6 class="section-titulo">Histórico</h6>
+            <div class="table-responsive mb-4">
+              <table class="table table-sm table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Cargo</th>
+                    <th>Associado</th>
+                    <th>Início</th>
+                    <th>Término</th>
+                    <th>Situação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (d of diretoresEquipe(); track d.idDiretorEquipe) {
+                    <tr>
+                      <td><span class="diretoria-sigla de sm">D.E.</span></td>
+                      <td>{{ d.nomeAssociado }}</td>
+                      <td>{{ formatarData(d.dataInicio) }}</td>
+                      <td>{{ formatarData(d.dataFim) }}</td>
+                      <td>
+                        <span [class]="d.dataFim === null ? 'status-chip status-ativa' : 'status-chip status-inativa'">
+                          {{ d.dataFim === null ? 'Ativo' : 'Encerrado' }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                  @for (d of diretoresTerritorio(); track d.idDiretorTerritorio) {
+                    <tr>
+                      <td>
+                        <span class="diretoria-sigla dt sm">
+                          {{ LABELS_NIVEL[d.nivel].split(' ')[1].replace('(', '').replace(')', '')}}
+                        </span>
+                      </td>
+                      <td>{{ d.nomeAssociado }}</td>
+                      <td>{{ formatarData(d.dataInicio) }}</td>
+                      <td>{{ formatarData(d.dataFim) }}</td>
+                      <td>
+                        <span [class]="d.dataFim === null ? 'status-chip status-ativa' : 'status-chip status-inativa'">
+                          {{ d.dataFim === null ? 'Ativo' : 'Encerrado' }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          <hr class="my-3">
+
+          <!-- ── SEÇÃO 3: Designar novo diretor ── -->
+          <h6 class="section-titulo">Designar Novo Diretor</h6>
+
+          <form [formGroup]="formDiretor">
+            <div class="row g-3">
+
+              <!-- Tipo de cargo -->
+              <div class="col-md-4">
+                <label class="form-label">
+                  Cargo <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <select
+                  class="form-select"
+                  formControlName="tipoCargo"
+                >
+                  <option value="DE">D.E. — Diretor de Equipe</option>
+                  <option value="DT">D.T. — Diretor de Território</option>
+                </select>
+              </div>
+
+              <!-- Nível (só visível quando DT) -->
+              @if (formDiretor.get('tipoCargo')?.value === 'DT') {
+                <div class="col-md-4">
+                  <label class="form-label">
+                    Nível <span class="text-danger" aria-hidden="true">*</span>
+                  </label>
+                  <select
+                    class="form-select"
+                    formControlName="nivel"
+                    [class.is-invalid]="!!errosValidacaoDiretor()['nivel']"
+                  >
+                    <option [ngValue]="null" disabled>Selecione o nível</option>
+                    @for (n of niveisDisponiveis(); track n) {
+                      <option [value]="n">{{ LABELS_NIVEL[n] }}</option>
+                    }
+                  </select>
+                  @if (niveisDisponiveis().length === 0) {
+                    <div class="form-text text-warning">
+                      Todos os níveis de DT já possuem titular ativo.
+                    </div>
+                  }
+                  @if (errosValidacaoDiretor()['nivel']) {
+                    <div class="invalid-feedback">{{ errosValidacaoDiretor()['nivel'] }}</div>
+                  }
+                </div>
+              }
+
+              <!-- Data de início -->
+              <div class="col-md-4">
+                <label class="form-label">
+                  Data de início <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="date"
+                  class="form-control"
+                  formControlName="dataInicio"
+                  [class.is-invalid]="!!errosValidacaoDiretor()['dataInicio']"
+                />
+                @if (formDiretor.get('dataInicio')?.hasError('dataFutura') && formDiretor.get('dataInicio')?.touched) {
+                  <div class="invalid-feedback d-block">A data de início não pode ser futura.</div>
+                }
+                @if (errosValidacaoDiretor()['dataInicio']) {
+                  <div class="invalid-feedback d-block">{{ errosValidacaoDiretor()['dataInicio'] }}</div>
+                }
+              </div>
+
+              <!-- Autocomplete de associado -->
+              <div class="col-12">
+                <label class="form-label">
+                  Associado <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <div class="padrinho-autocomplete-wrap">
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Digite o nome para buscar..."
+                    [value]="nomeAssociadoDiretorInput()"
+                    (input)="atualizarNomeAssociadoDiretor($any($event.target).value)"
+                    (blur)="fecharSugestoesDiretor()"
+                    autocomplete="off"
+                  />
+                  @if (buscandoAssociadoDiretor()) {
+                    <span class="padrinho-loading">
+                      <span class="spinner-border spinner-border-sm text-success" role="status"></span>
+                    </span>
+                  }
+                  @if (idAssociadoDiretorSelecionado()) {
+                    <button
+                      type="button"
+                      class="btn-limpar-padrinho"
+                      (click)="limparAssociadoDiretor()"
+                      aria-label="Limpar seleção"
+                    >✕</button>
+                  }
+                  @if (mostrarSugestoesDiretor()) {
+                    <ul class="padrinho-sugestoes">
+                      @for (assoc of sugestoesAssociadoDiretor(); track assoc.idAssociado) {
+                        <li
+                          class="padrinho-sugestao-item"
+                          (mousedown)="selecionarAssociadoDiretor(assoc)"
+                        >
+                          <span class="padrinho-avatar">{{ iniciais(assoc.nomeCompleto) }}</span>
+                          <span class="padrinho-dados">
+                            <strong>{{ assoc.nomeCompleto }}</strong>
+                            <small>{{ assoc.nomeEquipe ?? 'Sem equipe' }}</small>
+                          </span>
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+                @if (errosValidacaoDiretor()['idAssociado']) {
+                  <div class="invalid-feedback d-block">{{ errosValidacaoDiretor()['idAssociado'] }}</div>
+                }
+              </div>
+
+            </div>
+          </form>
+
+          <!-- ── Alerta de erro geral ── -->
+          @if (erroModalDiretor()) {
+            <div class="alert alert-danger d-flex align-items-center gap-2 mt-3 mb-0" role="alert">
+              <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+              {{ erroModalDiretor() }}
+            </div>
+          }
+
+        }
+
+      </div>
+
+      <!-- FOOTER -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          Fechar
+        </button>
+
+        @if (!carregandoDiretores()) {
+          <button
+            type="button"
+            class="btn-salvar-modal"
+            [disabled]="formDiretor.invalid || !idAssociadoDiretorSelecionado() || carregandoModalDiretor()"
+            (click)="salvarDiretor()"
+          >
+            @if (carregandoModalDiretor()) {
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Salvando...
+            } @else {
+              <i class="bi bi-briefcase-fill me-2" aria-hidden="true"></i>
+              Designar
+            }
+          </button>
+        }
       </div>
 
     </div>

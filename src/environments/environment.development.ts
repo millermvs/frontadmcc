@@ -136,6 +136,22 @@ export const environment = {
       porEquipe: (id: number) => `${baseUrl}/equipes-diretor-territorio/equipe/${id}`,
     },
 
+    // ========== DIRETORES DE EQUIPE (DE) ==========
+    diretoresEquipe: {
+      cadastrar: `${baseUrl}/diretores-equipe`,
+      buscarPorId: (id: number) => `${baseUrl}/diretores-equipe/${id}`,
+      editar: (id: number) => `${baseUrl}/diretores-equipe/${id}`,
+      porEquipe: (id: number) => `${baseUrl}/diretores-equipe/equipe/${id}`,
+    },
+
+    // ========== DIRETORES DE TERRITÓRIO (DT) ==========
+    diretoresTerritorio: {
+      cadastrar: `${baseUrl}/diretores-territorio`,
+      buscarPorId: (id: number) => `${baseUrl}/diretores-territorio/${id}`,
+      editar: (id: number) => `${baseUrl}/diretores-territorio/${id}`,
+      porEquipe: (id: number) => `${baseUrl}/diretores-territorio/equipe/${id}`,
+    },
+
     // ========== EQUIPE — LOCAL PRESENCIAL ==========
     // Endpoint separado: só é chamado quando modeloReuniao ≠ ONLINE
     locaisPresenciais: {
