@@ -454,14 +454,16 @@ A validacao acontece em dois niveis complementares:
 ### 9.1 Estrutura de Rotas
 
 ```
-/login                    → Publica (sem guard, sem layout principal)
-/pages                    → Protegida por authGuard (layout com navbar)
-  /pages/dashboard        → Dashboard (lazy loaded)
-  /pages/equipes          → Equipes (lazy loaded)
-  /pages/associados       → Associados (lazy loaded)
-  /pages/[recurso]        → Nova pagina (lazy loaded)
-/                         → Redirect → /pages/dashboard
-/**                       → Redirect → /pages/dashboard (wildcard)
+/login                       → Publica (sem guard, sem layout principal)
+/pages                       → Protegida por authGuard (layout com navbar)
+  /pages/dashboard           → Dashboard (lazy loaded)
+  /pages/equipes             → Equipes (lazy loaded)
+  /pages/associados          → Associados (lazy loaded)
+  /pages/clusters            → Clusters e Atuacoes Especificas (lazy loaded)
+  /pages/cargos-lideranca    → Cargos de Lideranca (lazy loaded)
+  /pages/[recurso]           → Nova pagina (lazy loaded)
+/                            → Redirect → /pages/dashboard
+/**                          → Redirect → /pages/dashboard (wildcard)
 ```
 
 ### 9.2 Regras de Roteamento
@@ -470,7 +472,7 @@ A validacao acontece em dois niveis complementares:
 |-------|---------|
 | **Lazy loading** | Todo componente de pagina carregado via `loadComponent: () => import(...)` |
 | **Guards** | Rotas dentro de `/pages` herdam `authGuard` do pai |
-| **Controle ADM** | Rotas ADM-only sao protegidas por visibilidade na navbar (`@if (isAdm())`) + `@PreAuthorize` no backend. Nao ha `roleGuard` implementado no frontend. |
+| **Controle ADM** | Rotas ADM-only sao protegidas por visibilidade na navbar (`@if (isAdm())`) + `@PreAuthorize` no backend. O `roleGuard` existe em `core/auth/auth.guard.ts` e pode ser aplicado a rotas especificas quando necessario. |
 | **Redirect** | Rota raiz e wildcard redirecionam para `/pages/dashboard` |
 | **Login** | Rota `/login` fica **fora** do grupo `/pages` (sem navbar, sem guard) |
 
@@ -607,7 +609,7 @@ Tokens de forma e sombra:
 
 | Elemento | Propriedade | Valor |
 |----------|-------------|-------|
-| Familia | `font-family` | `'Inter', system-ui, -apple-system, sans-serif` |
+| Familia | `font-family` | `'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif` |
 | Base | `font-size` | `15px` (definido no `body`) |
 | Titulo de pagina | `.page-title` | `28px / weight 800` |
 | Subtitulo de pagina | `.page-subtitle` | `14px / weight 400 / cor-texto-secundario` |
@@ -634,7 +636,7 @@ Contem tudo que e compartilhado entre paginas. Qualquer padrao que aparece em ma
 | KPI Cards | `.kpi-card`, `.kpi-icon`, `.kpi-icon-total`, `.kpi-icon-ativo`, `.kpi-icon-pendente`, `.kpi-icon-inativo`, `.kpi-info`, `.kpi-label`, `.kpi-value` |
 | Filter Bar | `.filter-bar`, `.filter-search-wrap`, `.filter-search-icon`, `.filter-search-input`, `.filter-selects`, `.filter-select-wrap`, `.filter-select-icon`, `.filter-select`, `.filter-count` |
 | Table Container | `.table-card`, `.table-wrapper` |
-| Botoes de acao | `.btn-acao`, `.btn-editar`, `.btn-inativar`, `.btn-reativar` |
+| Botoes de acao | `.btn-acao`, `.btn-editar`, `.btn-inativar`, `.btn-reativar`, `.btn-cargo` (roxo — atribuir/gerenciar cargo) |
 | Status Chips | `.status-chip`, `.status-ativa`, `.status-formacao`, `.status-inativa`, `.status-pre-ativo`, `.status-nova`, `.status-andamento`, `.status-fechada`, `.status-nao-fechada` |
 | Agenda Chips | `.agenda-chip`, `.agenda-hoje`, `.agenda-online`, `.agenda-proxima` |
 | Badges conexao | `.badge-quente`, `.badge-morna`, `.badge-fria` |
@@ -845,7 +847,7 @@ THEN   → Verificacao do resultado (template atualizado, service chamado, erro 
 | Ambiente | Arquivo | URL Base | Caracteristicas |
 |----------|---------|----------|-----------------|
 | **Desenvolvimento** | `environment.development.ts` | `http://localhost:8080/api/v1` | CORS permissivo, logs verbose |
-| **Producao** | `environment.ts` | `https://api.[dominio]/api/v1` | CORS restrito, sem logs de debug |
+| **Producao** | `environment.ts` | `https://apiadmcc.automica.com.br/api/v1` | CORS restrito, sem logs de debug |
 
 ### 15.2 Organizacao dos Endpoints
 
@@ -857,6 +859,8 @@ environment.api.dominio.metodo
 
 - Endpoints estaticos: propriedade string (ex: `listar: \`\${baseUrl}/equipes\``)
 - Endpoints dinamicos: funcao que recebe ID (ex: `buscarPorId: (id: number) => \`\${baseUrl}/equipes/\${id}\``)
+
+**Namespaces existentes:** `auth`, `associados`, `anuidades`, `renovacoes`, `cargosLideranca`, `associadosCargos`, `enderecosResidenciais`, `grupamentos`, `associadosGrupamentos`, `visibilidade`, `equipes`, `equipesCargosAtivos`, `equipesDesignacao`, `equipesDiretorEquipe`, `equipesDiretorTerritorio`, `diretoresEquipe`, `diretoresTerritorio`, `locaisPresenciais`, `pontuacaoFaixas`, `clusters`, `atuacoesEspecificas`, `empresas`, `enderecosComerciais`, `perfisAssociado`, `produtos` (Stripe — checkout).
 
 **Regra:** Toda URL da API e definida no environment. **Nunca** hardcoded no service.
 

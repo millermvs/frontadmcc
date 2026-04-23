@@ -14,9 +14,9 @@
     type="button"
   >
     @if (sidebarExpanded()) {
-      <i class="bi bi-chevron-left" aria-hidden="true"></i>
+      <i class="bi bi-chevron-left" aria-hidden="true" title="Recolher menu"></i>
     } @else {
-      <i class="bi bi-list" aria-hidden="true"></i>
+      <i class="bi bi-list" aria-hidden="true" title="Abrir menu"></i>
     }
   </button>
 
@@ -26,60 +26,62 @@
       class="menu-item"
       routerLink="/pages/dashboard"
       routerLinkActive="active-link"
+      title="Dashboard"
       [routerLinkActiveOptions]="{ exact: true }"
     >
       <span class="menu-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
       <span class="menu-label">Dashboard</span>
+      
     </a>
 
-    <a class="menu-item" routerLink="/pages/equipes" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/equipes" routerLinkActive="active-link" title="Equipes">
       <span class="menu-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Equipes</span>
     </a>
 
-    <a class="menu-item" routerLink="/pages/clusters" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/clusters" routerLinkActive="active-link" title="Clusters / Atuações">
       <span class="menu-icon"><i class="bi bi-diagram-3-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Clusters / Atuações</span>
     </a>
 
     @if (isAdm()) {
-      <a class="menu-item" routerLink="/pages/cargos-lideranca" routerLinkActive="active-link">
+      <a class="menu-item" routerLink="/pages/cargos-lideranca" routerLinkActive="active-link" title="Cargos">
         <span class="menu-icon"><i class="bi bi-award-fill" aria-hidden="true"></i></span>
         <span class="menu-label">Cargos</span>
       </a>
     }
 
-    <a class="menu-item" routerLink="/pages/associados" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/associados" routerLinkActive="active-link" title="Associados">
       <span class="menu-icon"><i class="bi bi-person-badge-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Associados</span>
     </a>
 
-    <a class="menu-item" routerLink="/pages/reunioes" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/reunioes" routerLinkActive="active-link" title="Reuniões">
       <span class="menu-icon"><i class="bi bi-calendar-event-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Reuniões</span>
     </a>
 
-    <a class="menu-item" routerLink="/pages/conexoes" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/conexoes" routerLinkActive="active-link" title="Conexões">
       <span class="menu-icon"><i class="bi bi-share-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Conexões</span>
     </a>
 
-    <a class="menu-item" routerLink="/pages/parcerias" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/parcerias" routerLinkActive="active-link" title="Parcerias">
       <span class="menu-icon"><i class="bi bi-link-45deg" aria-hidden="true"></i></span>
       <span class="menu-label">Parcerias</span>
     </a>
 
-    <a class="menu-item" routerLink="/pages/visitantes" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/visitantes" routerLinkActive="active-link" title="Visitantes">
       <span class="menu-icon"><i class="bi bi-person-plus-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Visitantes</span>
     </a>
 
-    <a class="menu-item" routerLink="/pages/relatorios" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/relatorios" routerLinkActive="active-link" title="Relatórios">
       <span class="menu-icon"><i class="bi bi-file-earmark-bar-graph-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Relatórios</span>
     </a>
 
-    <a class="menu-item" routerLink="/pages/perfil-cc" routerLinkActive="active-link">
+    <a class="menu-item" routerLink="/pages/perfil-cc" routerLinkActive="active-link" title="Perfil C+C">
       <span class="menu-icon"><i class="bi bi-person-vcard-fill" aria-hidden="true"></i></span>
       <span class="menu-label">Perfil C+C</span>
     </a>
@@ -108,7 +110,7 @@
       type="button"
       aria-label="Sair do sistema"
     >
-      <span class="menu-icon"><i class="bi bi-box-arrow-left" aria-hidden="true"></i></span>
+      <span class="menu-icon"><i class="bi bi-box-arrow-left" aria-hidden="true" title="Sair do sistema"></i></span>
       <span class="menu-label">Sair</span>
     </button>
 
