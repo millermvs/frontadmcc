@@ -247,6 +247,15 @@ export class Equipes implements OnInit {
   /** Erros por campo (400) normalizados pelo backend. */
   errosValidacaoDiretor   = signal<Record<string, string>>({});
 
+  /**
+   * encerrandoDiretorEquipeId / encerrandoDiretorTerritorioId
+   * Armazena o ID do registro cujo botão "Encerrar" foi clicado.
+   * Usado para exibir spinner no botão correto e desabilitá-lo enquanto
+   * o PUT está em andamento — sem bloquear os demais botões da tabela.
+   */
+  encerrandoDiretorEquipeId     = signal<number | null>(null);
+  encerrandoDiretorTerritorioId = signal<number | null>(null);
+
   // =========================================================================
   // SIGNALS — AUTOCOMPLETE DE ASSOCIADO (modal de diretores)
   //
@@ -330,6 +339,15 @@ export class Equipes implements OnInit {
     );
     return NIVEIS_TERRITORIO.filter(n => !ativosSet.has(n));
   });
+
+  /**
+   * todosCargosPreenchidos
+   * true quando D.E. + todos os níveis de D.T. já têm titular ativo.
+   * Usado para desabilitar o botão "Designar" e exibir alerta informativo.
+   */
+  todosCargosPreenchidos = computed(() =>
+    !!this.diretorEquipeAtivo() && this.niveisDisponiveis().length === 0
+  );
 
   // =========================================================================
   // FORMULÁRIOS REATIVOS
@@ -727,6 +745,71 @@ export class Equipes implements OnInit {
         complete: () => this.carregandoModalDiretor.set(false),
       });
     }
+  }
+
+  /**
+   * encerrarCargoDiretorEquipe(diretor)
+   *
+   * Envia PUT para o endpoint de Diretor de Equipe com dataFim = hoje.
+   * Mantém todos os campos originais (idEquipe, idAssociado, dataInicio)
+   * — o backend exige o objeto completo mesmo para encerramento parcial.
+   * Após sucesso, atualiza o registro no signal sem recarregar a lista.
+   */
+  encerrarCargoDiretorEquipe(diretor: EquipeDiretorEquipeResponseDto): void {
+    this.encerrandoDiretorEquipeId.set(diretor.idDiretorEquipe);
+    this.erroModalDiretor.set(null);
+
+    const dto: EquipeDiretorEquipeRequestDto = {
+      idEquipe:    diretor.idEquipe,
+      idAssociado: diretor.idAssociado,
+      dataInicio:  diretor.dataInicio,
+      dataFim:     this.obterDataHoje(),
+    };
+
+    this.equipeDiretorService.editarDiretorEquipe(diretor.idDiretorEquipe, dto).subscribe({
+      next: (atualizado) => {
+        this.diretoresEquipe.update(lista =>
+          lista.map(d => d.idDiretorEquipe === atualizado.idDiretorEquipe ? atualizado : d)
+        );
+      },
+      error: (err: HttpErrorResponse) => {
+        this.erroModalDiretor.set(this.extrairMensagemErro(err));
+        this.encerrandoDiretorEquipeId.set(null);
+      },
+      complete: () => this.encerrandoDiretorEquipeId.set(null),
+    });
+  }
+
+  /**
+   * encerrarCargoDiretorTerritorio(diretor)
+   *
+   * Mesmo padrão do encerrarCargoDiretorEquipe, mas para Diretor de Território.
+   * O campo nivel é obrigatório no RequestDto — preservado do registro original.
+   */
+  encerrarCargoDiretorTerritorio(diretor: EquipeDiretorTerritorioResponseDto): void {
+    this.encerrandoDiretorTerritorioId.set(diretor.idDiretorTerritorio);
+    this.erroModalDiretor.set(null);
+
+    const dto: EquipeDiretorTerritorioRequestDto = {
+      idEquipe:    diretor.idEquipe,
+      idAssociado: diretor.idAssociado,
+      nivel:       diretor.nivel,
+      dataInicio:  diretor.dataInicio,
+      dataFim:     this.obterDataHoje(),
+    };
+
+    this.equipeDiretorService.editarDiretorTerritorio(diretor.idDiretorTerritorio, dto).subscribe({
+      next: (atualizado) => {
+        this.diretoresTerritorio.update(lista =>
+          lista.map(d => d.idDiretorTerritorio === atualizado.idDiretorTerritorio ? atualizado : d)
+        );
+      },
+      error: (err: HttpErrorResponse) => {
+        this.erroModalDiretor.set(this.extrairMensagemErro(err));
+        this.encerrandoDiretorTerritorioId.set(null);
+      },
+      complete: () => this.encerrandoDiretorTerritorioId.set(null),
+    });
   }
 
   // =========================================================================

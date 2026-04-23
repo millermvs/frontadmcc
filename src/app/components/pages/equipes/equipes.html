@@ -13,12 +13,7 @@
     </div>
 
     <div class="page-header-right">
-      <button
-        class="btn-nova-equipe"
-        type="button"
-        data-bs-toggle="modal"
-        data-bs-target="#modalNovaEquipe"
-      >
+      <button class="btn-nova-equipe" type="button" data-bs-toggle="modal" data-bs-target="#modalNovaEquipe">
         <i class="bi bi-plus-lg" aria-hidden="true"></i>
         Nova Equipe
       </button>
@@ -80,25 +75,15 @@
   <div class="filter-bar">
     <div class="filter-search-wrap">
       <i class="bi bi-search filter-search-icon" aria-hidden="true"></i>
-      <input
-        class="filter-search-input"
-        type="text"
-        placeholder="Buscar equipe pelo nome…"
-        [value]="termoBusca()"
-        (input)="atualizarBusca($any($event.target).value)"
-        aria-label="Buscar equipe"
-      />
+      <input class="filter-search-input" type="text" placeholder="Buscar equipe pelo nome…" [value]="termoBusca()"
+        (input)="atualizarBusca($any($event.target).value)" aria-label="Buscar equipe" />
     </div>
 
     <div class="filter-selects">
       <div class="filter-select-wrap">
         <i class="bi bi-funnel-fill filter-select-icon" aria-hidden="true"></i>
-        <select
-          class="filter-select"
-          [value]="filtroStatus()"
-          (change)="atualizarFiltroStatus($any($event.target).value)"
-          aria-label="Filtrar por status"
-        >
+        <select class="filter-select" [value]="filtroStatus()"
+          (change)="atualizarFiltroStatus($any($event.target).value)" aria-label="Filtrar por status">
           <option value="Todos">Todos os status</option>
           <option value="ATIVA">Ativa</option>
           <option value="EM_FORMACAO">Em formação</option>
@@ -108,12 +93,8 @@
 
       <div class="filter-select-wrap">
         <i class="bi bi-camera-video-fill filter-select-icon" aria-hidden="true"></i>
-        <select
-          class="filter-select"
-          [value]="filtroModelo()"
-          (change)="atualizarFiltroModelo($any($event.target).value)"
-          aria-label="Filtrar por modelo"
-        >
+        <select class="filter-select" [value]="filtroModelo()"
+          (change)="atualizarFiltroModelo($any($event.target).value)" aria-label="Filtrar por modelo">
           <option value="Todos">Todos os modelos</option>
           <option value="PRESENCIAL">Presencial</option>
           <option value="ONLINE">Online</option>
@@ -145,165 +126,132 @@
 
         <tbody>
           @for (equipe of equipesFiltradas(); track equipe.idEquipe) {
-            <tr class="equipe-row" [class.row-inativa]="equipe.statusEquipe === 'INATIVA'">
+          <tr class="equipe-row" [class.row-inativa]="equipe.statusEquipe === 'INATIVA'">
 
-              <td class="cell-nome">
-                <div class="equipe-avatar">
-                  <span class="avatar-initials">{{ equipe.nomeEquipe.split(' ').slice(-1)[0].charAt(0) }}</span>
+            <td class="cell-nome">
+              <div class="equipe-avatar">
+                <span class="avatar-initials">{{ equipe.nomeEquipe.split(' ').slice(-1)[0].charAt(0) }}</span>
+              </div>
+              <div>
+                <span class="equipe-nome-texto">{{ equipe.nomeEquipe }}</span>
+                <small class="equipe-desde">
+                  Desde {{ formatarData(equipe.dataInicioFormacao) }}
+                </small>
+              </div>
+            </td>
+
+            <td>
+              <span [class]="classeStatus(equipe.statusEquipe)">
+                {{ LABELS_STATUS[equipe.statusEquipe] }}
+              </span>
+            </td>
+
+            <td class="cell-reuniao">
+              <div class="reuniao-linha">
+                <i class="bi bi-calendar2-week" aria-hidden="true"></i>
+                {{ LABELS_DIA[equipe.diaReuniao] }}
+              </div>
+              <div class="reuniao-linha reuniao-secundaria">
+                <i class="bi bi-clock" aria-hidden="true"></i>
+                {{ LABELS_HORARIO[equipe.horarioReuniao] }}
+                &nbsp;·&nbsp;
+
+                <!-- ONLINE: sem interação -->
+                @if (equipe.modeloReuniao === 'ONLINE') {
+                <i class="bi" [ngClass]="iconeModelo(equipe.modeloReuniao)" aria-hidden="true"></i>
+                <span>{{ LABELS_MODELO[equipe.modeloReuniao] }}</span>
+                }
+
+                <!-- PRESENCIAL / HÍBRIDO: clicável para ver/editar endereço -->
+                @if (equipe.modeloReuniao !== 'ONLINE') {
+                <button type="button" class="btn-reuniao-local" title="Ver / Editar Endereço"
+                  aria-label="Ver e editar endereço presencial de {{ equipe.nomeEquipe }}"
+                  (click)="abrirModalEndereco(equipe)" data-bs-toggle="modal" data-bs-target="#modalEnderecoPresencial">
+                  <i class="bi" [ngClass]="iconeModelo(equipe.modeloReuniao)" aria-hidden="true"></i>
+                  {{ LABELS_MODELO[equipe.modeloReuniao] }}
+                </button>
+                }
+              </div>
+            </td>
+
+            <td class="cell-formacao">
+              @if (equipe.statusEquipe !== 'INATIVA') {
+              <div class="formacao-wrap">
+                <div class="formacao-topo">
+                  <span class="formacao-contagem">
+                    {{ equipe.membros }} / {{ equipe.minimoLancamento }}
+                  </span>
+                  <span class="formacao-pct">
+                    {{ percentualFormacao(equipe) | number:'1.0-0' }}%
+                  </span>
                 </div>
-                <div>
-                  <span class="equipe-nome-texto">{{ equipe.nomeEquipe }}</span>
-                  <small class="equipe-desde">
-                    Desde {{ formatarData(equipe.dataInicioFormacao) }}
-                  </small>
+                <div class="progress-track">
+                  <div class="progress-fill" [class.progress-completo]="percentualFormacao(equipe) >= 100"
+                    [style.width.%]="percentualFormacao(equipe)" role="progressbar"
+                    [attr.aria-valuenow]="percentualFormacao(equipe)" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
-              </td>
+              </div>
+              } @else {
+              <span class="text-muted-sm">—</span>
+              }
+            </td>
 
-              <td>
-                <span [class]="classeStatus(equipe.statusEquipe)">
-                  {{ LABELS_STATUS[equipe.statusEquipe] }}
-                </span>
-              </td>
+            <td class="cell-lancamento">
+              @if (equipe.dataEfetivaLancamento) {
+              <div class="lancamento-wrap lancamento-ok">
+                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                <span>{{ formatarData(equipe.dataEfetivaLancamento) }}</span>
+              </div>
+              <small class="lancamento-label">Lançamento efetivo</small>
+              } @else {
+              <div class="lancamento-wrap">
+                <i class="bi bi-calendar-event" aria-hidden="true"></i>
+                <span>{{ formatarData(equipe.dataPrevisaoLancamento) }}</span>
+              </div>
+              <small class="lancamento-label">Previsão</small>
+              }
+            </td>
 
-              <td class="cell-reuniao">
-                <div class="reuniao-linha">
-                  <i class="bi bi-calendar2-week" aria-hidden="true"></i>
-                  {{ LABELS_DIA[equipe.diaReuniao] }}
-                </div>
-                <div class="reuniao-linha reuniao-secundaria">
-                  <i class="bi bi-clock" aria-hidden="true"></i>
-                  {{ LABELS_HORARIO[equipe.horarioReuniao] }}
-                  &nbsp;·&nbsp;
+            <td class="cell-acoes">
+              <div class="acoes-group">
+                <!-- Gerenciar diretores (DE + DT) -->
+                <button class="btn-acao btn-cargo" (click)="abrirModalDiretores(equipe)" title="Gerenciar diretores"
+                  type="button" aria-label="Gerenciar diretores de {{ equipe.nomeEquipe }}">
+                  <i class="bi bi-briefcase-fill" aria-hidden="true"></i>
+                </button>
 
-                  <!-- ONLINE: sem interação -->
-                  @if (equipe.modeloReuniao === 'ONLINE') {
-                    <i class="bi" [ngClass]="iconeModelo(equipe.modeloReuniao)" aria-hidden="true"></i>
-                    <span>{{ LABELS_MODELO[equipe.modeloReuniao] }}</span>
-                  }
+                <button class="btn-acao btn-editar" (click)="abrirModalEditarEquipe(equipe)" title="Editar equipe"
+                  type="button" aria-label="Editar {{ equipe.nomeEquipe }}" data-bs-toggle="modal"
+                  data-bs-target="#modalEditarEquipe">
+                  <i class="bi bi-pencil-fill" aria-hidden="true"></i>
+                </button>
 
-                  <!-- PRESENCIAL / HÍBRIDO: clicável para ver/editar endereço -->
-                  @if (equipe.modeloReuniao !== 'ONLINE') {
-                    <button
-                      type="button"
-                      class="btn-reuniao-local"
-                      title="Ver / Editar Endereço"
-                      aria-label="Ver e editar endereço presencial de {{ equipe.nomeEquipe }}"
-                      (click)="abrirModalEndereco(equipe)"
-                      data-bs-toggle="modal"
-                      data-bs-target="#modalEnderecoPresencial"
-                    >
-                      <i class="bi" [ngClass]="iconeModelo(equipe.modeloReuniao)" aria-hidden="true"></i>
-                      {{ LABELS_MODELO[equipe.modeloReuniao] }}
-                    </button>
-                  }
-                </div>
-              </td>
-
-              <td class="cell-formacao">
                 @if (equipe.statusEquipe !== 'INATIVA') {
-                  <div class="formacao-wrap">
-                    <div class="formacao-topo">
-                      <span class="formacao-contagem">
-                        {{ equipe.membros }} / {{ equipe.minimoLancamento }}
-                      </span>
-                      <span class="formacao-pct">
-                        {{ percentualFormacao(equipe) | number:'1.0-0' }}%
-                      </span>
-                    </div>
-                    <div class="progress-track">
-                      <div
-                        class="progress-fill"
-                        [class.progress-completo]="percentualFormacao(equipe) >= 100"
-                        [style.width.%]="percentualFormacao(equipe)"
-                        role="progressbar"
-                        [attr.aria-valuenow]="percentualFormacao(equipe)"
-                        aria-valuemin="0"
-                        aria-valuemax="100"
-                      ></div>
-                    </div>
-                  </div>
+                <button class="btn-acao btn-inativar" (click)="inativarEquipe(equipe)" title="Inativar equipe"
+                  type="button" aria-label="Inativar {{ equipe.nomeEquipe }}">
+                  <i class="bi bi-slash-circle-fill" aria-hidden="true"></i>
+                </button>
                 } @else {
-                  <span class="text-muted-sm">—</span>
+                <button class="btn-acao btn-reativar" (click)="inativarEquipe(equipe)" title="Reativar equipe"
+                  type="button" aria-label="Reativar {{ equipe.nomeEquipe }}">
+                  <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                </button>
                 }
-              </td>
-
-              <td class="cell-lancamento">
-                @if (equipe.dataEfetivaLancamento) {
-                  <div class="lancamento-wrap lancamento-ok">
-                    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
-                    <span>{{ formatarData(equipe.dataEfetivaLancamento) }}</span>
-                  </div>
-                  <small class="lancamento-label">Lançamento efetivo</small>
-                } @else {
-                  <div class="lancamento-wrap">
-                    <i class="bi bi-calendar-event" aria-hidden="true"></i>
-                    <span>{{ formatarData(equipe.dataPrevisaoLancamento) }}</span>
-                  </div>
-                  <small class="lancamento-label">Previsão</small>
-                }
-              </td>
-
-              <td class="cell-acoes">
-                <div class="acoes-group">
-                  <!-- Gerenciar diretores (DE + DT) -->
-                  <button
-                    class="btn-acao btn-cargo"
-                    (click)="abrirModalDiretores(equipe)"
-                    title="Gerenciar diretores"
-                    type="button"
-                    aria-label="Gerenciar diretores de {{ equipe.nomeEquipe }}"
-                  >
-                    <i class="bi bi-briefcase-fill" aria-hidden="true"></i>
-                  </button>
-
-                  <button
-                    class="btn-acao btn-editar"
-                    (click)="abrirModalEditarEquipe(equipe)"
-                    title="Editar equipe"
-                    type="button"
-                    aria-label="Editar {{ equipe.nomeEquipe }}"
-                    data-bs-toggle="modal"
-                    data-bs-target="#modalEditarEquipe"
-                  >
-                    <i class="bi bi-pencil-fill" aria-hidden="true"></i>
-                  </button>
-
-                  @if (equipe.statusEquipe !== 'INATIVA') {
-                    <button
-                      class="btn-acao btn-inativar"
-                      (click)="inativarEquipe(equipe)"
-                      title="Inativar equipe"
-                      type="button"
-                      aria-label="Inativar {{ equipe.nomeEquipe }}"
-                    >
-                      <i class="bi bi-slash-circle-fill" aria-hidden="true"></i>
-                    </button>
-                  } @else {
-                    <button
-                      class="btn-acao btn-reativar"
-                      (click)="inativarEquipe(equipe)"
-                      title="Reativar equipe"
-                      type="button"
-                      aria-label="Reativar {{ equipe.nomeEquipe }}"
-                    >
-                      <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
-                    </button>
-                  }
-                </div>
-              </td>
-            </tr>
+              </div>
+            </td>
+          </tr>
           }
 
           @empty {
-            <tr>
-              <td colspan="6" class="empty-state">
-                <div class="empty-icon">
-                  <i class="bi bi-people" aria-hidden="true"></i>
-                </div>
-                <p class="empty-title">Nenhuma equipe encontrada</p>
-                <p class="empty-subtitle">Tente ajustar os filtros ou cadastre uma nova equipe.</p>
-              </td>
-            </tr>
+          <tr>
+            <td colspan="6" class="empty-state">
+              <div class="empty-icon">
+                <i class="bi bi-people" aria-hidden="true"></i>
+              </div>
+              <p class="empty-title">Nenhuma equipe encontrada</p>
+              <p class="empty-subtitle">Tente ajustar os filtros ou cadastre uma nova equipe.</p>
+            </td>
+          </tr>
           }
         </tbody>
       </table>
@@ -311,53 +259,37 @@
 
     <!-- PAGINAÇÃO -->
     @if (totalPaginas() > 1) {
-      <div class="paginacao-bar">
+    <div class="paginacao-bar">
 
-        <span class="paginacao-info">
-          Página {{ paginaAtual() + 1 }} de {{ totalPaginas() }}
-          &nbsp;·&nbsp;
-          {{ totalEquipes() }} {{ totalEquipes() <= 1 ? 'equipe' : 'equipes' }} no total
-        </span>
+      <span class="paginacao-info">
+        Página {{ paginaAtual() + 1 }} de {{ totalPaginas() }}
+        &nbsp;·&nbsp;
+        {{ totalEquipes() }} {{ totalEquipes() <= 1 ? 'equipe' : 'equipes' }} no total </span>
 
-        <div class="paginacao-controles">
+          <div class="paginacao-controles">
 
-          <button
-            class="btn-pag"
-            type="button"
-            [disabled]="paginaAtual() === 0 || carregandoLista()"
-            (click)="paginaAnterior()"
-            aria-label="Página anterior"
-          >
-            <i class="bi bi-chevron-left" aria-hidden="true"></i>
-            Anterior
-          </button>
+            <button class="btn-pag" type="button" [disabled]="paginaAtual() === 0 || carregandoLista()"
+              (click)="paginaAnterior()" aria-label="Página anterior">
+              <i class="bi bi-chevron-left" aria-hidden="true"></i>
+              Anterior
+            </button>
 
-          @for (pagina of totalPaginasArray(); track pagina) {
-            <button
-              class="btn-pag-num"
-              type="button"
-              [class.ativo]="pagina === paginaAtual()"
-              (click)="irParaPagina(pagina)"
-              [attr.aria-current]="pagina === paginaAtual() ? 'page' : null"
-              [attr.aria-label]="'Ir para página ' + (pagina + 1)"
-            >
+            @for (pagina of totalPaginasArray(); track pagina) {
+            <button class="btn-pag-num" type="button" [class.ativo]="pagina === paginaAtual()"
+              (click)="irParaPagina(pagina)" [attr.aria-current]="pagina === paginaAtual() ? 'page' : null"
+              [attr.aria-label]="'Ir para página ' + (pagina + 1)">
               {{ pagina + 1 }}
             </button>
-          }
+            }
 
-          <button
-            class="btn-pag"
-            type="button"
-            [disabled]="paginaAtual() >= totalPaginas() - 1 || carregandoLista()"
-            (click)="proximaPagina()"
-            aria-label="Próxima página"
-          >
-            Próxima
-            <i class="bi bi-chevron-right" aria-hidden="true"></i>
-          </button>
+            <button class="btn-pag" type="button" [disabled]="paginaAtual() >= totalPaginas() - 1 || carregandoLista()"
+              (click)="proximaPagina()" aria-label="Próxima página">
+              Próxima
+              <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
 
-        </div>
-      </div>
+          </div>
+    </div>
     }
 
   </div>
@@ -377,299 +309,220 @@
       <!-- CABEÇALHO -->
       <div class="modal-header">
         <h5 class="modal-title fw-bold" id="modalNovaEquipeTitulo">Nova Equipe</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar" (click)="resetarFormulario()"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"
+          (click)="resetarFormulario()"></button>
       </div>
 
       <!-- CORPO -->
       <div class="modal-body">
-      <form [formGroup]="formCadastro" novalidate>
+        <form [formGroup]="formCadastro" novalidate>
 
-        <!-- SEÇÃO 1: Informações Básicas -->
-        <h6 class="text-muted text-uppercase small fw-bold mb-3">Informações Básicas</h6>
+          <!-- SEÇÃO 1: Informações Básicas -->
+          <h6 class="text-muted text-uppercase small fw-bold mb-3">Informações Básicas</h6>
 
-        <div class="row">
-          <div class="col-md-8 mb-3">
-            <label for="nomeEquipe" class="form-label">
-              Nome da Equipe <span class="text-danger">*</span>
-            </label>
-            <input
-              type="text"
-              class="form-control"
-              id="nomeEquipe"
-              formControlName="nomeEquipe"
-              placeholder="Ex: C+C Zona Leste"
-              maxlength="24"
-              [class.is-invalid]="!!errosValidacao()['nomeEquipe']"
-            />
-            @if (errosValidacao()['nomeEquipe']) {
+          <div class="row">
+            <div class="col-md-8 mb-3">
+              <label for="nomeEquipe" class="form-label">
+                Nome da Equipe <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control" id="nomeEquipe" formControlName="nomeEquipe"
+                placeholder="Ex: C+C Zona Leste" maxlength="24" [class.is-invalid]="!!errosValidacao()['nomeEquipe']" />
+              @if (errosValidacao()['nomeEquipe']) {
               <div class="invalid-feedback">{{ errosValidacao()['nomeEquipe'] }}</div>
-            } @else {
+              } @else {
               <small class="form-text text-muted">Deve começar com "C+C". Máx. 20 caracteres.</small>
-            }
+              }
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label for="dataInicioFormacao" class="form-label">
+                Data de Início
+              </label>
+              <input type="date" class="form-control" id="dataInicioFormacao" formControlName="dataInicioFormacao" />
+              <small class="form-text text-muted">Opcional. Padrão: hoje.</small>
+            </div>
           </div>
 
-          <div class="col-md-4 mb-3">
-            <label for="dataInicioFormacao" class="form-label">
-              Data de Início
-            </label>
-            <input
-              type="date"
-              class="form-control"
-              id="dataInicioFormacao"
-              formControlName="dataInicioFormacao"
-            />
-            <small class="form-text text-muted">Opcional. Padrão: hoje.</small>
-          </div>
-        </div>
+          <!-- SEÇÃO 2: Configuração da Reunião -->
+          <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Configuração da Reunião</h6>
 
-        <!-- SEÇÃO 2: Configuração da Reunião -->
-        <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Configuração da Reunião</h6>
-
-        <div class="row">
-          <div class="col-md-4 mb-3">
-            <label for="diaReuniao" class="form-label">
-              Dia da Reunião <span class="text-danger">*</span>
-            </label>
-            <select
-              class="form-select"
-              id="diaReuniao"
-              formControlName="diaReuniao"
-              [class.is-invalid]="!!errosValidacao()['diaReuniao']"
-            >
-              <option [ngValue]="null">-- Selecione --</option>
-              <option value="TERCA">Terça-feira</option>
-              <option value="QUARTA">Quarta-feira</option>
-              <option value="QUINTA">Quinta-feira</option>
-              <option value="SEXTA">Sexta-feira</option>
-            </select>
-            @if (errosValidacao()['diaReuniao']) {
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label for="diaReuniao" class="form-label">
+                Dia da Reunião <span class="text-danger">*</span>
+              </label>
+              <select class="form-select" id="diaReuniao" formControlName="diaReuniao"
+                [class.is-invalid]="!!errosValidacao()['diaReuniao']">
+                <option [ngValue]="null">-- Selecione --</option>
+                <option value="TERCA">Terça-feira</option>
+                <option value="QUARTA">Quarta-feira</option>
+                <option value="QUINTA">Quinta-feira</option>
+                <option value="SEXTA">Sexta-feira</option>
+              </select>
+              @if (errosValidacao()['diaReuniao']) {
               <div class="invalid-feedback">{{ errosValidacao()['diaReuniao'] }}</div>
-            }
-          </div>
+              }
+            </div>
 
-          <div class="col-md-4 mb-3">
-            <label for="horarioReuniao" class="form-label">
-              Horário <span class="text-danger">*</span>
-            </label>
-            <select
-              class="form-select"
-              id="horarioReuniao"
-              formControlName="horarioReuniao"
-              [class.is-invalid]="!!errosValidacao()['horarioReuniao']"
-            >
-              <option [ngValue]="null">-- Selecione --</option>
-              <option value="08:00:00">08:00</option>
-              <option value="09:00:00">09:00</option>
-              <option value="10:00:00">10:00</option>
-              <option value="11:00:00">11:00</option>
-              <option value="13:00:00">13:00</option>
-              <option value="14:00:00">14:00</option>
-              <option value="15:00:00">15:00</option>
-              <option value="16:00:00">16:00</option>
-              <option value="17:00:00">17:00</option>
-              <option value="18:00:00">18:00</option>
-              <option value="19:00:00">19:00</option>
-              <option value="20:00:00">20:00</option>
-            </select>
-            @if (errosValidacao()['horarioReuniao']) {
+            <div class="col-md-4 mb-3">
+              <label for="horarioReuniao" class="form-label">
+                Horário <span class="text-danger">*</span>
+              </label>
+              <select class="form-select" id="horarioReuniao" formControlName="horarioReuniao"
+                [class.is-invalid]="!!errosValidacao()['horarioReuniao']">
+                <option [ngValue]="null">-- Selecione --</option>
+                <option value="08:00:00">08:00</option>
+                <option value="09:00:00">09:00</option>
+                <option value="10:00:00">10:00</option>
+                <option value="11:00:00">11:00</option>
+                <option value="13:00:00">13:00</option>
+                <option value="14:00:00">14:00</option>
+                <option value="15:00:00">15:00</option>
+                <option value="16:00:00">16:00</option>
+                <option value="17:00:00">17:00</option>
+                <option value="18:00:00">18:00</option>
+                <option value="19:00:00">19:00</option>
+                <option value="20:00:00">20:00</option>
+              </select>
+              @if (errosValidacao()['horarioReuniao']) {
               <div class="invalid-feedback">{{ errosValidacao()['horarioReuniao'] }}</div>
-            }
-          </div>
+              }
+            </div>
 
-          <div class="col-md-4 mb-3">
-            <label for="modeloReuniao" class="form-label">
-              Modelo <span class="text-danger">*</span>
-            </label>
-            <select
-              class="form-select"
-              id="modeloReuniao"
-              formControlName="modeloReuniao"
-              [class.is-invalid]="!!errosValidacao()['modeloReuniao']"
-            >
-              <option [ngValue]="null">-- Selecione --</option>
-              <option value="HIBRIDO">Híbrido (1ª e 3ª presencial)</option>
-              <option value="ONLINE">100% Online</option>
-              <option value="PRESENCIAL">100% Presencial</option>
-            </select>
-            @if (errosValidacao()['modeloReuniao']) {
+            <div class="col-md-4 mb-3">
+              <label for="modeloReuniao" class="form-label">
+                Modelo <span class="text-danger">*</span>
+              </label>
+              <select class="form-select" id="modeloReuniao" formControlName="modeloReuniao"
+                [class.is-invalid]="!!errosValidacao()['modeloReuniao']">
+                <option [ngValue]="null">-- Selecione --</option>
+                <option value="HIBRIDO">Híbrido (1ª e 3ª presencial)</option>
+                <option value="ONLINE">100% Online</option>
+                <option value="PRESENCIAL">100% Presencial</option>
+              </select>
+              @if (errosValidacao()['modeloReuniao']) {
               <div class="invalid-feedback">{{ errosValidacao()['modeloReuniao'] }}</div>
-            }
+              }
+            </div>
           </div>
-        </div>
 
-        <!-- SEÇÃO 3: Local Presencial — só aparece quando modelo foi selecionado E não é ONLINE -->
-        @if (modeloCadastro && modeloCadastro !== 'ONLINE') {
+          <!-- SEÇÃO 3: Local Presencial — só aparece quando modelo foi selecionado E não é ONLINE -->
+          @if (modeloCadastro && modeloCadastro !== 'ONLINE') {
           <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Local Presencial</h6>
 
           <div formGroupName="localPresencial">
             <div class="row">
               <div class="col-md-8 mb-3">
                 <label for="rua" class="form-label">Rua <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="rua"
-                  formControlName="rua"
-                  placeholder="Ex: Av. Paulista"
-                  maxlength="150"
-                  [class.is-invalid]="!!errosValidacao()['rua']"
-                />
+                <input type="text" class="form-control" id="rua" formControlName="rua" placeholder="Ex: Av. Paulista"
+                  maxlength="150" [class.is-invalid]="!!errosValidacao()['rua']" />
                 @if (errosValidacao()['rua']) {
-                  <div class="invalid-feedback">{{ errosValidacao()['rua'] }}</div>
+                <div class="invalid-feedback">{{ errosValidacao()['rua'] }}</div>
                 }
               </div>
               <div class="col-md-4 mb-3">
                 <label for="numero" class="form-label">Número <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="numero"
-                  formControlName="numero"
-                  placeholder="Ex: 1000"
-                  maxlength="20"
-                  [class.is-invalid]="!!errosValidacao()['numero']"
-                />
+                <input type="text" class="form-control" id="numero" formControlName="numero" placeholder="Ex: 1000"
+                  maxlength="20" [class.is-invalid]="!!errosValidacao()['numero']" />
                 @if (errosValidacao()['numero']) {
-                  <div class="invalid-feedback">{{ errosValidacao()['numero'] }}</div>
+                <div class="invalid-feedback">{{ errosValidacao()['numero'] }}</div>
                 }
               </div>
             </div>
 
             <div class="mb-3">
               <label for="complemento" class="form-label">Complemento (opcional)</label>
-              <input
-                type="text"
-                class="form-control"
-                id="complemento"
-                formControlName="complemento"
-                placeholder="Ex: Sala 500, Conjunto 10"
-                maxlength="80"
-              />
+              <input type="text" class="form-control" id="complemento" formControlName="complemento"
+                placeholder="Ex: Sala 500, Conjunto 10" maxlength="80" />
             </div>
 
             <div class="row">
               <div class="col-md-4 mb-3">
                 <label for="bairro" class="form-label">Bairro <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="bairro"
-                  formControlName="bairro"
-                  placeholder="Ex: Bela Vista"
-                  maxlength="100"
-                  [class.is-invalid]="!!errosValidacao()['bairro']"
-                />
+                <input type="text" class="form-control" id="bairro" formControlName="bairro"
+                  placeholder="Ex: Bela Vista" maxlength="100" [class.is-invalid]="!!errosValidacao()['bairro']" />
                 @if (errosValidacao()['bairro']) {
-                  <div class="invalid-feedback">{{ errosValidacao()['bairro'] }}</div>
+                <div class="invalid-feedback">{{ errosValidacao()['bairro'] }}</div>
                 }
               </div>
               <div class="col-md-4 mb-3">
                 <label for="cidade" class="form-label">Cidade <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="cidade"
-                  formControlName="cidade"
-                  placeholder="Ex: São Paulo"
-                  maxlength="100"
-                  [class.is-invalid]="!!errosValidacao()['cidade']"
-                />
+                <input type="text" class="form-control" id="cidade" formControlName="cidade" placeholder="Ex: São Paulo"
+                  maxlength="100" [class.is-invalid]="!!errosValidacao()['cidade']" />
                 @if (errosValidacao()['cidade']) {
-                  <div class="invalid-feedback">{{ errosValidacao()['cidade'] }}</div>
+                <div class="invalid-feedback">{{ errosValidacao()['cidade'] }}</div>
                 }
               </div>
               <div class="col-md-2 mb-3">
                 <label for="uf" class="form-label">UF <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control text-uppercase"
-                  id="uf"
-                  formControlName="uf"
-                  placeholder="SP"
-                  maxlength="2"
-                  [class.is-invalid]="!!errosValidacao()['uf']"
-                />
+                <input type="text" class="form-control text-uppercase" id="uf" formControlName="uf" placeholder="SP"
+                  maxlength="2" [class.is-invalid]="!!errosValidacao()['uf']" />
                 @if (errosValidacao()['uf']) {
-                  <div class="invalid-feedback">{{ errosValidacao()['uf'] }}</div>
+                <div class="invalid-feedback">{{ errosValidacao()['uf'] }}</div>
                 }
               </div>
               <div class="col-md-2 mb-3">
                 <label for="cep" class="form-label">CEP <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="cep"
-                  formControlName="cep"
-                  placeholder="01311100"
-                  maxlength="8"
-                  [class.is-invalid]="!!errosValidacao()['cep']"
-                />
+                <input type="text" class="form-control" id="cep" formControlName="cep" placeholder="01311100"
+                  maxlength="8" [class.is-invalid]="!!errosValidacao()['cep']" />
                 @if (errosValidacao()['cep']) {
-                  <div class="invalid-feedback">{{ errosValidacao()['cep'] }}</div>
+                <div class="invalid-feedback">{{ errosValidacao()['cep'] }}</div>
                 }
               </div>
             </div>
           </div>
-        }
+          }
 
-        <!-- SEÇÃO 4: Link Online — só aparece quando modelo foi selecionado E não é PRESENCIAL -->
-        @if (modeloCadastro && modeloCadastro !== 'PRESENCIAL') {
+          <!-- SEÇÃO 4: Link Online — só aparece quando modelo foi selecionado E não é PRESENCIAL -->
+          @if (modeloCadastro && modeloCadastro !== 'PRESENCIAL') {
           <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Link Online</h6>
 
           <div class="mb-3">
             <label for="linkZoom" class="form-label">
               Link Zoom
-              @if (modeloCadastro === 'ONLINE') {                
+              @if (modeloCadastro === 'ONLINE') {
               } @else {
-                <span class="text-muted">(recomendado para reuniões online)</span>
+              <span class="text-muted">(recomendado para reuniões online)</span>
               }
             </label>
-            <input
-              type="url"
-              class="form-control"
-              id="linkZoom"
-              formControlName="linkReuniaoOnline"
-              placeholder="https://zoom.us/j/123456789"
-              [class.is-invalid]="!!errosValidacao()['linkReuniaoOnline']"
-            />
+            <input type="url" class="form-control" id="linkZoom" formControlName="linkReuniaoOnline"
+              placeholder="https://zoom.us/j/123456789" [class.is-invalid]="!!errosValidacao()['linkReuniaoOnline']" />
             @if (errosValidacao()['linkReuniaoOnline']) {
-              <div class="invalid-feedback">{{ errosValidacao()['linkReuniaoOnline'] }}</div>
+            <div class="invalid-feedback">{{ errosValidacao()['linkReuniaoOnline'] }}</div>
             }
           </div>
-        }
+          }
 
-      </form>
+        </form>
       </div>
 
       <!-- Botão oculto: ViewChild no component.ts o acessa pela ref #btnFecharModalEquipe -->
-      <button #btnFecharModalEquipe type="button" data-bs-dismiss="modal" style="display:none" aria-hidden="true"></button>
+      <button #btnFecharModalEquipe type="button" data-bs-dismiss="modal" style="display:none"
+        aria-hidden="true"></button>
 
       <!-- RODAPÉ -->
       <div class="modal-footer flex-column align-items-stretch gap-2">
 
         @if (erroModalEquipe()) {
-          <div class="alert alert-danger mb-0">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            {{ erroModalEquipe() }}
-          </div>
+        <div class="alert alert-danger mb-0">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          {{ erroModalEquipe() }}
+        </div>
         }
 
         <div class="d-flex justify-content-end gap-2">
-          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" (click)="resetarFormulario()">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"
+            (click)="resetarFormulario()">
             Cancelar
           </button>
-          <button
-            type="button"
-            class="btn-salvar-modal"
-            (click)="salvarNovaEquipe()"
-            [disabled]="formCadastro.invalid || carregandoModal()"
-          >
+          <button type="button" class="btn-salvar-modal" (click)="salvarNovaEquipe()"
+            [disabled]="formCadastro.invalid || carregandoModal()">
             @if (carregandoModal()) {
-              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-              Salvando...
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Salvando...
             } @else {
-              <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
-              Salvar Equipe
+            <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+            Salvar Equipe
             }
           </button>
         </div>
@@ -698,13 +551,8 @@
             {{ nomeEquipeEndereco() }}
           </h5>
         </div>
-        <button
-          type="button"
-          class="btn-close btn-close-white"
-          data-bs-dismiss="modal"
-          aria-label="Fechar"
-          (click)="resetarFormularioEndereco()"
-        ></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"
+          (click)="resetarFormularioEndereco()"></button>
       </div>
 
       <!-- CORPO -->
@@ -712,190 +560,132 @@
 
         <!-- CARREGANDO -->
         @if (carregandoEndereco()) {
-          <div class="endereco-loading">
-            <span class="spinner-border spinner-border-sm text-success me-2"></span>
-            Carregando endereço...
-          </div>
+        <div class="endereco-loading">
+          <span class="spinner-border spinner-border-sm text-success me-2"></span>
+          Carregando endereço...
+        </div>
         }
 
         <!-- ERRO AO CARREGAR -->
         @if (!carregandoEndereco() && erroEndereco() && !enderecoAtual()) {
-          <div class="alert alert-danger">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            {{ erroEndereco() }}
-          </div>
+        <div class="alert alert-danger">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          {{ erroEndereco() }}
+        </div>
         }
 
         <!-- FORMULÁRIO (exibido quando endereço foi carregado) -->
         @if (!carregandoEndereco() && enderecoAtual()) {
-          <form [formGroup]="formEndereco" novalidate>
+        <form [formGroup]="formEndereco" novalidate>
 
-            <div class="row">
-              <div class="col-8 mb-3">
-                <label for="endRua" class="form-label">Rua <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  id="endRua"
-                  formControlName="rua"
-                  placeholder="Ex: Av. Paulista"
-                  maxlength="150"
-                  [class.is-invalid]="!!errosValidacaoEndereco()['rua']"
-                />
-                @if (errosValidacaoEndereco()['rua']) {
-                  <div class="invalid-feedback">{{ errosValidacaoEndereco()['rua'] }}</div>
-                }
-              </div>
-              <div class="col-4 mb-3">
-                <label for="endNumero" class="form-label">Número <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  id="endNumero"
-                  formControlName="numero"
-                  placeholder="Ex: 1000"
-                  maxlength="20"
-                  [class.is-invalid]="!!errosValidacaoEndereco()['numero']"
-                />
-                @if (errosValidacaoEndereco()['numero']) {
-                  <div class="invalid-feedback">{{ errosValidacaoEndereco()['numero'] }}</div>
-                }
-              </div>
-            </div>
-
-            <div class="mb-3">
-              <label for="endComplemento" class="form-label">Complemento <span class="text-muted">(opcional)</span></label>
-              <input
-                type="text"
-                class="form-control form-control-sm"
-                id="endComplemento"
-                formControlName="complemento"
-                placeholder="Ex: Sala 500"
-                maxlength="80"
-              />
-            </div>
-
-            <div class="row">
-              <div class="col-5 mb-3">
-                <label for="endBairro" class="form-label">Bairro <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  id="endBairro"
-                  formControlName="bairro"
-                  placeholder="Ex: Bela Vista"
-                  maxlength="100"
-                  [class.is-invalid]="!!errosValidacaoEndereco()['bairro']"
-                />
-                @if (errosValidacaoEndereco()['bairro']) {
-                  <div class="invalid-feedback">{{ errosValidacaoEndereco()['bairro'] }}</div>
-                }
-              </div>
-              <div class="col-4 mb-3">
-                <label for="endCidade" class="form-label">Cidade <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  id="endCidade"
-                  formControlName="cidade"
-                  placeholder="Ex: São Paulo"
-                  maxlength="100"
-                  [class.is-invalid]="!!errosValidacaoEndereco()['cidade']"
-                />
-                @if (errosValidacaoEndereco()['cidade']) {
-                  <div class="invalid-feedback">{{ errosValidacaoEndereco()['cidade'] }}</div>
-                }
-              </div>
-              <div class="col-3 mb-3">
-                <label for="endUf" class="form-label">UF <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control form-control-sm text-uppercase"
-                  id="endUf"
-                  formControlName="uf"
-                  placeholder="SP"
-                  maxlength="2"
-                  [class.is-invalid]="!!errosValidacaoEndereco()['uf']"
-                />
-                @if (errosValidacaoEndereco()['uf']) {
-                  <div class="invalid-feedback">{{ errosValidacaoEndereco()['uf'] }}</div>
-                }
-              </div>
-            </div>
-
-            <div class="mb-1">
-              <label for="endCep" class="form-label">CEP <span class="text-danger">*</span></label>
-              <input
-                type="text"
-                class="form-control form-control-sm"
-                id="endCep"
-                formControlName="cep"
-                placeholder="01311100"
-                maxlength="8"
-                [class.is-invalid]="!!errosValidacaoEndereco()['cep']"
-              />
-              @if (errosValidacaoEndereco()['cep']) {
-                <div class="invalid-feedback">{{ errosValidacaoEndereco()['cep'] }}</div>
+          <div class="row">
+            <div class="col-8 mb-3">
+              <label for="endRua" class="form-label">Rua <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm" id="endRua" formControlName="rua"
+                placeholder="Ex: Av. Paulista" maxlength="150" [class.is-invalid]="!!errosValidacaoEndereco()['rua']" />
+              @if (errosValidacaoEndereco()['rua']) {
+              <div class="invalid-feedback">{{ errosValidacaoEndereco()['rua'] }}</div>
               }
             </div>
+            <div class="col-4 mb-3">
+              <label for="endNumero" class="form-label">Número <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm" id="endNumero" formControlName="numero"
+                placeholder="Ex: 1000" maxlength="20" [class.is-invalid]="!!errosValidacaoEndereco()['numero']" />
+              @if (errosValidacaoEndereco()['numero']) {
+              <div class="invalid-feedback">{{ errosValidacaoEndereco()['numero'] }}</div>
+              }
+            </div>
+          </div>
 
-          </form>
+          <div class="mb-3">
+            <label for="endComplemento" class="form-label">Complemento <span
+                class="text-muted">(opcional)</span></label>
+            <input type="text" class="form-control form-control-sm" id="endComplemento" formControlName="complemento"
+              placeholder="Ex: Sala 500" maxlength="80" />
+          </div>
+
+          <div class="row">
+            <div class="col-5 mb-3">
+              <label for="endBairro" class="form-label">Bairro <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm" id="endBairro" formControlName="bairro"
+                placeholder="Ex: Bela Vista" maxlength="100"
+                [class.is-invalid]="!!errosValidacaoEndereco()['bairro']" />
+              @if (errosValidacaoEndereco()['bairro']) {
+              <div class="invalid-feedback">{{ errosValidacaoEndereco()['bairro'] }}</div>
+              }
+            </div>
+            <div class="col-4 mb-3">
+              <label for="endCidade" class="form-label">Cidade <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm" id="endCidade" formControlName="cidade"
+                placeholder="Ex: São Paulo" maxlength="100" [class.is-invalid]="!!errosValidacaoEndereco()['cidade']" />
+              @if (errosValidacaoEndereco()['cidade']) {
+              <div class="invalid-feedback">{{ errosValidacaoEndereco()['cidade'] }}</div>
+              }
+            </div>
+            <div class="col-3 mb-3">
+              <label for="endUf" class="form-label">UF <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm text-uppercase" id="endUf" formControlName="uf"
+                placeholder="SP" maxlength="2" [class.is-invalid]="!!errosValidacaoEndereco()['uf']" />
+              @if (errosValidacaoEndereco()['uf']) {
+              <div class="invalid-feedback">{{ errosValidacaoEndereco()['uf'] }}</div>
+              }
+            </div>
+          </div>
+
+          <div class="mb-1">
+            <label for="endCep" class="form-label">CEP <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" id="endCep" formControlName="cep"
+              placeholder="01311100" maxlength="8" [class.is-invalid]="!!errosValidacaoEndereco()['cep']" />
+            @if (errosValidacaoEndereco()['cep']) {
+            <div class="invalid-feedback">{{ errosValidacaoEndereco()['cep'] }}</div>
+            }
+          </div>
+
+        </form>
         }
 
       </div>
 
       <!-- Botão oculto: ViewChild no component.ts acessa por #btnFecharModalEndereco -->
-      <button #btnFecharModalEndereco type="button" data-bs-dismiss="modal" style="display:none" aria-hidden="true"></button>
+      <button #btnFecharModalEndereco type="button" data-bs-dismiss="modal" style="display:none"
+        aria-hidden="true"></button>
 
       <!-- RODAPÉ -->
       <div class="modal-footer d-flex justify-content-between align-items-center">
 
         <!-- BOTÃO COPIAR (esquerda) -->
-        <button
-          type="button"
-          class="btn-copiar-endereco"
-          [class.btn-copiar-copiado]="enderecoCopiado()"
-          (click)="copiarEndereco()"
-          [disabled]="!enderecoAtual() || carregandoEndereco()"
-          title="Copiar endereço completo"
-        >
+        <button type="button" class="btn-copiar-endereco" [class.btn-copiar-copiado]="enderecoCopiado()"
+          (click)="copiarEndereco()" [disabled]="!enderecoAtual() || carregandoEndereco()"
+          title="Copiar endereço completo">
           @if (enderecoCopiado()) {
-            <i class="bi bi-clipboard-check-fill me-1"></i>
-            Copiado!
+          <i class="bi bi-clipboard-check-fill me-1"></i>
+          Copiado!
           } @else {
-            <i class="bi bi-clipboard me-1"></i>
-            Copiar
+          <i class="bi bi-clipboard me-1"></i>
+          Copiar
           }
         </button>
 
         <!-- ERRO DE SALVAMENTO -->
         @if (erroEndereco() && enderecoAtual()) {
-          <span class="text-danger small">
-            <i class="bi bi-exclamation-circle me-1"></i>{{ erroEndereco() }}
-          </span>
+        <span class="text-danger small">
+          <i class="bi bi-exclamation-circle me-1"></i>{{ erroEndereco() }}
+        </span>
         }
 
         <!-- AÇÕES (direita) -->
         <div class="d-flex gap-2">
-          <button
-            type="button"
-            class="btn btn-sm btn-secondary"
-            data-bs-dismiss="modal"
-            (click)="resetarFormularioEndereco()"
-          >
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal"
+            (click)="resetarFormularioEndereco()">
             Cancelar
           </button>
-          <button
-            type="button"
-            class="btn btn-sm btn-salvar-modal"
-            (click)="salvarEndereco()"
-            [disabled]="!formEndereco.dirty || formEndereco.invalid || carregandoEndereco() || !enderecoAtual()"
-          >
+          <button type="button" class="btn btn-sm btn-salvar-modal" (click)="salvarEndereco()"
+            [disabled]="!formEndereco.dirty || formEndereco.invalid || carregandoEndereco() || !enderecoAtual()">
             @if (carregandoEndereco() && enderecoAtual()) {
-              <span class="spinner-border spinner-border-sm me-1"></span>
-              Salvando...
+            <span class="spinner-border spinner-border-sm me-1"></span>
+            Salvando...
             } @else {
-              Salvar
+            Salvar
             }
           </button>
         </div>
@@ -920,299 +710,221 @@
       <!-- CABEÇALHO -->
       <div class="modal-header">
         <h5 class="modal-title fw-bold" id="modalEditarEquipeTitulo">Editar Equipe</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar" (click)="resetarFormularioEdicao()"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"
+          (click)="resetarFormularioEdicao()"></button>
       </div>
 
       <!-- CORPO -->
       <div class="modal-body">
-      <form [formGroup]="formEdicao" novalidate>
+        <form [formGroup]="formEdicao" novalidate>
 
-        <!-- SEÇÃO 1: Informações Básicas -->
-        <h6 class="text-muted text-uppercase small fw-bold mb-3">Informações Básicas</h6>
+          <!-- SEÇÃO 1: Informações Básicas -->
+          <h6 class="text-muted text-uppercase small fw-bold mb-3">Informações Básicas</h6>
 
-        <div class="row">
-          <div class="col-md-8 mb-3">
-            <label for="nomeEquipeEdicao" class="form-label">
-              Nome da Equipe <span class="text-danger">*</span>
-            </label>
-            <input
-              type="text"
-              class="form-control"
-              id="nomeEquipeEdicao"
-              formControlName="nomeEquipe"
-              placeholder="Ex: C+C Zona Leste"
-              maxlength="24"
-              [class.is-invalid]="!!errosValidacao()['nomeEquipe']"
-            />
-            @if (errosValidacao()['nomeEquipe']) {
+          <div class="row">
+            <div class="col-md-8 mb-3">
+              <label for="nomeEquipeEdicao" class="form-label">
+                Nome da Equipe <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control" id="nomeEquipeEdicao" formControlName="nomeEquipe"
+                placeholder="Ex: C+C Zona Leste" maxlength="24" [class.is-invalid]="!!errosValidacao()['nomeEquipe']" />
+              @if (errosValidacao()['nomeEquipe']) {
               <div class="invalid-feedback">{{ errosValidacao()['nomeEquipe'] }}</div>
-            } @else {
+              } @else {
               <small class="form-text text-muted">Deve começar com "C+C". Máx. 20 caracteres.</small>
-            }
+              }
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label for="dataInicioFormacaoEdicao" class="form-label">
+                Data de Início
+              </label>
+              <input type="date" class="form-control" id="dataInicioFormacaoEdicao"
+                formControlName="dataInicioFormacao" />
+            </div>
           </div>
 
-          <div class="col-md-4 mb-3">
-            <label for="dataInicioFormacaoEdicao" class="form-label">
-              Data de Início
-            </label>
-            <input
-              type="date"
-              class="form-control"
-              id="dataInicioFormacaoEdicao"
-              formControlName="dataInicioFormacao"
-            />
-          </div>
-        </div>
+          <!-- SEÇÃO 2: Configuração da Reunião -->
+          <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Configuração da Reunião</h6>
 
-        <!-- SEÇÃO 2: Configuração da Reunião -->
-        <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Configuração da Reunião</h6>
-
-        <div class="row">
-          <div class="col-md-4 mb-3">
-            <label for="diaReuniaoEdicao" class="form-label">
-              Dia da Reunião <span class="text-danger">*</span>
-            </label>
-            <select
-              class="form-select"
-              id="diaReuniaoEdicao"
-              formControlName="diaReuniao"
-              [class.is-invalid]="!!errosValidacao()['diaReuniao']"
-            >
-              <option [ngValue]="null">-- Selecione --</option>
-              <option value="TERCA">Terça-feira</option>
-              <option value="QUARTA">Quarta-feira</option>
-              <option value="QUINTA">Quinta-feira</option>
-              <option value="SEXTA">Sexta-feira</option>
-            </select>
-            @if (errosValidacao()['diaReuniao']) {
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label for="diaReuniaoEdicao" class="form-label">
+                Dia da Reunião <span class="text-danger">*</span>
+              </label>
+              <select class="form-select" id="diaReuniaoEdicao" formControlName="diaReuniao"
+                [class.is-invalid]="!!errosValidacao()['diaReuniao']">
+                <option [ngValue]="null">-- Selecione --</option>
+                <option value="TERCA">Terça-feira</option>
+                <option value="QUARTA">Quarta-feira</option>
+                <option value="QUINTA">Quinta-feira</option>
+                <option value="SEXTA">Sexta-feira</option>
+              </select>
+              @if (errosValidacao()['diaReuniao']) {
               <div class="invalid-feedback">{{ errosValidacao()['diaReuniao'] }}</div>
-            }
-          </div>
+              }
+            </div>
 
-          <div class="col-md-4 mb-3">
-            <label for="horarioReuniaoEdicao" class="form-label">
-              Horário <span class="text-danger">*</span>
-            </label>
-            <select
-              class="form-select"
-              id="horarioReuniaoEdicao"
-              formControlName="horarioReuniao"
-              [class.is-invalid]="!!errosValidacao()['horarioReuniao']"
-            >
-              <option [ngValue]="null">-- Selecione --</option>
-              <option value="08:00:00">08:00</option>
-              <option value="09:00:00">09:00</option>
-              <option value="10:00:00">10:00</option>
-              <option value="11:00:00">11:00</option>
-              <option value="13:00:00">13:00</option>
-              <option value="14:00:00">14:00</option>
-              <option value="15:00:00">15:00</option>
-              <option value="16:00:00">16:00</option>
-              <option value="17:00:00">17:00</option>
-              <option value="18:00:00">18:00</option>
-              <option value="19:00:00">19:00</option>
-              <option value="20:00:00">20:00</option>
-            </select>
-            @if (errosValidacao()['horarioReuniao']) {
+            <div class="col-md-4 mb-3">
+              <label for="horarioReuniaoEdicao" class="form-label">
+                Horário <span class="text-danger">*</span>
+              </label>
+              <select class="form-select" id="horarioReuniaoEdicao" formControlName="horarioReuniao"
+                [class.is-invalid]="!!errosValidacao()['horarioReuniao']">
+                <option [ngValue]="null">-- Selecione --</option>
+                <option value="08:00:00">08:00</option>
+                <option value="09:00:00">09:00</option>
+                <option value="10:00:00">10:00</option>
+                <option value="11:00:00">11:00</option>
+                <option value="13:00:00">13:00</option>
+                <option value="14:00:00">14:00</option>
+                <option value="15:00:00">15:00</option>
+                <option value="16:00:00">16:00</option>
+                <option value="17:00:00">17:00</option>
+                <option value="18:00:00">18:00</option>
+                <option value="19:00:00">19:00</option>
+                <option value="20:00:00">20:00</option>
+              </select>
+              @if (errosValidacao()['horarioReuniao']) {
               <div class="invalid-feedback">{{ errosValidacao()['horarioReuniao'] }}</div>
-            }
-          </div>
+              }
+            </div>
 
-          <div class="col-md-4 mb-3">
-            <label for="modeloReuniaoEdicao" class="form-label">
-              Modelo <span class="text-danger">*</span>
-            </label>
-            <select
-              class="form-select"
-              id="modeloReuniaoEdicao"
-              formControlName="modeloReuniao"
-              [class.is-invalid]="!!errosValidacao()['modeloReuniao']"
-            >
-              <option [ngValue]="null">-- Selecione --</option>
-              <option value="HIBRIDO">Híbrido (1ª e 3ª presencial)</option>
-              <option value="ONLINE">100% Online</option>
-              <option value="PRESENCIAL">100% Presencial</option>
-            </select>
-            @if (errosValidacao()['modeloReuniao']) {
+            <div class="col-md-4 mb-3">
+              <label for="modeloReuniaoEdicao" class="form-label">
+                Modelo <span class="text-danger">*</span>
+              </label>
+              <select class="form-select" id="modeloReuniaoEdicao" formControlName="modeloReuniao"
+                [class.is-invalid]="!!errosValidacao()['modeloReuniao']">
+                <option [ngValue]="null">-- Selecione --</option>
+                <option value="HIBRIDO">Híbrido (1ª e 3ª presencial)</option>
+                <option value="ONLINE">100% Online</option>
+                <option value="PRESENCIAL">100% Presencial</option>
+              </select>
+              @if (errosValidacao()['modeloReuniao']) {
               <div class="invalid-feedback">{{ errosValidacao()['modeloReuniao'] }}</div>
-            }
+              }
+            </div>
           </div>
-        </div>
 
-        <!-- SEÇÃO 3: Local Presencial — só aparece quando modelo foi selecionado E não é ONLINE -->
-        @if (modeloEdicao && modeloEdicao !== 'ONLINE') {
+          <!-- SEÇÃO 3: Local Presencial — só aparece quando modelo foi selecionado E não é ONLINE -->
+          @if (modeloEdicao && modeloEdicao !== 'ONLINE') {
           <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Local Presencial</h6>
 
           <div formGroupName="localPresencial">
             <div class="row">
               <div class="col-md-8 mb-3">
                 <label for="ruaEdicao" class="form-label">Rua <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="ruaEdicao"
-                  formControlName="rua"
-                  placeholder="Ex: Av. Paulista"
-                  maxlength="150"
-                  [class.is-invalid]="!!errosValidacao()['rua']"
-                />
+                <input type="text" class="form-control" id="ruaEdicao" formControlName="rua"
+                  placeholder="Ex: Av. Paulista" maxlength="150" [class.is-invalid]="!!errosValidacao()['rua']" />
                 @if (errosValidacao()['rua']) {
-                  <div class="invalid-feedback">{{ errosValidacao()['rua'] }}</div>
+                <div class="invalid-feedback">{{ errosValidacao()['rua'] }}</div>
                 }
               </div>
               <div class="col-md-4 mb-3">
                 <label for="numeroEdicao" class="form-label">Número <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="numeroEdicao"
-                  formControlName="numero"
-                  placeholder="Ex: 1000"
-                  maxlength="20"
-                  [class.is-invalid]="!!errosValidacao()['numero']"
-                />
+                <input type="text" class="form-control" id="numeroEdicao" formControlName="numero"
+                  placeholder="Ex: 1000" maxlength="20" [class.is-invalid]="!!errosValidacao()['numero']" />
                 @if (errosValidacao()['numero']) {
-                  <div class="invalid-feedback">{{ errosValidacao()['numero'] }}</div>
+                <div class="invalid-feedback">{{ errosValidacao()['numero'] }}</div>
                 }
               </div>
             </div>
 
             <div class="mb-3">
               <label for="complementoEdicao" class="form-label">Complemento (opcional)</label>
-              <input
-                type="text"
-                class="form-control"
-                id="complementoEdicao"
-                formControlName="complemento"
-                placeholder="Ex: Sala 500, Conjunto 10"
-                maxlength="80"
-              />
+              <input type="text" class="form-control" id="complementoEdicao" formControlName="complemento"
+                placeholder="Ex: Sala 500, Conjunto 10" maxlength="80" />
             </div>
 
             <div class="row">
               <div class="col-md-4 mb-3">
                 <label for="bairroEdicao" class="form-label">Bairro <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="bairroEdicao"
-                  formControlName="bairro"
-                  placeholder="Ex: Bela Vista"
-                  maxlength="100"
-                  [class.is-invalid]="!!errosValidacao()['bairro']"
-                />
+                <input type="text" class="form-control" id="bairroEdicao" formControlName="bairro"
+                  placeholder="Ex: Bela Vista" maxlength="100" [class.is-invalid]="!!errosValidacao()['bairro']" />
                 @if (errosValidacao()['bairro']) {
-                  <div class="invalid-feedback">{{ errosValidacao()['bairro'] }}</div>
+                <div class="invalid-feedback">{{ errosValidacao()['bairro'] }}</div>
                 }
               </div>
               <div class="col-md-4 mb-3">
                 <label for="cidadeEdicao" class="form-label">Cidade <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="cidadeEdicao"
-                  formControlName="cidade"
-                  placeholder="Ex: São Paulo"
-                  maxlength="100"
-                  [class.is-invalid]="!!errosValidacao()['cidade']"
-                />
+                <input type="text" class="form-control" id="cidadeEdicao" formControlName="cidade"
+                  placeholder="Ex: São Paulo" maxlength="100" [class.is-invalid]="!!errosValidacao()['cidade']" />
                 @if (errosValidacao()['cidade']) {
-                  <div class="invalid-feedback">{{ errosValidacao()['cidade'] }}</div>
+                <div class="invalid-feedback">{{ errosValidacao()['cidade'] }}</div>
                 }
               </div>
               <div class="col-md-2 mb-3">
                 <label for="ufEdicao" class="form-label">UF <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control text-uppercase"
-                  id="ufEdicao"
-                  formControlName="uf"
-                  placeholder="SP"
-                  maxlength="2"
-                  [class.is-invalid]="!!errosValidacao()['uf']"
-                />
+                <input type="text" class="form-control text-uppercase" id="ufEdicao" formControlName="uf"
+                  placeholder="SP" maxlength="2" [class.is-invalid]="!!errosValidacao()['uf']" />
                 @if (errosValidacao()['uf']) {
-                  <div class="invalid-feedback">{{ errosValidacao()['uf'] }}</div>
+                <div class="invalid-feedback">{{ errosValidacao()['uf'] }}</div>
                 }
               </div>
               <div class="col-md-2 mb-3">
                 <label for="cepEdicao" class="form-label">CEP <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="cepEdicao"
-                  formControlName="cep"
-                  placeholder="01311100"
-                  maxlength="8"
-                  [class.is-invalid]="!!errosValidacao()['cep']"
-                />
+                <input type="text" class="form-control" id="cepEdicao" formControlName="cep" placeholder="01311100"
+                  maxlength="8" [class.is-invalid]="!!errosValidacao()['cep']" />
                 @if (errosValidacao()['cep']) {
-                  <div class="invalid-feedback">{{ errosValidacao()['cep'] }}</div>
+                <div class="invalid-feedback">{{ errosValidacao()['cep'] }}</div>
                 }
               </div>
             </div>
           </div>
-        }
+          }
 
-        <!-- SEÇÃO 4: Link Online — só aparece quando modelo foi selecionado E não é PRESENCIAL -->
-        @if (modeloEdicao && modeloEdicao !== 'PRESENCIAL') {
+          <!-- SEÇÃO 4: Link Online — só aparece quando modelo foi selecionado E não é PRESENCIAL -->
+          @if (modeloEdicao && modeloEdicao !== 'PRESENCIAL') {
           <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-4">Link Online</h6>
 
           <div class="mb-3">
             <label for="linkZoomEdicao" class="form-label">
               Link Zoom
               @if (modeloEdicao === 'ONLINE') {
-                
+
               } @else {
-                <span class="text-muted">(recomendado para reuniões online)</span>
+              <span class="text-muted">(recomendado para reuniões online)</span>
               }
             </label>
-            <input
-              type="url"
-              class="form-control"
-              id="linkZoomEdicao"
-              formControlName="linkReuniaoOnline"
-              placeholder="https://zoom.us/j/123456789"
-              [class.is-invalid]="!!errosValidacao()['linkReuniaoOnline']"
-            />
+            <input type="url" class="form-control" id="linkZoomEdicao" formControlName="linkReuniaoOnline"
+              placeholder="https://zoom.us/j/123456789" [class.is-invalid]="!!errosValidacao()['linkReuniaoOnline']" />
             @if (errosValidacao()['linkReuniaoOnline']) {
-              <div class="invalid-feedback">{{ errosValidacao()['linkReuniaoOnline'] }}</div>
+            <div class="invalid-feedback">{{ errosValidacao()['linkReuniaoOnline'] }}</div>
             }
           </div>
-        }
+          }
 
-      </form>
+        </form>
       </div>
 
       <!-- Botão oculto: ViewChild no component.ts o acessa pela ref #btnFecharModalEditarEquipe -->
-      <button #btnFecharModalEditarEquipe type="button" data-bs-dismiss="modal" style="display:none" aria-hidden="true"></button>
+      <button #btnFecharModalEditarEquipe type="button" data-bs-dismiss="modal" style="display:none"
+        aria-hidden="true"></button>
 
       <!-- RODAPÉ -->
       <div class="modal-footer flex-column align-items-stretch gap-2">
 
         @if (erroModalEquipe()) {
-          <div class="alert alert-danger mb-0">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            {{ erroModalEquipe() }}
-          </div>
+        <div class="alert alert-danger mb-0">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          {{ erroModalEquipe() }}
+        </div>
         }
 
         <div class="d-flex justify-content-end gap-2">
-          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" (click)="resetarFormularioEdicao()">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"
+            (click)="resetarFormularioEdicao()">
             Cancelar
           </button>
-          <button
-            type="button"
-            class="btn-salvar-modal"
-            (click)="editarEquipe()"
-            [disabled]="!formEdicao.dirty || formEdicao.invalid || carregandoModal()"
-          >
+          <button type="button" class="btn-salvar-modal" (click)="editarEquipe()"
+            [disabled]="!formEdicao.dirty || formEdicao.invalid || carregandoModal()">
             @if (carregandoModal()) {
-              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-              Salvando...
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Salvando...
             } @else {
-              <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
-              Salvar Alterações
+            <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+            Salvar Alterações
             }
           </button>
         </div>
@@ -1229,14 +941,8 @@
      Exibe a diretoria ativa, o histórico completo e o formulário de designação.
      O modal permanece aberto após salvar para permitir designações em sequência.
      ============================================================================ -->
-<div
-  #modalDiretoresEl
-  class="modal fade"
-  id="modalDiretoresEquipe"
-  tabindex="-1"
-  aria-labelledby="modalDiretoresEquipeLabel"
-  aria-hidden="true"
->
+<div #modalDiretoresEl class="modal fade" id="modalDiretoresEquipe" tabindex="-1"
+  aria-labelledby="modalDiretoresEquipeLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
 
@@ -1246,7 +952,7 @@
           <i class="bi bi-briefcase-fill me-2"></i>
           Diretores —
           @if (equipeSelecionadaDiretores()) {
-            {{ equipeSelecionadaDiretores()!.nomeEquipe }}
+          {{ equipeSelecionadaDiretores()!.nomeEquipe }}
           }
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
@@ -1257,235 +963,261 @@
 
         <!-- ── SPINNER de carregamento inicial ── -->
         @if (carregandoDiretores()) {
-          <div class="text-center py-5">
-            <div class="spinner-border text-success" role="status" aria-hidden="true"></div>
-            <p class="mt-3 text-muted-sm">Carregando diretores...</p>
-          </div>
+        <div class="text-center py-5">
+          <div class="spinner-border text-success" role="status" aria-hidden="true"></div>
+          <p class="mt-3 text-muted-sm">Carregando diretores...</p>
+        </div>
 
         } @else {
 
-          <!-- ── SEÇÃO 1: Diretoria Atual ── -->
-          <h6 class="section-titulo">Diretoria Atual</h6>
+        <!-- ── SEÇÃO 1: Diretoria Atual ── -->
+        <h6 class="section-titulo">Diretoria Atual</h6>
 
-          <div class="row g-2 mb-4">
+        <div class="row g-2 mb-4">
 
-            <!-- D.E. ativo -->
-            <div class="col-12">
-              <div class="diretoria-card">
-                <span class="diretoria-sigla de">D.E.</span>
-                <div class="diretoria-info">
-                  <span class="diretoria-cargo">Diretor de Equipe</span>
-                  @if (diretorEquipeAtivo()) {
-                    <span class="diretoria-nome">{{ diretorEquipeAtivo()!.nomeAssociado }}</span>
-                    <span class="diretoria-data">desde {{ formatarData(diretorEquipeAtivo()!.dataInicio) }}</span>
-                  } @else {
-                    <span class="diretoria-vago">Cargo sem titular ativo</span>
-                  }
-                </div>
+          <!-- D.E. ativo -->
+          <div class="col-12">
+            <div class="diretoria-card">
+              <span class="diretoria-sigla de">D.E.</span>
+              <div class="diretoria-info">
+                <span class="diretoria-cargo">Diretor de Equipe</span>
+                @if (diretorEquipeAtivo()) {
+                <span class="diretoria-nome">{{ diretorEquipeAtivo()!.nomeAssociado }}</span>
+                <span class="diretoria-data">desde {{ formatarData(diretorEquipeAtivo()!.dataInicio) }}</span>
+                } @else {
+                <span class="diretoria-vago">Cargo sem titular ativo</span>
+                }
               </div>
             </div>
-
-            <!-- DT por nível -->
-            @for (nivel of NIVEIS_TERRITORIO; track nivel) {
-              <div class="col-12 col-md-4">
-                <div class="diretoria-card">
-                  <span class="diretoria-sigla dt">{{ LABELS_NIVEL[nivel].split(' ')[2].replace('(', '').replace(')', '') }}</span>
-                  <div class="diretoria-info">
-                    <span class="diretoria-cargo">{{ LABELS_NIVEL[nivel] }}</span>
-                    @if (mapaDiretoresTerritorioAtivos().get(nivel); as dtAtivo) {
-                      <span class="diretoria-nome">{{ dtAtivo.nomeAssociado }}</span>
-                      <span class="diretoria-data">desde {{ formatarData(dtAtivo.dataInicio) }}</span>
-                    } @else {
-                      <span class="diretoria-vago">Cargo sem titular ativo</span>
-                    }
-                  </div>
-                </div>
-              </div>
-            }
-
           </div>
 
-          <!-- ── SEÇÃO 2: Histórico completo ── -->
-          @if (diretoresEquipe().length > 0 || diretoresTerritorio().length > 0) {
-            <h6 class="section-titulo">Histórico</h6>
-            <div class="table-responsive mb-4">
-              <table class="table table-sm table-hover align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th>Cargo</th>
-                    <th>Associado</th>
-                    <th>Início</th>
-                    <th>Término</th>
-                    <th>Situação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (d of diretoresEquipe(); track d.idDiretorEquipe) {
-                    <tr>
-                      <td><span class="diretoria-sigla de sm">D.E.</span></td>
-                      <td>{{ d.nomeAssociado }}</td>
-                      <td>{{ formatarData(d.dataInicio) }}</td>
-                      <td>{{ formatarData(d.dataFim) }}</td>
-                      <td>
-                        <span [class]="d.dataFim === null ? 'status-chip status-ativa' : 'status-chip status-inativa'">
-                          {{ d.dataFim === null ? 'Ativo' : 'Encerrado' }}
-                        </span>
-                      </td>
-                    </tr>
-                  }
-                  @for (d of diretoresTerritorio(); track d.idDiretorTerritorio) {
-                    <tr>
-                      <td>
-                        <span class="diretoria-sigla dt sm">
-                          {{ LABELS_NIVEL[d.nivel].split(' ')[1].replace('(', '').replace(')', '')}}
-                        </span>
-                      </td>
-                      <td>{{ d.nomeAssociado }}</td>
-                      <td>{{ formatarData(d.dataInicio) }}</td>
-                      <td>{{ formatarData(d.dataFim) }}</td>
-                      <td>
-                        <span [class]="d.dataFim === null ? 'status-chip status-ativa' : 'status-chip status-inativa'">
-                          {{ d.dataFim === null ? 'Ativo' : 'Encerrado' }}
-                        </span>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+          <!-- DT por nível -->
+          @for (nivel of NIVEIS_TERRITORIO; track nivel) {
+          <div class="col-12 col-md-4">
+            <div class="diretoria-card">
+              <span class="diretoria-sigla dt">{{ LABELS_NIVEL[nivel].split(' ')[2].replace('(', '').replace(')', '')
+                }}</span>
+              <div class="diretoria-info">
+                <span class="diretoria-cargo">{{ LABELS_NIVEL[nivel] }}</span>
+                @if (mapaDiretoresTerritorioAtivos().get(nivel); as dtAtivo) {
+                <span class="diretoria-nome">{{ dtAtivo.nomeAssociado }}</span>
+                <span class="diretoria-data">desde {{ formatarData(dtAtivo.dataInicio) }}</span>
+                } @else {
+                <span class="diretoria-vago">Cargo sem titular ativo</span>
+                }
+              </div>
             </div>
+          </div>
           }
 
-          <hr class="my-3">
+        </div>
 
-          <!-- ── SEÇÃO 3: Designar novo diretor ── -->
-          <h6 class="section-titulo">Designar Novo Diretor</h6>
+        <hr class="my-3">
 
-          <form [formGroup]="formDiretor">
-            <div class="row g-3">
+        <!-- ── SEÇÃO 3: Designar novo diretor ── -->
+        <h6 class="section-titulo">Designar Novo Diretor</h6>
 
-              <!-- Tipo de cargo -->
-              <div class="col-md-4">
-                <label class="form-label">
-                  Cargo <span class="text-danger" aria-hidden="true">*</span>
-                </label>
-                <select
-                  class="form-select"
-                  formControlName="tipoCargo"
-                >
-                  <option value="DE">D.E. — Diretor de Equipe</option>
-                  <option value="DT">D.T. — Diretor de Território</option>
-                </select>
+        <form [formGroup]="formDiretor">
+          <div class="row g-3">
+
+            <!-- Tipo de cargo -->
+            <div class="col-md-4">
+              <label class="form-label">
+                Cargo <span class="text-danger" aria-hidden="true">*</span>
+              </label>
+              <select class="form-select" formControlName="tipoCargo">
+                <option value="DE" [disabled]="!!diretorEquipeAtivo()">D.E. — Diretor de Equipe</option>
+                <option value="DT" [disabled]="todosCargosPreenchidos()">D.T. — Diretor de Território</option>
+              </select>
+              @if (todosCargosPreenchidos()) {
+              <div class="form-text text-warning mt-1">
+                <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>
+                Todos os cargos de diretoria já estão preenchidos.
               </div>
-
-              <!-- Nível (só visível quando DT) -->
-              @if (formDiretor.get('tipoCargo')?.value === 'DT') {
-                <div class="col-md-4">
-                  <label class="form-label">
-                    Nível <span class="text-danger" aria-hidden="true">*</span>
-                  </label>
-                  <select
-                    class="form-select"
-                    formControlName="nivel"
-                    [class.is-invalid]="!!errosValidacaoDiretor()['nivel']"
-                  >
-                    <option [ngValue]="null" disabled>Selecione o nível</option>
-                    @for (n of niveisDisponiveis(); track n) {
-                      <option [value]="n">{{ LABELS_NIVEL[n] }}</option>
-                    }
-                  </select>
-                  @if (niveisDisponiveis().length === 0) {
-                    <div class="form-text text-warning">
-                      Todos os níveis de DT já possuem titular ativo.
-                    </div>
-                  }
-                  @if (errosValidacaoDiretor()['nivel']) {
-                    <div class="invalid-feedback">{{ errosValidacaoDiretor()['nivel'] }}</div>
-                  }
-                </div>
               }
-
-              <!-- Data de início -->
-              <div class="col-md-4">
-                <label class="form-label">
-                  Data de início <span class="text-danger" aria-hidden="true">*</span>
-                </label>
-                <input
-                  type="date"
-                  class="form-control"
-                  formControlName="dataInicio"
-                  [class.is-invalid]="!!errosValidacaoDiretor()['dataInicio']"
-                />
-                @if (formDiretor.get('dataInicio')?.hasError('dataFutura') && formDiretor.get('dataInicio')?.touched) {
-                  <div class="invalid-feedback d-block">A data de início não pode ser futura.</div>
-                }
-                @if (errosValidacaoDiretor()['dataInicio']) {
-                  <div class="invalid-feedback d-block">{{ errosValidacaoDiretor()['dataInicio'] }}</div>
-                }
-              </div>
-
-              <!-- Autocomplete de associado -->
-              <div class="col-12">
-                <label class="form-label">
-                  Associado <span class="text-danger" aria-hidden="true">*</span>
-                </label>
-                <div class="padrinho-autocomplete-wrap">
-                  <input
-                    type="text"
-                    class="form-control"
-                    placeholder="Digite o nome para buscar..."
-                    [value]="nomeAssociadoDiretorInput()"
-                    (input)="atualizarNomeAssociadoDiretor($any($event.target).value)"
-                    (blur)="fecharSugestoesDiretor()"
-                    autocomplete="off"
-                  />
-                  @if (buscandoAssociadoDiretor()) {
-                    <span class="padrinho-loading">
-                      <span class="spinner-border spinner-border-sm text-success" role="status"></span>
-                    </span>
-                  }
-                  @if (idAssociadoDiretorSelecionado()) {
-                    <button
-                      type="button"
-                      class="btn-limpar-padrinho"
-                      (click)="limparAssociadoDiretor()"
-                      aria-label="Limpar seleção"
-                    >✕</button>
-                  }
-                  @if (mostrarSugestoesDiretor()) {
-                    <ul class="padrinho-sugestoes">
-                      @for (assoc of sugestoesAssociadoDiretor(); track assoc.idAssociado) {
-                        <li
-                          class="padrinho-sugestao-item"
-                          (mousedown)="selecionarAssociadoDiretor(assoc)"
-                        >
-                          <span class="padrinho-avatar">{{ iniciais(assoc.nomeCompleto) }}</span>
-                          <span class="padrinho-dados">
-                            <strong>{{ assoc.nomeCompleto }}</strong>
-                            <small>{{ assoc.nomeEquipe ?? 'Sem equipe' }}</small>
-                          </span>
-                        </li>
-                      }
-                    </ul>
-                  }
-                </div>
-                @if (errosValidacaoDiretor()['idAssociado']) {
-                  <div class="invalid-feedback d-block">{{ errosValidacaoDiretor()['idAssociado'] }}</div>
-                }
-              </div>
-
             </div>
-          </form>
 
-          <!-- ── Alerta de erro geral ── -->
-          @if (erroModalDiretor()) {
+            <!-- Nível (só visível quando DT) -->
+            @if (formDiretor.get('tipoCargo')?.value === 'DT') {
+            <div class="col-md-4">
+              <label class="form-label">
+                Nível <span class="text-danger" aria-hidden="true">*</span>
+              </label>
+              <select class="form-select" formControlName="nivel"
+                [class.is-invalid]="!!errosValidacaoDiretor()['nivel']">
+                <option [ngValue]="null" disabled>Selecione o nível</option>
+                @for (n of niveisDisponiveis(); track n) {
+                <option [value]="n">{{ LABELS_NIVEL[n] }}</option>
+                }
+              </select>
+              @if (niveisDisponiveis().length === 0) {
+              <div class="form-text text-warning">
+                Todos os níveis de DT já possuem titular ativo.
+              </div>
+              }
+              @if (errosValidacaoDiretor()['nivel']) {
+              <div class="invalid-feedback">{{ errosValidacaoDiretor()['nivel'] }}</div>
+              }
+            </div>
+            }
+
+            <!-- Data de início -->
+            <div class="col-md-4">
+              <label class="form-label">
+                Data de início <span class="text-danger" aria-hidden="true">*</span>
+              </label>
+              <input type="date" class="form-control" formControlName="dataInicio"
+                [class.is-invalid]="!!errosValidacaoDiretor()['dataInicio']" />
+              @if (formDiretor.get('dataInicio')?.hasError('dataFutura') && formDiretor.get('dataInicio')?.touched) {
+              <div class="invalid-feedback d-block">A data de início não pode ser futura.</div>
+              }
+              @if (errosValidacaoDiretor()['dataInicio']) {
+              <div class="invalid-feedback d-block">{{ errosValidacaoDiretor()['dataInicio'] }}</div>
+              }
+            </div>
+
+            <!-- Autocomplete de associado -->
+            <div class="col-12">
+              <label class="form-label">
+                Associado <span class="text-danger" aria-hidden="true">*</span>
+              </label>
+              <div class="padrinho-autocomplete-wrap">
+                <input type="text" class="form-control" placeholder="Digite o nome para buscar..."
+                  [value]="nomeAssociadoDiretorInput()"
+                  (input)="atualizarNomeAssociadoDiretor($any($event.target).value)" (blur)="fecharSugestoesDiretor()"
+                  autocomplete="off" />
+                @if (buscandoAssociadoDiretor()) {
+                <span class="padrinho-loading">
+                  <span class="spinner-border spinner-border-sm text-success" role="status"></span>
+                </span>
+                }
+                @if (idAssociadoDiretorSelecionado()) {
+                <button type="button" class="btn-limpar-padrinho" (click)="limparAssociadoDiretor()"
+                  aria-label="Limpar seleção">✕</button>
+                }
+                @if (mostrarSugestoesDiretor()) {
+                <ul class="padrinho-sugestoes">
+                  @for (assoc of sugestoesAssociadoDiretor(); track assoc.idAssociado) {
+                  <li class="padrinho-sugestao-item" (mousedown)="selecionarAssociadoDiretor(assoc)">
+                    <span class="padrinho-avatar">{{ iniciais(assoc.nomeCompleto) }}</span>
+                    <span class="padrinho-dados">
+                      <strong>{{ assoc.nomeCompleto }}</strong>
+                      <small>{{ assoc.nomeEquipe }}</small>
+                    </span>
+                  </li>
+                  }
+                </ul>
+                }
+              </div>
+              @if (errosValidacaoDiretor()['idAssociado']) {
+              <div class="invalid-feedback d-block">{{ errosValidacaoDiretor()['idAssociado'] }}</div>
+              }
+            </div>
+            <!-- ── Alerta de erro geral ── -->
+            @if (erroModalDiretor()) {
             <div class="alert alert-danger d-flex align-items-center gap-2 mt-3 mb-0" role="alert">
               <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
               {{ erroModalDiretor() }}
             </div>
-          }
+            }
+          </div>
+        </form>
 
+        <hr class="my-3">
+
+
+        <!-- ── SEÇÃO 2: Histórico completo ── -->
+        @if (diretoresEquipe().length > 0 || diretoresTerritorio().length > 0) {
+        <h6 class="section-titulo">Histórico</h6>
+        <div class="table-responsive mb-4">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Cargo</th>
+                <th>Associado</th>
+                <th>Início</th>
+                <th>Término</th>
+                <th>Situação</th>
+                <th>Ação</th>
+
+              </tr>
+            </thead>
+            <tbody>
+              @for (d of diretoresEquipe(); track d.idDiretorEquipe) {
+              <tr>
+                <td><span class="diretoria-sigla de sm">D.E.</span></td>
+                <td>{{ d.nomeAssociado }}</td>
+                <td>{{ formatarData(d.dataInicio) }}</td>
+                <td>{{ formatarData(d.dataFim) }}</td>
+                <td>
+                  <span [class]="d.dataFim === null ? 'status-chip status-ativa' : 'status-chip status-inativa'">
+                    {{ d.dataFim === null ? 'Ativo' : 'Encerrado' }}
+                  </span>
+                </td>
+                <td>
+                  @if (d.dataFim === null) {
+                  <div class="acoes-group">
+                    <button class="btn-acao btn-inativar"
+                      (click)="encerrarCargoDiretorEquipe(d)"
+                      title="Encerrar cargo"
+                      type="button"
+                      [disabled]="encerrandoDiretorEquipeId() === d.idDiretorEquipe"
+                      aria-label="Encerrar cargo de {{ d.nomeAssociado }}">
+                      @if (encerrandoDiretorEquipeId() === d.idDiretorEquipe) {
+                      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                      } @else {
+                      <i class="bi bi-slash-circle-fill" aria-hidden="true"></i>
+                      }
+                    </button>
+                  </div>
+                  } @else {
+                  <span class="text-muted">—</span>
+                  }
+                </td>
+              </tr>
+              }
+              @for (d of diretoresTerritorio(); track d.idDiretorTerritorio) {
+              <tr>
+                <td>
+                  <span class="diretoria-sigla dt sm">
+                    {{ LABELS_NIVEL[d.nivel].split(' ')[1].replace('(', '').replace(')', '')}}
+                  </span>
+                </td>
+                <td>{{ d.nomeAssociado }}</td>
+                <td>{{ formatarData(d.dataInicio) }}</td>
+                <td>{{ formatarData(d.dataFim) }}</td>
+                <td>
+                  <span [class]="d.dataFim === null ? 'status-chip status-ativa' : 'status-chip status-inativa'">
+                    {{ d.dataFim === null ? 'Ativo' : 'Encerrado' }}
+                  </span>
+                </td>
+                <td>
+                  @if (d.dataFim === null) {
+                  <div class="acoes-group">
+                    <button class="btn-acao btn-inativar"
+                      (click)="encerrarCargoDiretorTerritorio(d)"
+                      title="Encerrar cargo"
+                      type="button"
+                      [disabled]="encerrandoDiretorTerritorioId() === d.idDiretorTerritorio"
+                      aria-label="Encerrar cargo de {{ d.nomeAssociado }}">
+                      @if (encerrandoDiretorTerritorioId() === d.idDiretorTerritorio) {
+                      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                      } @else {
+                      <i class="bi bi-slash-circle-fill" aria-hidden="true"></i>
+                      }
+                    </button>
+                  </div>
+                  } @else {
+                  <span class="text-muted">—</span>
+                  }
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
         }
-
+        }
       </div>
 
       <!-- FOOTER -->
@@ -1495,20 +1227,17 @@
         </button>
 
         @if (!carregandoDiretores()) {
-          <button
-            type="button"
-            class="btn-salvar-modal"
-            [disabled]="formDiretor.invalid || !idAssociadoDiretorSelecionado() || carregandoModalDiretor()"
-            (click)="salvarDiretor()"
-          >
-            @if (carregandoModalDiretor()) {
-              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-              Salvando...
-            } @else {
-              <i class="bi bi-briefcase-fill me-2" aria-hidden="true"></i>
-              Designar
-            }
-          </button>
+        <button type="button" class="btn-salvar-modal"
+          [disabled]="formDiretor.invalid || !idAssociadoDiretorSelecionado() || carregandoModalDiretor() || todosCargosPreenchidos() || (formDiretor.get('tipoCargo')?.value === 'DE' && !!diretorEquipeAtivo())"
+          (click)="salvarDiretor()">
+          @if (carregandoModalDiretor()) {
+          <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          Salvando...
+          } @else {
+          <i class="bi bi-briefcase-fill me-2" aria-hidden="true"></i>
+          Designar
+          }
+        </button>
         }
       </div>
 

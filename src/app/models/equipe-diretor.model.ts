@@ -69,6 +69,7 @@ export interface EquipeDiretorEquipeResponseDto {
   nomeAssociado:   string;
   dataInicio:      string;       // yyyy-MM-dd
   dataFim:         string | null; // null = vigência indeterminada
+  ativo:           boolean;      // true = dataFim null, false = dataFim preenchida
 }
 
 /**
