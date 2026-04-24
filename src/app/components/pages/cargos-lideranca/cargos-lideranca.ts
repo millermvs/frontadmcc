@@ -3,6 +3,7 @@ import { Component, computed, signal, OnInit, inject, ViewChild, ElementRef } fr
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CargoLiderancaService } from '../../../services/cargo-lideranca.service';
+import { ToastService } from '../../../services/toast.service';
 import {
   CargoLiderancaResponseDto,
   CargoLiderancaRequestDto,
@@ -43,7 +44,8 @@ export class CargosLideranca implements OnInit {
   // INJEÇÕES
   // =========================================================================
 
-  private cargoService = inject(CargoLiderancaService);
+  private cargoService  = inject(CargoLiderancaService);
+  private toastService  = inject(ToastService);
   private fb           = inject(FormBuilder);
 
   // =========================================================================
@@ -220,6 +222,7 @@ export class CargosLideranca implements OnInit {
         this.btnFecharNovo.nativeElement.click();
         this.resetarFormNovo();
         this.carregar(0);
+        this.toastService.sucesso('Cargo cadastrado com sucesso!');
       },
       error: (err: HttpErrorResponse) => {
         this.tratarErroModal(err);
@@ -266,6 +269,7 @@ export class CargosLideranca implements OnInit {
         this.btnFecharEditar.nativeElement.click();
         this.resetarFormEditar();
         this.carregar(this.paginaAtual());
+        this.toastService.sucesso('Cargo atualizado com sucesso!');
       },
       error: (err: HttpErrorResponse) => {
         this.tratarErroModal(err);
@@ -303,6 +307,9 @@ export class CargosLideranca implements OnInit {
     acao.subscribe({
       next: () => {
         document.getElementById('btnFecharModalConfirmacao')?.click();
+        this.toastService.sucesso(
+          cargo.ativo ? 'Cargo inativado com sucesso!' : 'Cargo reativado com sucesso!'
+        );
         this.cargoParaToggle.set(null);
         this.carregar(this.paginaAtual());
       },

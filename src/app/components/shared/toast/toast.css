@@ -1,0 +1,82 @@
+/*
+ * toast.css — estilos do componente Toast compartilhado.
+ *
+ * Posicionado fixo no canto superior direito, acima de modais
+ * Bootstrap (z-index 1055) e do autocomplete (1060).
+ *
+ * Três variantes de cor via classes modificadoras:
+ *   .toast-sucesso → verde  (var --cor-sucesso*)
+ *   .toast-erro    → vermelho (var --cor-erro*)
+ *   .toast-aviso   → amarelo  (var --cor-alerta*)
+ *
+ * A animação slideInRight é local deste componente — não polui
+ * o styles.css global.
+ */
+
+/* ================================================
+   BASE — estrutura comum a todos os tipos
+   ================================================ */
+.toast-flutuante {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1080;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: var(--radius-md);
+  padding: 14px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  max-width: 420px;
+  animation: slideInRight 0.28s ease;
+}
+
+/* ================================================
+   VARIANTES — cor por tipo de notificação
+   ================================================ */
+.toast-sucesso {
+  background: var(--cor-sucesso-bg);
+  color: var(--cor-sucesso);
+  border: 1px solid rgba(22, 101, 52, 0.20);
+}
+
+.toast-erro {
+  background: var(--cor-erro-bg);
+  color: var(--cor-erro);
+  border: 1px solid rgba(153, 27, 27, 0.20);
+}
+
+.toast-aviso {
+  background: var(--cor-alerta-bg);
+  color: var(--cor-alerta);
+  border: 1px solid rgba(146, 64, 14, 0.20);
+}
+
+/* ================================================
+   ANIMAÇÃO DE ENTRADA
+   ================================================ */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ================================================
+   RESPONSIVO — MOBILE
+   No mobile o toast ocupa toda a largura disponível.
+   ================================================ */
+@media (max-width: 575px) {
+  .toast-flutuante {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    max-width: none;
+  }
+}

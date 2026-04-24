@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
 import { ClusterService } from '../../../services/cluster.service';
+import { ToastService } from '../../../services/toast.service';
 import {
   ClusterResponseDto,
   ClusterRequestDto,
@@ -39,6 +40,7 @@ export class Clusters implements OnInit {
   // =========================================================================
 
   private clusterService = inject(ClusterService);
+  private toastService   = inject(ToastService);
   private fb             = inject(FormBuilder);
 
   // =========================================================================
@@ -287,6 +289,7 @@ export class Clusters implements OnInit {
         this.btnFecharNovoCluster.nativeElement.click();
         this.formNovoCluster.reset();
         this.recarregarAposModal();
+        this.toastService.sucesso('Cluster cadastrado com sucesso!');
       },
       error: (err: HttpErrorResponse) => {
         this.tratarErroModal(err);
@@ -320,6 +323,7 @@ export class Clusters implements OnInit {
         this.formEditarCluster.reset();
         this.idClusterParaAtualizar.set(null);
         this.recarregarAposModal();
+        this.toastService.sucesso('Cluster atualizado com sucesso!');
       },
       error: (err: HttpErrorResponse) => {
         this.tratarErroModal(err);
@@ -354,6 +358,7 @@ export class Clusters implements OnInit {
         this.btnFecharNovaAtuacao.nativeElement.click();
         this.formNovaAtuacao.reset();
         this.recarregarAposModal();
+        this.toastService.sucesso('Atuação específica cadastrada com sucesso!');
       },
       error: (err: HttpErrorResponse) => {
         this.tratarErroModal(err);
@@ -390,6 +395,7 @@ export class Clusters implements OnInit {
         this.formEditarAtuacao.reset();
         this.idAtuacaoParaAtualizar.set(null);
         this.recarregarAposModal();
+        this.toastService.sucesso('Atuação específica atualizada com sucesso!');
       },
       error: (err: HttpErrorResponse) => {
         this.tratarErroModal(err);

@@ -29,6 +29,7 @@ import { AssociadoResponseDto } from '../../../models/associado.model';
 import { EquipeService } from '../../../services/equipe.service';
 import { EquipeDiretorService } from '../../../services/equipe-diretor.service';
 import { AssociadoService } from '../../../services/associado.service';
+import { ToastService } from '../../../services/toast.service';
 
 // ============================================================================
 // SHIM DE TIPO — bootstrap (global JS carregado via angular.json)
@@ -106,6 +107,7 @@ export class Equipes implements OnInit {
   private equipesService       = inject(EquipeService);
   private equipeDiretorService = inject(EquipeDiretorService);
   private associadoService     = inject(AssociadoService);
+  private toastService         = inject(ToastService);
   private fb                   = inject(FormBuilder);
   private destroyRef           = inject(DestroyRef);
 
@@ -517,7 +519,7 @@ export class Equipes implements OnInit {
         this.formCadastro.reset({ nomeEquipe: 'C+C ', dataInicioFormacao: this.obterDataHoje() });
         this.errosValidacao.set({});
         this.carregarEquipes(0); // novo item: volta à primeira página
-        // TODO: toastService.sucesso('Equipe cadastrada com sucesso!');
+        this.toastService.sucesso('Equipe cadastrada com sucesso!');
       },
       error: (err: HttpErrorResponse) => {
         if (err.status === 400 && err.error?.errors) {
@@ -624,7 +626,7 @@ export class Equipes implements OnInit {
         this.idEquipeParaAtualizar.set(null);
         this.errosValidacao.set({});
         this.carregarEquipes(this.paginaAtual()); // edição: permanece na página atual
-        // TODO: toastService.sucesso('Equipe atualizada com sucesso!');
+        this.toastService.sucesso('Equipe atualizada com sucesso!');
       },
       error: (err: HttpErrorResponse) => {
         if (err.status === 400 && err.error?.errors) {
@@ -918,6 +920,7 @@ export class Equipes implements OnInit {
         this.enderecoAtual.set(localAtualizado);
         this.btnFecharEndereco.nativeElement.click();
         this.formEndereco.reset();
+        this.toastService.sucesso('Endereço presencial atualizado com sucesso!');
       },
       error: (err: HttpErrorResponse) => {
         if (err.status === 400 && err.error?.errors) {

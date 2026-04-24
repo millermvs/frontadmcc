@@ -45,6 +45,7 @@ import { AssociadoCargoService } from '../../../services/associado-cargo.service
 import { CargoLiderancaService } from '../../../services/cargo-lideranca.service';
 import { ClusterService } from '../../../services/cluster.service';
 import { EquipeService } from '../../../services/equipe.service';
+import { ToastService } from '../../../services/toast.service';
 
 // ============================================================================
 // VALIDADOR CUSTOMIZADO — Data não pode ser futura
@@ -94,6 +95,7 @@ export class Associados implements OnInit {
   private equipeService         = inject(EquipeService);
   private cargoService          = inject(CargoLiderancaService);
   private clusterService        = inject(ClusterService);
+  private toastService          = inject(ToastService);
   private fb                    = inject(FormBuilder);
   private destroyRef            = inject(DestroyRef);
 
@@ -113,6 +115,9 @@ export class Associados implements OnInit {
 
   @ViewChild('btnFecharModalEquipe')
   private btnFecharEquipe!: ElementRef<HTMLButtonElement>;
+
+  @ViewChild('btnFecharModalConfirmacao')
+  private btnFecharConfirmacao!: ElementRef<HTMLButtonElement>;
 
   // =========================================================================
   // SIGNALS — LISTAGEM
@@ -381,6 +386,24 @@ export class Associados implements OnInit {
    * null quando nenhum endereço foi copiado ou após o timeout.
    */
   idEnderecoCopiado = signal<number | null>(null);
+
+  // =========================================================================
+  // SIGNALS — CONFIRMAÇÃO DE CADASTRO (Bloco 5)
+  //
+  // Fluxo simples: sem formulário, sem forkJoin.
+  // O associado clicado é guardado em associadoParaConfirmar; o modal exibe
+  // o nome e um aviso; ao confirmar, o PATCH é disparado e o alerta verde
+  // aparece na tela por 3 segundos.
+  // =========================================================================
+
+  /** Associado da linha clicada. Fonte de verdade do id no PATCH. */
+  associadoParaConfirmar = signal<AssociadoResponseDto | null>(null);
+
+  /** Controla o spinner do botão "Sim, ativar" durante o PATCH. */
+  carregandoConfirmacao  = signal(false);
+
+  /** Mensagem de erro exibida dentro do modal de confirmação. */
+  erroConfirmacao        = signal<string | null>(null);
 
   /**
    * formatarEndereco
@@ -709,7 +732,7 @@ export class Associados implements OnInit {
       next: () => {
         this.btnFecharCadastro.nativeElement.click();
         this.carregarAssociados(0); // novo item: volta à primeira página
-        // TODO: toastService.sucesso('Associado cadastrado com sucesso!');
+        this.toastService.sucesso('Associado cadastrado com sucesso!');
       },
       error: (err: HttpErrorResponse) => {
         console.error('Erro ao cadastrar associado:', err);
@@ -927,6 +950,7 @@ export class Associados implements OnInit {
       next: () => {
         this.btnFecharEquipe.nativeElement.click();
         this.carregarAssociados(this.paginaAtual());
+        this.toastService.sucesso('Equipe do associado atualizada com sucesso!');
       },
       error: (err: HttpErrorResponse) => {
         console.error('Erro ao transferir equipe do associado:', err);
@@ -1103,6 +1127,56 @@ export class Associados implements OnInit {
       },
       complete: () => {
         this.carregandoModalEndereco.set(false);
+      },
+    });
+  }
+
+  // =========================================================================
+  // MÉTODOS PÚBLICOS — CONFIRMAÇÃO DE CADASTRO (Bloco 5)
+  // =========================================================================
+
+  /**
+   * abrirConfirmacaoAtivacao(associado)
+   *
+   * Chamado pelo (click) do botão "Confirmar cadastro" na tabela, antes do
+   * Bootstrap exibir o modal. Registra o associado clicado e reseta o erro.
+   */
+  abrirConfirmacaoAtivacao(associado: AssociadoResponseDto): void {
+    this.associadoParaConfirmar.set(associado);
+    this.erroConfirmacao.set(null);
+  }
+
+  /**
+   * confirmarAtivacao()
+   *
+   * Executa o PATCH /api/v1/associados/{id}/confirmar-cadastro.
+   * Transição PREATIVO → ATIVO.
+   *
+   * Após sucesso:
+   *   - Fecha o modal via ViewChild (botão oculto com data-bs-dismiss)
+   *   - Recarrega a página atual da listagem
+   *   - Exibe o alerta verde flutuante com o nome do associado por 3s
+   */
+  confirmarAtivacao(): void {
+    const associado = this.associadoParaConfirmar();
+    if (!associado) return;
+
+    this.carregandoConfirmacao.set(true);
+    this.erroConfirmacao.set(null);
+
+    this.associadoService.confirmarCadastro(associado.idAssociado).subscribe({
+      next: () => {
+        this.btnFecharConfirmacao.nativeElement.click();
+        this.carregarAssociados(this.paginaAtual());
+        this.toastService.sucesso(`${associado.nomeCompleto} foi ativado com sucesso!`);
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao confirmar cadastro:', err);
+        this.erroConfirmacao.set(this.extrairMensagemErro(err));
+        this.carregandoConfirmacao.set(false);
+      },
+      complete: () => {
+        this.carregandoConfirmacao.set(false);
       },
     });
   }

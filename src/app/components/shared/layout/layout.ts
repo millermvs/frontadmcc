@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Navbar } from '../navbar/navbar';
+import { Toast } from '../toast/toast';
 
 // ============================================================
 // Layout
@@ -26,7 +27,7 @@ import { Navbar } from '../navbar/navbar';
 
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, Navbar],
+  imports: [RouterOutlet, Navbar, Toast],
   templateUrl: './layout.html',
   styleUrl: './layout.css',
 })

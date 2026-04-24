@@ -287,13 +287,15 @@
                       <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
                     </button>
 
-                    <!-- Confirmar cadastro — aparece só para PREATIVO — Bloco 5 -->
+                    <!-- Confirmar cadastro — aparece só para PREATIVO -->
                     @if (associado.statusAssociado === 'PREATIVO') {
                       <button
                         class="btn-acao btn-reativar"
-                        title="Confirmar cadastro (Bloco 5)"
+                        title="Confirmar cadastro e ativar associado"
                         type="button"
-                        disabled
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalConfirmarAtivacao"
+                        (click)="abrirConfirmacaoAtivacao(associado)"
                         aria-label="Confirmar cadastro de {{ associado.nomeCompleto }}"
                       >
                         <i class="bi bi-person-check-fill" aria-hidden="true"></i>
@@ -1876,6 +1878,98 @@
           </button>
         }
 
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================================
+     MODAL — CONFIRMAR ATIVAÇÃO DE ASSOCIADO
+     Modal pequeno e centralizado. Sem formulário — apenas confirmação.
+     O botão oculto (#btnFecharModalConfirmacao) é acionado via ViewChild
+     para fechar o modal programaticamente após o PATCH bem-sucedido.
+     ============================================================================ -->
+<div
+  class="modal fade"
+  id="modalConfirmarAtivacao"
+  tabindex="-1"
+  aria-labelledby="modalConfirmarAtivacaoLabel"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalConfirmarAtivacaoLabel">
+          <i class="bi bi-person-check-fill text-success me-2" aria-hidden="true"></i>
+          Confirmar ativação
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+          [disabled]="carregandoConfirmacao()"
+        ></button>
+      </div>
+
+      <div class="modal-body">
+        @if (associadoParaConfirmar()) {
+          <p class="mb-2" style="font-size: 15px;">
+            Você está prestes a ativar o associado
+            <strong>{{ associadoParaConfirmar()!.nomeCompleto }}</strong>.
+          </p>
+          <p class="mb-3" style="font-size: 14px; color: var(--cor-texto-secundario);">
+            Após a ativação, o associado terá acesso integral ao sistema e ficará visível na rede C+C.
+          </p>
+          <div class="aviso-registro-db">
+            <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+            Esta ação ficará registrada no banco de dados para controle administrativo.
+          </div>
+        }
+
+        @if (erroConfirmacao()) {
+          <div class="alert alert-danger d-flex align-items-center gap-2 mt-3 mb-0" role="alert">
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+            <span>{{ erroConfirmacao() }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <!-- Botão oculto: acionado via ViewChild para fechar o modal após sucesso -->
+        <button
+          #btnFecharModalConfirmacao
+          type="button"
+          data-bs-dismiss="modal"
+          style="display: none;"
+          aria-hidden="true"
+        ></button>
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal"
+          [disabled]="carregandoConfirmacao()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="btn-salvar-modal"
+          (click)="confirmarAtivacao()"
+          [disabled]="carregandoConfirmacao()"
+        >
+          @if (carregandoConfirmacao()) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Ativando...
+          } @else {
+            <i class="bi bi-person-check-fill me-2" aria-hidden="true"></i>
+            Sim, ativar
+          }
+        </button>
       </div>
 
     </div>

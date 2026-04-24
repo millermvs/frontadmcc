@@ -1,0 +1,28 @@
+<!-- ============================================================
+  TOAST — notificação flutuante
+  Visível apenas quando ToastService.toast() estiver preenchido.
+  A classe de cor é determinada pelo tipo ('sucesso' | 'erro' | 'aviso').
+  ============================================================ -->
+@if (toastService.toast(); as toast) {
+  <div
+    class="toast-flutuante"
+    [class.toast-sucesso]="toast.tipo === 'sucesso'"
+    [class.toast-erro]="toast.tipo === 'erro'"
+    [class.toast-aviso]="toast.tipo === 'aviso'"
+    role="alert"
+    aria-live="polite"
+  >
+    @switch (toast.tipo) {
+      @case ('sucesso') {
+        <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+      }
+      @case ('erro') {
+        <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
+      }
+      @case ('aviso') {
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+      }
+    }
+    {{ toast.mensagem }}
+  </div>
+}
