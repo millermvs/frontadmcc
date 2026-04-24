@@ -1274,6 +1274,7 @@
                     <th>Início</th>
                     <th>Término</th>
                     <th>Situação</th>
+                    <th>Ação</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1288,6 +1289,23 @@
                           : 'status-chip status-inativa'">
                           {{ cargo.ativo ? 'Ativo' : 'Encerrado' }}
                         </span>
+                      </td>
+                      <td>
+                        @if (cargo.ativo) {
+                          <div class="acoes-group">
+                            <button
+                              class="btn-acao btn-inativar"
+                              type="button"
+                              title="Encerrar cargo"
+                              (click)="prepararEncerramentoCargo(cargo)"
+                              aria-label="Encerrar cargo {{ cargo.nomeCargo }}"
+                            >
+                              <i class="bi bi-slash-circle-fill" aria-hidden="true"></i>
+                            </button>
+                          </div>
+                        } @else {
+                          <span class="text-muted">—</span>
+                        }
                       </td>
                     </tr>
                   }
@@ -1968,6 +1986,94 @@
           } @else {
             <i class="bi bi-person-check-fill me-2" aria-hidden="true"></i>
             Sim, ativar
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================================
+     MODAL — CONFIRMAR ENCERRAMENTO DE CARGO
+     Aberto via bootstrap.Modal API (não data-bs-toggle) para empilhar sobre o
+     modal de cargos sem gerar backdrop duplo. Sem formulário — apenas confirmação.
+     O botão oculto (#btnFecharModalConfirmacaoCargo) é acionado via ViewChild
+     para fechar programaticamente após o PUT bem-sucedido.
+     ============================================================================ -->
+<div
+  #modalConfirmarEncerramentoCargo
+  class="modal fade"
+  id="modalConfirmarEncerramentoCargo"
+  tabindex="-1"
+  aria-labelledby="modalConfirmarEncerramentoCargoLabel"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalConfirmarEncerramentoCargoLabel">
+          <i class="bi bi-slash-circle-fill text-danger me-2" aria-hidden="true"></i>
+          Encerrar cargo
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+          [disabled]="encerrandoCargoId() !== null"
+        ></button>
+      </div>
+
+      <div class="modal-body">
+        @if (cargoParaEncerrar()) {
+          <p class="mb-2" style="font-size: 15px;">
+            Você está prestes a encerrar o cargo
+            <strong>{{ cargoParaEncerrar()!.nomeCargo }}</strong>
+            de <strong>{{ associadoParaCargo()?.nomeCompleto }}</strong>.
+          </p>
+          <p class="mb-3" style="font-size: 14px; color: var(--cor-texto-secundario);">
+            A data de término será registrada como hoje. O cargo poderá ser atribuído novamente no futuro.
+          </p>
+          <div class="aviso-registro-db">
+            <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+            Esta ação ficará registrada no banco de dados para controle administrativo.
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <!-- Botão oculto: acionado via ViewChild para fechar o modal após sucesso -->
+        <button
+          #btnFecharModalConfirmacaoCargo
+          type="button"
+          data-bs-dismiss="modal"
+          style="display: none;"
+          aria-hidden="true"
+        ></button>
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal"
+          [disabled]="encerrandoCargoId() !== null"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-danger"
+          (click)="encerrarCargo()"
+          [disabled]="encerrandoCargoId() !== null"
+        >
+          @if (encerrandoCargoId() !== null) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Encerrando...
+          } @else {
+            <i class="bi bi-slash-circle-fill me-2" aria-hidden="true"></i>
+            Sim, encerrar
           }
         </button>
       </div>

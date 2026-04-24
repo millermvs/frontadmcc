@@ -48,6 +48,20 @@ import { EquipeService } from '../../../services/equipe.service';
 import { ToastService } from '../../../services/toast.service';
 
 // ============================================================================
+// SHIM DE TIPO — bootstrap (global JS carregado via angular.json)
+//
+// O bundle bootstrap.bundle.min.js é importado no angular.json como script
+// global, então `bootstrap` existe em runtime como `window.bootstrap`. Não
+// instalamos @types/bootstrap; declaramos apenas o contrato mínimo necessário:
+// Modal.getOrCreateInstance(el).show()/hide(). Mesmo padrão de equipes.ts.
+// ============================================================================
+declare const bootstrap: {
+  Modal: {
+    getOrCreateInstance(el: Element): { show(): void; hide(): void };
+  };
+};
+
+// ============================================================================
 // VALIDADOR CUSTOMIZADO — Data não pode ser futura
 //
 // Definido fora da classe para evitar problemas de contexto (this) quando
@@ -118,6 +132,18 @@ export class Associados implements OnInit {
 
   @ViewChild('btnFecharModalConfirmacao')
   private btnFecharConfirmacao!: ElementRef<HTMLButtonElement>;
+
+  /**
+   * Referência ao elemento DOM do modal de confirmação de encerramento de cargo.
+   * Aberto via bootstrap.Modal.getOrCreateInstance(el).show() para evitar
+   * race condition de backdrop duplo ao empilhar sobre o modal de cargos.
+   */
+  @ViewChild('modalConfirmarEncerramentoCargo')
+  private modalConfirmarEncerramentoCargo!: ElementRef<HTMLElement>;
+
+  /** Botão oculto para fechar o modal de confirmação de encerramento via ViewChild. */
+  @ViewChild('btnFecharModalConfirmacaoCargo')
+  private btnFecharConfirmacaoCargo!: ElementRef<HTMLButtonElement>;
 
   // =========================================================================
   // SIGNALS — LISTAGEM
@@ -217,6 +243,22 @@ export class Associados implements OnInit {
    * Mesma estratégia do modal de cadastro: normaliza chaves aninhadas.
    */
   errosValidacaoCargo = signal<Record<string, string>>({});
+
+  /**
+   * cargoParaEncerrar
+   * Cargo selecionado para encerramento. Preenchido em prepararEncerramentoCargo()
+   * ao clicar no botão encerrar — fonte de verdade para o PUT em encerrarCargo().
+   * Null enquanto nenhuma confirmação estiver pendente.
+   */
+  cargoParaEncerrar = signal<AssociadoCargoLiderancaResponseDto | null>(null);
+
+  /**
+   * encerrandoCargoId
+   * Armazena o idAssociadoCargo cujo PUT de encerramento está em andamento.
+   * Usado para exibir spinner e desabilitar o botão "Confirmar" no modal
+   * enquanto a requisição está pendente.
+   */
+  encerrandoCargoId = signal<number | null>(null);
 
   /**
    * formCargo
@@ -845,6 +887,77 @@ export class Associados implements OnInit {
         this.carregandoModalCargo.set(false);
       },
       complete: () => this.carregandoModalCargo.set(false),
+    });
+  }
+
+  /**
+   * prepararEncerramentoCargo(cargo)
+   *
+   * Chamado pelo (click) do botão encerrar na tabela de cargos.
+   * Registra o cargo selecionado e abre o modal de confirmação via API
+   * do Bootstrap (getOrCreateInstance + show) — evita race condition de
+   * backdrop duplo ao empilhar sobre o modal de cargos já aberto.
+   */
+  prepararEncerramentoCargo(cargo: AssociadoCargoLiderancaResponseDto): void {
+    this.cargoParaEncerrar.set(cargo);
+    this.encerrandoCargoId.set(null);
+    bootstrap.Modal.getOrCreateInstance(
+      this.modalConfirmarEncerramentoCargo.nativeElement
+    ).show();
+  }
+
+  /**
+   * encerrarCargo()
+   *
+   * Chamado pelo botão "Confirmar" no modal de confirmação de encerramento.
+   * Lê o cargo de cargoParaEncerrar() e envia PUT com ativo: false e dataFim = hoje.
+   *
+   * O ResponseDto não expõe idCargoLideranca — resolvido via match de nomeCargo
+   * no catálogo já carregado em cargos() (mesmo mecanismo de idCargoSilencioso).
+   *
+   * Após sucesso: fecha o modal de confirmação via botão oculto (ViewChild) e
+   * atualiza o registro no signal localmente — o modal de cargos permanece aberto
+   * e o computed cargosDisponiveis() libera o cargo para nova atribuição.
+   */
+  encerrarCargo(): void {
+    const cargo    = this.cargoParaEncerrar();
+    const associado = this.associadoParaCargo();
+    if (!cargo || !associado) return;
+
+    // Localiza o idCargoLideranca no catálogo por nomeCargo (ResponseDto não expõe FK)
+    const cargoNoCatalogo = this.cargos().find(
+      c => c.nomeCargo.trim().toLowerCase() === cargo.nomeCargo.trim().toLowerCase()
+    );
+    if (!cargoNoCatalogo) {
+      this.erroModalCargo.set('Cargo não encontrado no catálogo. Feche e reabra o modal.');
+      return;
+    }
+
+    this.encerrandoCargoId.set(cargo.idAssociadoCargo);
+
+    const dto: AssociadoCargoLiderancaRequestDto = {
+      idAssociado:      associado.idAssociado,
+      idCargoLideranca: cargoNoCatalogo.idCargoLideranca,
+      dataInicio:       cargo.dataInicio,
+      dataFim:          this.obterDataHoje(),
+      ativo:            false,
+    };
+
+    this.associadoCargoService.editarCargo(cargo.idAssociadoCargo, dto).subscribe({
+      next: (atualizado) => {
+        // Fecha o modal de confirmação — o modal de cargos permanece aberto
+        this.btnFecharConfirmacaoCargo.nativeElement.click();
+        this.cargosDoAssociado.update(lista =>
+          lista.map(c => c.idAssociadoCargo === atualizado.idAssociadoCargo ? atualizado : c)
+        );
+        this.cargoParaEncerrar.set(null);
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao encerrar cargo:', err);
+        this.erroModalCargo.set(this.extrairMensagemErro(err));
+        this.encerrandoCargoId.set(null);
+      },
+      complete: () => this.encerrandoCargoId.set(null),
     });
   }
 
