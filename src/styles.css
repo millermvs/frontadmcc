@@ -448,6 +448,18 @@ body {
   border-color: #c4b5fd;
 }
 
+/* Azul — transferir / alterar equipe */
+.btn-equipe {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.btn-equipe:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
 /* ================================================
    STATUS CHIPS
    Pílulas coloridas de status usadas em tabelas e listas.

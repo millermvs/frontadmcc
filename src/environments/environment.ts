@@ -27,6 +27,7 @@ export const environment = {
       renovarAnuidade: (id: number) => `${baseUrl}/associados/${id}/renovar-anuidade`,
       alterarStatus: (id: number) => `${baseUrl}/associados/${id}/alterar-status`,
       historicoStatus: (id: number) => `${baseUrl}/associados/${id}/historico-status`,
+      editarEquipe: (id: number) => `${baseUrl}/associados/${id}/equipe`,
       perfil: (cpf: string) => `${baseUrl}/associados/${cpf}/perfil`,
       editarCampo: (cpf: string, campo: string) => `${baseUrl}/associados/${cpf}/campo/${campo}`,
       togglePermissao: (cpf: string, campo: string) => `${baseUrl}/associados/${cpf}/permissao/${campo}`,

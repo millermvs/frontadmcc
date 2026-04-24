@@ -108,11 +108,25 @@ export interface AssociadoResponseDto {
   dataPrevisaoRetorno: string | null;        // preenchido apenas para INATIVO_PAUSA_PROGRAMADA
   dataPagamentoPrimeiraAnuidade: string | null;
   motivoStatusInativo: string | null;        // preenchido para DESISTENCIA e DESLIGADO
+
+  // ── Vínculos: ID + nome sempre juntos ──────────────────────
+  // Os 5 campos Long adicionados ao ResponseDto do backend (Decisão 1).
+  // Permitem popular selects no modal de edição sem precisar de match por nome.
+  idPadrinho: number | null;                 // null quando não há padrinho
   nomePadrinho: string | null;
+
+  idEquipeOrigem: number;                    // imutável após o cadastro
   nomeEquipeOrigem: string;
-  nomeEquipe: string;                        // equipe atual
+
+  idEquipeAtual: number;                     // equipe atual, editável
+  nomeEquipe: string;
+
+  idCluster: number;
   nomeCluster: string;
+
+  idAtuacaoEspecifica: number;
   nomeAtuacaoEspecifica: string;
+
   criadoEm: string;                          // yyyy-MM-ddTHH:mm:ss
   atualizadoEm: string;
 }
@@ -209,6 +223,22 @@ export interface AssociadoRenovarAnuidadeRequestDto {
 }
 
 // ============================================================================
+// EDITAR EQUIPE — REQUEST DTO
+// ============================================================================
+
+/**
+ * AssociadoEditarEquipeRequestDto
+ *
+ * Payload para PUT /api/v1/associados/{id}/equipe.
+ * DTO intencional e mínimo: a transferência de equipe é uma ação focada,
+ * separada do PUT geral para evitar que campos irrelevantes afetem
+ * o log e a rastreabilidade da operação.
+ */
+export interface AssociadoEditarEquipeRequestDto {
+  idEquipe: number;
+}
+
+// ============================================================================
 // HISTÓRICO DE STATUS — RESPONSE DTO
 // ============================================================================
 
@@ -267,4 +297,21 @@ export interface EnderecoResidencialRequestDto {
   cidade: string;
   estado: string;                   // 2 caracteres (UF)
   cep: string;                      // 8 dígitos, sem hífen
+}
+
+// ============================================================================
+// VISIBILIDADE — RESPONSE DTO
+// ============================================================================
+
+/**
+ * AssociadoVisibilidadeResponseDto
+ *
+ * Retornado por GET /api/v1/visibilidades/associado/{idAssociado}.
+ * Controla quais dados do associado ficam visíveis para toda a rede.
+ * Gerenciado pela ADM e pelo próprio associado (via toggle).
+ */
+export interface AssociadoVisibilidadeResponseDto {
+  idVisibilidade: number;
+  exibirAniversario: boolean;        // exibe DD/MM do aniversário para toda a rede
+  exibirEnderecoComercial: boolean;  // exibe endereço comercial para toda a rede
 }

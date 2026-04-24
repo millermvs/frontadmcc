@@ -243,26 +243,15 @@
                     <!-- Editar — Bloco 4 -->
                     <button
                       class="btn-acao btn-editar"
-                      title="Editar associado (Bloco 4)"
+                      title="Editar associado"
                       type="button"
-                      disabled
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalEditarAssociado"
+                      (click)="abrirModalEdicao(associado)"
                       aria-label="Editar {{ associado.nomeCompleto }}"
                     >
-                      <i class="bi bi-pencil-fill" aria-hidden="true"></i>
-                    </button>
-
-                    <!-- Confirmar cadastro — aparece só para PREATIVO — Bloco 5 -->
-                    @if (associado.statusAssociado === 'PREATIVO') {
-                      <button
-                        class="btn-acao btn-reativar"
-                        title="Confirmar cadastro (Bloco 5)"
-                        type="button"
-                        disabled
-                        aria-label="Confirmar cadastro de {{ associado.nomeCompleto }}"
-                      >
-                        <i class="bi bi-person-check-fill" aria-hidden="true"></i>
-                      </button>
-                    }
+                      <i class="bi bi-person-lines-fill" aria-hidden="true"></i>
+                    </button>                    
 
                     <!-- Atribuir / gerenciar cargos -->
                     <button
@@ -277,6 +266,19 @@
                       <i class="bi bi-briefcase-fill" aria-hidden="true"></i>
                     </button>
 
+                    <!-- Gerenciar equipe -->
+                    <button
+                      class="btn-acao btn-equipe"
+                      title="Gerenciar equipe"
+                      type="button"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalEquipeAssociado"
+                      (click)="abrirModalEquipe(associado)"
+                      aria-label="Gerenciar equipe de {{ associado.nomeCompleto }}"
+                    >
+                      <i class="bi bi-people-fill" aria-hidden="true"></i>
+                    </button>
+
                     <!-- Alterar status — Bloco 5 -->
                     <button
                       class="btn-acao btn-inativar"
@@ -287,9 +289,21 @@
                     >
                       <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
                     </button>
+
+                    <!-- Confirmar cadastro — aparece só para PREATIVO — Bloco 5 -->
+                    @if (associado.statusAssociado === 'PREATIVO') {
+                      <button
+                        class="btn-acao btn-reativar"
+                        title="Confirmar cadastro (Bloco 5)"
+                        type="button"
+                        disabled
+                        aria-label="Confirmar cadastro de {{ associado.nomeCompleto }}"
+                      >
+                        <i class="bi bi-person-check-fill" aria-hidden="true"></i>
+                      </button>
+                    }
                   </div>
                 </td>
-
               </tr>
             }
 
@@ -1138,6 +1152,542 @@
             }
           </button>
         }
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================================
+     MODAL — GERENCIAR EQUIPE DO ASSOCIADO
+     Aberto pelo botão .btn-equipe na tabela.
+     Exibe equipe de origem (readonly) e equipe atual (readonly), mais um
+     select para escolher a nova equipe. Envia PUT /{id}/equipe com { idEquipe }.
+     A lista de equipes vem de this.equipes() — carregada no ngOnInit,
+     sem precisar de nova requisição ao abrir o modal.
+     ============================================================================ -->
+<div
+  class="modal fade"
+  id="modalEquipeAssociado"
+  tabindex="-1"
+  aria-labelledby="modalEquipeAssociadoLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <!-- HEADER -->
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalEquipeAssociadoLabel">
+          <i class="bi bi-people-fill me-2 text-primary" aria-hidden="true"></i>
+          Gerenciar Equipe
+          @if (associadoParaEquipe()) {
+            — {{ associadoParaEquipe()!.nomeCompleto }}
+          }
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body">
+
+        @if (associadoParaEquipe()) {
+
+          <!-- ── INFORMAÇÕES ATUAIS (readonly) ── -->
+          <div class="mb-4">
+            <div class="row g-3">
+
+              <div class="col-12">
+                <label class="form-label text-muted-sm">Equipe de Origem</label>
+                <div class="form-control bg-light" aria-readonly="true">
+                  <i class="bi bi-flag-fill me-2 text-muted" aria-hidden="true"></i>
+                  {{ associadoParaEquipe()!.nomeEquipeOrigem }}
+                </div>
+                <small class="form-text text-muted">Registrada no cadastro inicial. Não pode ser alterada.</small>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label text-muted-sm">Equipe Atual</label>
+                <div class="form-control bg-light" aria-readonly="true">
+                  <i class="bi bi-diagram-3 me-2 text-muted" aria-hidden="true"></i>
+                  {{ associadoParaEquipe()!.nomeEquipe }}
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          <!-- ── FORMULÁRIO: Nova Equipe ── -->
+          <form [formGroup]="formEquipe" novalidate>
+
+            <div class="mb-3">
+              <label for="equipeDestino" class="form-label fw-semibold">
+                Nova Equipe <span class="text-danger" aria-hidden="true">*</span>
+              </label>
+              <select
+                class="form-select"
+                id="equipeDestino"
+                formControlName="idEquipe"
+              >
+                <option [ngValue]="null">-- Selecione a equipe de destino --</option>
+                @for (equipe of equipes(); track equipe.idEquipe) {
+                  <option [value]="equipe.idEquipe">{{ equipe.nomeEquipe }}</option>
+                }
+              </select>
+              <small class="form-text text-muted">
+                Selecione uma equipe diferente da atual para habilitar a transferência.
+              </small>
+            </div>
+
+          </form>
+
+          <!-- ── Alerta de erro geral ── -->
+          @if (erroModalEquipe()) {
+            <div class="alert alert-danger d-flex align-items-center gap-2 mt-3 mb-0" role="alert">
+              <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+              <span>{{ erroModalEquipe() }}</span>
+            </div>
+          }
+
+        }
+
+      </div>
+
+      <!-- FOOTER -->
+      <div class="modal-footer">
+
+        <!-- Botão OCULTO: acionado via ViewChild após sucesso -->
+        <button
+          #btnFecharModalEquipe
+          type="button"
+          class="d-none"
+          data-bs-dismiss="modal"
+          aria-hidden="true"
+        ></button>
+
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="btn-salvar-modal"
+          [disabled]="!formEquipe.dirty || formEquipe.invalid || carregandoModalEquipe()"
+          (click)="salvarEquipe()"
+        >
+          @if (carregandoModalEquipe()) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Transferindo...
+          } @else {
+            <i class="bi bi-diagram-3-fill me-2" aria-hidden="true"></i>
+            Salvar Transferência
+          }
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================================
+     MODAL — EDITAR ASSOCIADO
+     Aberto pelo botão .btn-editar na tabela.
+     Não exibe: padrinho, data de ingresso, cargo (cada um tem fluxo próprio).
+     O cargo ativo é enviado silenciosamente no PUT (backend exige @NotNull).
+     ============================================================================ -->
+<div
+  class="modal fade"
+  id="modalEditarAssociado"
+  tabindex="-1"
+  aria-labelledby="modalEditarAssociadoLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <!-- HEADER -->
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalEditarAssociadoLabel">
+          <i class="bi bi-pencil-fill me-2"></i>
+          Editar Associado
+          @if (associadoParaEditar()) {
+            — {{ associadoParaEditar()!.nomeCompleto }}
+          }
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body">
+
+        <!-- ── SPINNER de carregamento inicial ── -->
+        @if (carregandoEdicao()) {
+          <div class="text-center py-5">
+            <div class="spinner-border text-success" role="status" aria-hidden="true"></div>
+            <p class="mt-3 text-muted-sm">Carregando dados do associado...</p>
+          </div>
+
+        } @else {
+
+          <form [formGroup]="formEdicao" (ngSubmit)="salvarEdicao()" novalidate>
+
+            <!-- ============================================================
+                 SEÇÃO 1 — DADOS PESSOAIS
+                 ============================================================ -->
+            <h6 class="section-titulo">Dados Pessoais</h6>
+
+            <div class="row">
+
+              <div class="col-md-6 mb-3">
+                <label for="edit-nomeCompleto" class="form-label">
+                  Nome Completo <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="edit-nomeCompleto"
+                  formControlName="nomeCompleto"
+                  placeholder="Nome completo sem abreviações"
+                  [class.is-invalid]="!!errosValidacaoEdicao()['nomeCompleto'] || (formEdicao.get('nomeCompleto')?.invalid && formEdicao.get('nomeCompleto')?.touched)"
+                />
+                @if (errosValidacaoEdicao()['nomeCompleto']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['nomeCompleto'] }}</div>
+                } @else if (formEdicao.get('nomeCompleto')?.invalid && formEdicao.get('nomeCompleto')?.touched) {
+                  <div class="invalid-feedback">Nome completo é obrigatório.</div>
+                }
+              </div>
+
+              <div class="col-md-3 mb-3">
+                <label for="edit-cpf" class="form-label">CPF</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="edit-cpf"
+                  formControlName="cpf"
+                  readonly
+                  aria-describedby="edit-cpf-help"
+                />
+                <small id="edit-cpf-help" class="form-text text-muted">
+                  CPF não pode ser alterado após o cadastro.
+                </small>
+              </div>
+
+              <div class="col-md-3 mb-3">
+                <label for="edit-dataNascimento" class="form-label">
+                  Data de Nascimento <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="date"
+                  class="form-control"
+                  id="edit-dataNascimento"
+                  formControlName="dataNascimento"
+                  [class.is-invalid]="!!errosValidacaoEdicao()['dataNascimento'] || (formEdicao.get('dataNascimento')?.invalid && formEdicao.get('dataNascimento')?.touched)"
+                />
+                @if (errosValidacaoEdicao()['dataNascimento']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['dataNascimento'] }}</div>
+                } @else if (formEdicao.get('dataNascimento')?.invalid && formEdicao.get('dataNascimento')?.touched) {
+                  <div class="invalid-feedback">Data de nascimento é obrigatória.</div>
+                }
+              </div>
+
+            </div>
+
+            <div class="row">
+
+              <div class="col-md-6 mb-3">
+                <label for="edit-emailPrincipal" class="form-label">
+                  E-mail Principal <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="edit-emailPrincipal"
+                  formControlName="emailPrincipal"
+                  placeholder="email@exemplo.com.br"
+                  [class.is-invalid]="!!errosValidacaoEdicao()['emailPrincipal'] || (formEdicao.get('emailPrincipal')?.errors?.['email'] && formEdicao.get('emailPrincipal')?.touched)"
+                />
+                @if (errosValidacaoEdicao()['emailPrincipal']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['emailPrincipal'] }}</div>
+                } @else if (formEdicao.get('emailPrincipal')?.errors?.['email'] && formEdicao.get('emailPrincipal')?.touched) {
+                  <div class="invalid-feedback">E-mail inválido.</div>
+                }
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label for="edit-telefonePrincipal" class="form-label">
+                  Telefone / WhatsApp <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="edit-telefonePrincipal"
+                  formControlName="telefonePrincipal"
+                  placeholder="10 ou 11 dígitos"
+                  maxlength="11"
+                  inputmode="tel"
+                  [class.is-invalid]="!!errosValidacaoEdicao()['telefonePrincipal'] || (formEdicao.get('telefonePrincipal')?.errors?.['pattern'] && formEdicao.get('telefonePrincipal')?.touched)"
+                />
+                @if (errosValidacaoEdicao()['telefonePrincipal']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['telefonePrincipal'] }}</div>
+                } @else if (formEdicao.get('telefonePrincipal')?.errors?.['pattern'] && formEdicao.get('telefonePrincipal')?.touched) {
+                  <div class="invalid-feedback">Digite 10 ou 11 dígitos (sem formatação).</div>
+                }
+              </div>
+
+            </div>
+
+            <!-- ============================================================
+                 SEÇÃO 2 — DADOS ADMINISTRATIVOS
+                 ============================================================ -->
+            <h6 class="section-titulo mt-4">Dados Administrativos</h6>
+
+            <div class="row align-items-end">
+
+              <div class="col-md-4 mb-3">
+                <label for="edit-dataPagamentoPrimeiraAnuidade" class="form-label">
+                  Data da 1ª Anuidade
+                </label>
+                <input
+                  type="date"
+                  class="form-control"
+                  id="edit-dataPagamentoPrimeiraAnuidade"
+                  formControlName="dataPagamentoPrimeiraAnuidade"
+                />
+                <small class="form-text text-muted">Opcional. Deixe em branco se ainda não pago.</small>
+              </div>
+
+              <div class="col-md-8 mb-3">
+                <div class="form-check form-switch mt-2">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="edit-exibirAniversario"
+                    formControlName="exibirAniversario"
+                    role="switch"
+                  />
+                  <label class="form-check-label" for="edit-exibirAniversario">
+                    Exibir aniversário para toda a rede (apenas Dia/Mês)
+                  </label>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- ============================================================
+                 SEÇÃO 3 — ENDEREÇO RESIDENCIAL
+                 ============================================================ -->
+            <h6 class="section-titulo mt-4">Endereço Residencial</h6>
+
+            <div class="row">
+
+              <div class="col-md-6 mb-3">
+                <label for="edit-rua" class="form-label">
+                  Rua / Logradouro <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="edit-rua"
+                  formControlName="rua"
+                  placeholder="Ex: Rua das Flores"
+                  [class.is-invalid]="!!errosValidacaoEdicao()['rua'] || (formEdicao.get('rua')?.invalid && formEdicao.get('rua')?.touched)"
+                />
+                @if (errosValidacaoEdicao()['rua']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['rua'] }}</div>
+                } @else if (formEdicao.get('rua')?.invalid && formEdicao.get('rua')?.touched) {
+                  <div class="invalid-feedback">Rua é obrigatória.</div>
+                }
+              </div>
+
+              <div class="col-md-2 mb-3">
+                <label for="edit-numero" class="form-label">
+                  Número <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="edit-numero"
+                  formControlName="numero"
+                  placeholder="Ex: 123"
+                  [class.is-invalid]="!!errosValidacaoEdicao()['numero'] || (formEdicao.get('numero')?.invalid && formEdicao.get('numero')?.touched)"
+                />
+                @if (errosValidacaoEdicao()['numero']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['numero'] }}</div>
+                } @else if (formEdicao.get('numero')?.invalid && formEdicao.get('numero')?.touched) {
+                  <div class="invalid-feedback">Número é obrigatório.</div>
+                }
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="edit-complemento" class="form-label">Complemento</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="edit-complemento"
+                  formControlName="complemento"
+                  placeholder="Apto, sala, bloco (opcional)"
+                />
+              </div>
+
+            </div>
+
+            <div class="row">
+
+              <div class="col-md-4 mb-3">
+                <label for="edit-bairro" class="form-label">
+                  Bairro <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="edit-bairro"
+                  formControlName="bairro"
+                  placeholder="Nome do bairro"
+                  [class.is-invalid]="!!errosValidacaoEdicao()['bairro'] || (formEdicao.get('bairro')?.invalid && formEdicao.get('bairro')?.touched)"
+                />
+                @if (errosValidacaoEdicao()['bairro']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['bairro'] }}</div>
+                } @else if (formEdicao.get('bairro')?.invalid && formEdicao.get('bairro')?.touched) {
+                  <div class="invalid-feedback">Bairro é obrigatório.</div>
+                }
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="edit-cidade" class="form-label">
+                  Cidade <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="edit-cidade"
+                  formControlName="cidade"
+                  placeholder="Nome da cidade"
+                  [class.is-invalid]="!!errosValidacaoEdicao()['cidade'] || (formEdicao.get('cidade')?.invalid && formEdicao.get('cidade')?.touched)"
+                />
+                @if (errosValidacaoEdicao()['cidade']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['cidade'] }}</div>
+                } @else if (formEdicao.get('cidade')?.invalid && formEdicao.get('cidade')?.touched) {
+                  <div class="invalid-feedback">Cidade é obrigatória.</div>
+                }
+              </div>
+
+              <div class="col-md-2 mb-3">
+                <label for="edit-estado" class="form-label">
+                  UF <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="edit-estado"
+                  formControlName="estado"
+                  placeholder="SP"
+                  maxlength="2"
+                  style="text-transform: uppercase"
+                  [class.is-invalid]="!!errosValidacaoEdicao()['estado'] || (formEdicao.get('estado')?.invalid && formEdicao.get('estado')?.touched)"
+                />
+                @if (errosValidacaoEdicao()['estado']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['estado'] }}</div>
+                } @else if (formEdicao.get('estado')?.invalid && formEdicao.get('estado')?.touched) {
+                  <div class="invalid-feedback">UF é obrigatória (2 letras).</div>
+                }
+              </div>
+
+              <div class="col-md-2 mb-3">
+                <label for="edit-cep" class="form-label">
+                  CEP <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="edit-cep"
+                  formControlName="cep"
+                  placeholder="8 dígitos"
+                  maxlength="8"
+                  inputmode="numeric"
+                  [class.is-invalid]="!!errosValidacaoEdicao()['cep'] || (formEdicao.get('cep')?.errors?.['pattern'] && formEdicao.get('cep')?.touched)"
+                />
+                @if (errosValidacaoEdicao()['cep']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['cep'] }}</div>
+                } @else if (formEdicao.get('cep')?.errors?.['pattern'] && formEdicao.get('cep')?.touched) {
+                  <div class="invalid-feedback">CEP deve conter exatamente 8 dígitos.</div>
+                }
+              </div>
+
+            </div>
+
+          </form>
+
+          <!-- ALERTA: cargo silencioso não encontrado -->
+          @if (idCargoSilencioso() === null) {
+            <div class="alert alert-warning d-flex align-items-center gap-2 mt-3 mb-0" role="alert">
+              <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+              <span>
+                Não foi possível identificar o cargo ativo deste associado.
+                Use o botão <strong>Gerenciar Cargos</strong> para atribuir um cargo antes de salvar.
+              </span>
+            </div>
+          }
+
+          <!-- ALERTA DE ERRO GERAL -->
+          @if (erroModalEdicao()) {
+            <div class="alert alert-danger d-flex align-items-center gap-2 mt-3 mb-0" role="alert">
+              <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+              <span>{{ erroModalEdicao() }}</span>
+            </div>
+          }
+
+        }
+
+      </div>
+
+      <!-- ── RODAPÉ ─────────────────────────────────────────────────────── -->
+      <div class="modal-footer">
+
+        <!-- Botão OCULTO: acionado via ViewChild após sucesso no submit -->
+        <button
+          #btnFecharModalEdicao
+          type="button"
+          class="d-none"
+          data-bs-dismiss="modal"
+          aria-hidden="true"
+        ></button>
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="btn-salvar-modal"
+          [disabled]="!formEdicao.dirty || formEdicao.invalid || carregandoSalvarEdicao() || idCargoSilencioso() === null"
+          (click)="salvarEdicao()"
+        >
+          @if (carregandoSalvarEdicao()) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Salvando...
+          } @else {
+            <i class="bi bi-check-lg me-2" aria-hidden="true"></i>
+            Salvar Alterações
+          }
+        </button>
+
       </div>
 
     </div>

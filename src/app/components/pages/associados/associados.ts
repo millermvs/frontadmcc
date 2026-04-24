@@ -22,6 +22,7 @@ import {
 import { forkJoin, of, Subject } from 'rxjs';
 import { catchError, debounceTime, switchMap } from 'rxjs/operators';
 import {
+  AssociadoEditarEquipeRequestDto,
   AssociadoRequestDto,
   AssociadoResponseDto,
   LABELS_STATUS_ASSOCIADO,
@@ -93,7 +94,7 @@ export class Associados implements OnInit {
   private destroyRef            = inject(DestroyRef);
 
   // =========================================================================
-  // VIEWCHILD — referência ao botão oculto que fecha o modal de cadastro
+  // VIEWCHILD — referências aos botões ocultos que fecham os modais
   //
   // Por que ViewChild em vez de document.getElementById?
   // CLAUDE.md §2.2 proíbe manipulação direta do DOM no componente.
@@ -102,6 +103,12 @@ export class Associados implements OnInit {
 
   @ViewChild('btnFecharModalNovoAssociado')
   private btnFecharCadastro!: ElementRef<HTMLButtonElement>;
+
+  @ViewChild('btnFecharModalEdicao')
+  private btnFecharEdicao!: ElementRef<HTMLButtonElement>;
+
+  @ViewChild('btnFecharModalEquipe')
+  private btnFecharEquipe!: ElementRef<HTMLButtonElement>;
 
   // =========================================================================
   // SIGNALS — LISTAGEM
@@ -231,6 +238,77 @@ export class Associados implements OnInit {
   });
 
   // =========================================================================
+  // SIGNALS — MODAL DE EDIÇÃO (Bloco 4)
+  //
+  // Separados dos signals de cadastro para que os dois fluxos não interfiram.
+  // associadoParaEditar guarda o objeto completo carregado via GET — é a fonte
+  // de verdade para os campos silenciosos enviados no PUT.
+  // =========================================================================
+
+  /**
+   * associadoParaEditar
+   * Dados frescos do associado. Preenchido no forkJoin de abrirModalEdicao().
+   * Campos que o formulário não expõe (dataIngresso, statusAssociado, etc.)
+   * são lidos diretamente daqui na hora do submit.
+   */
+  associadoParaEditar = signal<AssociadoResponseDto | null>(null);
+
+  /** Spinner que substitui o corpo do modal enquanto os GETs do forkJoin carregam. */
+  carregandoEdicao      = signal(false);
+
+  /** Spinner do botão "Salvar Alterações" durante o PUT. */
+  carregandoSalvarEdicao = signal(false);
+
+  /** Mensagem de erro exibida no rodapé do modal de edição. */
+  erroModalEdicao       = signal<string | null>(null);
+
+  /** Erros por campo retornados pelo backend (400). */
+  errosValidacaoEdicao  = signal<Record<string, string>>({});
+
+
+  /**
+   * idCargoSilencioso / dataInicioCargoSilencioso
+   * Cargo ativo do associado, necessário para preencher idCargoLideranca e
+   * dataInicioCargo no PUT (o backend valida @NotNull — não pode omitir).
+   * O cargo NÃO aparece no formulário de edição; é carregado silenciosamente
+   * via GET /associados-cargos/associado/{id} e enviado como dado invisível.
+   *
+   * Como AssociadoCargoLiderancaResponseDto não expõe idCargoLideranca,
+   * o ID é encontrado por match de nomeCargo no catálogo de cargos.
+   */
+  idCargoSilencioso           = signal<number | null>(null);
+  dataInicioCargoSilencioso   = signal<string | null>(null);
+
+  // =========================================================================
+  // SIGNALS — MODAL DE EQUIPE
+  //
+  // Fluxo simples (sem forkJoin): a lista de equipes já está carregada em
+  // this.equipes() desde o ngOnInit. O modal apenas exibe os dados do
+  // associado clicado e um select com todas as equipes ativas.
+  // =========================================================================
+
+  /**
+   * associadoParaEquipe
+   * Associado da linha clicada. Fonte de verdade do idAssociado no PUT.
+   * Também fornece nomeEquipeOrigem e nomeEquipe para exibição readonly.
+   */
+  associadoParaEquipe = signal<AssociadoResponseDto | null>(null);
+
+  /** Spinner do botão "Salvar Transferência" durante o PUT. */
+  carregandoModalEquipe = signal(false);
+
+  /** Mensagem de erro exibida no rodapé do modal. */
+  erroModalEquipe = signal<string | null>(null);
+
+  /**
+   * formEquipe
+   * Formulário com um único campo: idEquipe.
+   * patchValue() ao abrir o modal pré-seleciona a equipe atual;
+   * o botão salvar só habilita quando o usuário altera (form.dirty).
+   */
+  formEquipe: FormGroup = this.criarFormEquipe();
+
+  // =========================================================================
   // SIGNALS — DADOS DE SUPORTE (dropdowns do modal)
   //
   // Carregados via forkJoin ao abrir o modal (Tarefa 3.1).
@@ -238,8 +316,6 @@ export class Associados implements OnInit {
   // =========================================================================
 
   clusters = signal<ClusterResponseDto[]>([]);
-  
-  
   cargos   = signal<CargoLiderancaResponseDto[]>([]);
 
   /**
@@ -282,6 +358,17 @@ export class Associados implements OnInit {
 
   formCadastro: FormGroup = this.criarFormCadastro();
 
+  /**
+   * formEdicao
+   * Formulário reativo do modal de edição. Campos que não aparecem na UI
+   * (dataIngresso, cargo, etc.) não estão aqui — são lidos de associadoParaEditar()
+   * e injetados no DTO silenciosamente no salvarEdicao().
+   *
+   * CPF é disabled: visível como identificação mas não editável.
+   * getRawValue() o inclui no valor lido para o PUT.
+   */
+  formEdicao: FormGroup = this.criarFormEdicao();
+
   // =========================================================================
   // CONSTANTES
   //
@@ -317,8 +404,8 @@ export class Associados implements OnInit {
       takeUntilDestroyed(this.destroyRef)
     ).subscribe(() => this.carregarAssociados(0));
 
-    // Inicia os observadores do modal de cadastro
-    this.observarCluster();
+    // Inicia os observadores dos modais
+    this.observarCluster(); // cadastro
     this.observarPadrinho();
 
     // Carga inicial da listagem
@@ -657,6 +744,241 @@ export class Associados implements OnInit {
   }
 
   // =========================================================================
+  // MÉTODOS PÚBLICOS — MODAL DE EDIÇÃO — Bloco 4
+  // =========================================================================
+
+  /**
+   * abrirModalEdicao(associado)
+   *
+   * Chamado pelo (click) do botão "Editar" na tabela, antes do Bootstrap
+   * exibir o modal. Dispara um forkJoin com 4 GETs garantidos + 1 condicional:
+   *
+   *   Garantidos:
+   *     - dadosAtuais     → dados frescos do associado (evita listagem desatualizada)
+   *     - cargosAssociado → para localizar o cargo ativo (cargo silencioso no PUT)
+   *     - enderecos       → o ResponseDto não traz endereço embutido
+   *     - visibilidade    → para pré-preencher exibirAniversario com o valor real
+   *
+   *   Condicional (of(null) se já em cache):
+   *     - cargos          → catálogo de cargos, necessário para o match silencioso
+   *
+   * Equipe, cluster e atuação não são editados aqui — cada um tem modal dedicado.
+   * Os valores originais são lidos de dadosAtuais e enviados silenciosamente no PUT.
+   *
+   * Por que buscar dados frescos ao abrir e não usar o objeto da listagem?
+   * A listagem pode estar desatualizada (outra aba editou o mesmo registro).
+   * O GET por ID garante que o formulário parte de dados consistentes.
+   */
+  abrirModalEdicao(associado: AssociadoResponseDto): void {
+    this.associadoParaEditar.set(associado); // valor provisório para o título do modal
+    this.carregandoEdicao.set(true);
+    this.erroModalEdicao.set(null);
+    this.errosValidacaoEdicao.set({});
+
+    forkJoin({
+      dadosAtuais:     this.associadoService.buscarAssociadoPorId(associado.idAssociado),
+      cargosAssociado: this.associadoCargoService.listarPorAssociado(associado.idAssociado),
+      enderecos:       this.associadoService.listarEnderecosResidenciais(associado.idAssociado),
+      visibilidade:    this.associadoService.buscarVisibilidade(associado.idAssociado),
+      cargos:          this.cargos().length > 0
+                         ? of(null)
+                         : this.cargoService.listar(0, 100),
+    }).subscribe({
+      next: ({ dadosAtuais, cargosAssociado, enderecos, visibilidade, cargos }) => {
+        // Atualiza cache condicional de cargos
+        if (cargos) this.cargos.set(cargos.items.filter((c: CargoLiderancaResponseDto) => c.ativo));
+
+        // Salva dados frescos como fonte de verdade
+        this.associadoParaEditar.set(dadosAtuais);
+
+        // Localiza cargo ativo e resolve o idCargoLideranca silencioso.
+        // AssociadoCargoLiderancaResponseDto não expõe idCargoLideranca,
+        // então fazemos match por nomeCargo no catálogo.
+        const cargoAtivo = cargosAssociado.find((c: AssociadoCargoLiderancaResponseDto) => c.ativo);
+        if (cargoAtivo) {
+          const nomeNorm = cargoAtivo.nomeCargo.trim().toLowerCase();
+          const match    = this.cargos().find(c => c.nomeCargo.trim().toLowerCase() === nomeNorm);
+          this.idCargoSilencioso.set(match?.idCargoLideranca ?? null);
+          this.dataInicioCargoSilencioso.set(cargoAtivo.dataInicio);
+        } else {
+          // Associado sem cargo ativo — situação anormal, bloqueamos o submit
+          this.idCargoSilencioso.set(null);
+          this.dataInicioCargoSilencioso.set(null);
+        }
+
+        const endereco = enderecos[0] ?? null;
+        this.formEdicao.patchValue({
+          nomeCompleto:                  dadosAtuais.nomeCompleto,
+          cpf:                           dadosAtuais.cpf,
+          emailPrincipal:                dadosAtuais.emailPrincipal,
+          telefonePrincipal:             dadosAtuais.telefonePrincipal,
+          dataNascimento:                dadosAtuais.dataNascimento,
+          dataPagamentoPrimeiraAnuidade: dadosAtuais.dataPagamentoPrimeiraAnuidade,
+          exibirAniversario:             visibilidade.exibirAniversario,
+          // Endereço residencial
+          rua:         endereco?.rua         ?? '',
+          numero:      endereco?.numero      ?? '',
+          complemento: endereco?.complemento ?? null,
+          bairro:      endereco?.bairro      ?? '',
+          cidade:      endereco?.cidade      ?? '',
+          estado:      endereco?.estado      ?? '',
+          cep:         endereco?.cep         ?? '',
+        }, { emitEvent: false });
+
+        this.carregandoEdicao.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao carregar dados do associado para edição:', err);
+        this.erroModalEdicao.set('Erro ao carregar os dados. Feche o modal e tente novamente.');
+        this.carregandoEdicao.set(false);
+      },
+    });
+  }
+
+  /**
+   * salvarEdicao()
+   *
+   * Monta o AssociadoRequestDto combinando:
+   *   - Campos editáveis do formulário (getRawValue() inclui o CPF disabled)
+   *   - Campos silenciosos do associadoParaEditar() (dataIngresso, idEquipeOrigem, etc.)
+   *   - Cargo silencioso (idCargoSilencioso + dataInicioCargoSilencioso)
+   *
+   * Bloqueia o submit se idCargoSilencioso for null (cargo ativo não encontrado),
+   * pois o backend valida @NotNull em idCargoLideranca.
+   */
+  salvarEdicao(): void {
+    const original = this.associadoParaEditar();
+    if (!original) return;
+
+    // Guarda de cargo: se o match por nome falhou, o PUT retornaria 400 do backend.
+    // Melhor bloquear aqui com mensagem clara do que receber um erro genérico.
+    if (this.idCargoSilencioso() === null) {
+      this.erroModalEdicao.set(
+        'Cargo ativo do associado não encontrado no sistema. Entre em contato com o suporte.'
+      );
+      return;
+    }
+
+    this.carregandoSalvarEdicao.set(true);
+    this.erroModalEdicao.set(null);
+    this.errosValidacaoEdicao.set({});
+
+    const val = this.formEdicao.getRawValue();
+
+    const dto: AssociadoRequestDto = {
+      // ── Campos editáveis pelo usuário ────────────────────────
+      nomeCompleto:                  val.nomeCompleto?.trim(),
+      cpf:                           (val.cpf as string).replace(/\D/g, ''),
+      emailPrincipal:                val.emailPrincipal?.trim(),
+      telefonePrincipal:             (val.telefonePrincipal as string).replace(/\D/g, ''),
+      dataNascimento:                val.dataNascimento,
+      dataPagamentoPrimeiraAnuidade: val.dataPagamentoPrimeiraAnuidade || null,
+      exibirAniversario:             val.exibirAniversario ?? false,
+      rua:                           val.rua?.trim(),
+      numero:                        val.numero?.trim(),
+      complemento:                   val.complemento?.trim() || null,
+      bairro:                        val.bairro?.trim(),
+      cidade:                        val.cidade?.trim(),
+      estado:                        (val.estado as string).toUpperCase().trim(),
+      cep:                           (val.cep as string).replace(/\D/g, ''),
+
+      // ── Campos silenciosos (originais, não editáveis neste modal) ─
+      dataIngresso:        original.dataIngresso,
+      tipoOrigemEquipe:    original.tipoOrigemEquipe,
+      statusAssociado:     original.statusAssociado,
+      idEquipeOrigem:      original.idEquipeOrigem,
+      idEquipeAtual:       original.idEquipeAtual,       // editado via modal de equipe
+      idCluster:           original.idCluster,           // editado via modal de cluster (futuro)
+      idAtuacaoEspecifica: original.idAtuacaoEspecifica, // editado via modal de cluster (futuro)
+      idPadrinho:          original.idPadrinho,
+
+      // ── Cargo silencioso (obrigatório no backend, invisível na UI) ─
+      idCargoLideranca: this.idCargoSilencioso()!,
+      dataInicioCargo:  this.dataInicioCargoSilencioso()!,
+    };
+
+    this.associadoService.editarAssociado(original.idAssociado, dto).subscribe({
+      next: () => {
+        this.btnFecharEdicao.nativeElement.click();
+        this.carregarAssociados(this.paginaAtual()); // mantém a página atual após edição
+        // TODO: toastService.sucesso('Associado atualizado com sucesso!');
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao editar associado:', err);
+        if (err.status === 400 && err.error?.errors) {
+          this.errosValidacaoEdicao.set(this.normalizarErros(err.error.errors));
+          this.erroModalEdicao.set('Corrija os campos destacados.');
+        } else {
+          this.erroModalEdicao.set(this.extrairMensagemErro(err));
+        }
+        this.carregandoSalvarEdicao.set(false);
+      },
+      complete: () => {
+        this.carregandoSalvarEdicao.set(false);
+      },
+    });
+  }
+
+  // =========================================================================
+  // MÉTODOS PÚBLICOS — MODAL DE EQUIPE
+  // =========================================================================
+
+  /**
+   * abrirModalEquipe(associado)
+   *
+   * Chamado pelo (click) do botão de equipe na tabela, antes do Bootstrap
+   * exibir o modal. Não dispara nenhum GET — a lista de equipes já está
+   * em this.equipes() (carregada no ngOnInit) e os dados do associado
+   * vêm diretamente da linha clicada.
+   *
+   * patchValue() com emitEvent padrão (true) não é problema aqui porque
+   * formEquipe não tem observers de valueChanges.
+   */
+  abrirModalEquipe(associado: AssociadoResponseDto): void {
+    this.associadoParaEquipe.set(associado);
+    this.erroModalEquipe.set(null);
+    this.formEquipe.reset();
+
+    // Pré-seleciona a equipe atual — o usuário precisa TROCAR para habilitar salvar
+    this.formEquipe.patchValue({ idEquipe: associado.idEquipeAtual });
+  }
+
+  /**
+   * salvarEquipe()
+   *
+   * Monta o AssociadoEditarEquipeRequestDto com o idEquipe selecionado
+   * e faz PUT /api/v1/associados/{id}/equipe.
+   *
+   * Após sucesso: fecha modal + recarrega a página atual.
+   * O backend retorna o AssociadoResponseDto atualizado (com o novo nomeEquipe).
+   */
+  salvarEquipe(): void {
+    const associado = this.associadoParaEquipe();
+    if (!associado) return;
+
+    this.carregandoModalEquipe.set(true);
+    this.erroModalEquipe.set(null);
+
+    const val = this.formEquipe.getRawValue();
+    const dto: AssociadoEditarEquipeRequestDto = { idEquipe: Number(val.idEquipe) };
+
+    this.associadoService.editarEquipeAssociado(associado.idAssociado, dto).subscribe({
+      next: () => {
+        this.btnFecharEquipe.nativeElement.click();
+        this.carregarAssociados(this.paginaAtual());
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao transferir equipe do associado:', err);
+        this.erroModalEquipe.set(this.extrairMensagemErro(err));
+        this.carregandoModalEquipe.set(false);
+      },
+      complete: () => {
+        this.carregandoModalEquipe.set(false);
+      },
+    });
+  }
+
+  // =========================================================================
   // MÉTODOS PÚBLICOS — AUTOCOMPLETE DE PADRINHO
   // =========================================================================
 
@@ -805,6 +1127,46 @@ export class Associados implements OnInit {
   // =========================================================================
 
   /**
+   * criarFormEdicao()
+   *
+   * Factory do FormGroup do modal de edição. Campos que NÃO aparecem aqui:
+   *   - dataIngresso       → imutável; lido de associadoParaEditar() no submit
+   *   - idPadrinho         → imutável; lido de associadoParaEditar() no submit
+   *   - idCargoLideranca   → cargo silencioso; lido de idCargoSilencioso() no submit
+   *   - tipoOrigemEquipe   → imutável; lido de associadoParaEditar() no submit
+   *   - statusAssociado    → alterado via modal próprio (Bloco 5)
+   *
+   * CPF: disabled — visível para identificação do associado, mas não editável.
+   * getRawValue() o lê mesmo com disabled:true para incluir no PUT.
+   *
+   * idAtuacaoEspecifica: começa disabled, igual ao cadastro.
+   * observarClusterEdicao() habilita quando o usuário seleciona um cluster.
+   */
+  private criarFormEdicao(): FormGroup {
+    return this.fb.group({
+      // ── Dados pessoais ───────────────────────────────────────────────────
+      nomeCompleto:      ['', Validators.required],
+      cpf:               [{ value: '', disabled: true }], // identificação, não editável
+      emailPrincipal:    ['', [Validators.required, Validators.email]],
+      telefonePrincipal: ['', [Validators.required, Validators.pattern(/^\d{10,11}$/)]],
+      dataNascimento:    ['', Validators.required],
+
+      // ── Dados administrativos ────────────────────────────────────────────
+      dataPagamentoPrimeiraAnuidade: [null], // opcional
+      exibirAniversario:             [false],
+
+      // ── Endereço residencial ─────────────────────────────────────────────
+      rua:         ['', Validators.required],
+      numero:      ['', Validators.required],
+      complemento: [null],
+      bairro:      ['', Validators.required],
+      cidade:      ['', Validators.required],
+      estado:      ['', [Validators.required, Validators.maxLength(2)]],
+      cep:         ['', [Validators.required, Validators.pattern(/^\d{8}$/)]],
+    });
+  }
+
+  /**
    * observarCluster() — Tarefa 3.3
    *
    * Observa mudanças no select de Cluster e:
@@ -904,6 +1266,19 @@ export class Associados implements OnInit {
     return this.fb.group({
       idCargoLideranca: [null, Validators.required],
       dataInicio:       [this.obterDataHoje(), [Validators.required, validarDataNaoFutura]],
+    });
+  }
+
+  /**
+   * criarFormEquipe()
+   *
+   * Factory do FormGroup do modal de equipe. Campo único: idEquipe.
+   * Começa com null — preenchido via patchValue() ao abrir o modal.
+   * O campo é obrigatório para que o select em branco bloqueie o salvar.
+   */
+  private criarFormEquipe(): FormGroup {
+    return this.fb.group({
+      idEquipe: [null, Validators.required],
     });
   }
 

@@ -32,6 +32,8 @@ import {
   AssociadoAlterarStatusRequestDto,
   AssociadoRenovarAnuidadeRequestDto,
   AssociadoStatusHistoricoResponseDto,
+  AssociadoVisibilidadeResponseDto,
+  AssociadoEditarEquipeRequestDto,
   EnderecoResidencialResponseDto,
   EnderecoResidencialRequestDto,
   StatusAssociado,
@@ -51,8 +53,9 @@ export class AssociadoService {
   // URLS (do environment — nunca hardcoded)
   // =========================================================================
 
-  private apiAssociados = environment.api.associados;
-  private apiEnderecos  = environment.api.enderecosResidenciais;
+  private apiAssociados   = environment.api.associados;
+  private apiEnderecos    = environment.api.enderecosResidenciais;
+  private apiVisibilidade = environment.api.visibilidade;
 
   // =========================================================================
   // LISTAGEM E BUSCA
@@ -125,6 +128,23 @@ export class AssociadoService {
     );
   }
 
+  /**
+   * editarEquipeAssociado(id, dto)
+   * HTTP: PUT /api/v1/associados/{id}/equipe
+   * Transfere o associado para outra equipe.
+   * Endpoint focado: recebe apenas { idEquipe } para manter
+   * o log da operação limpo e rastreável.
+   */
+  editarEquipeAssociado(
+    id: number,
+    dto: AssociadoEditarEquipeRequestDto
+  ): Observable<AssociadoResponseDto> {
+    return this.http.put<AssociadoResponseDto>(
+      this.apiAssociados.editarEquipe(id),
+      dto
+    );
+  }
+
   // =========================================================================
   // AÇÕES DE CICLO DE VIDA
   // =========================================================================
@@ -179,6 +199,23 @@ export class AssociadoService {
   historicoStatus(id: number): Observable<AssociadoStatusHistoricoResponseDto[]> {
     return this.http.get<AssociadoStatusHistoricoResponseDto[]>(
       this.apiAssociados.historicoStatus(id)
+    );
+  }
+
+  // =========================================================================
+  // VISIBILIDADE
+  // =========================================================================
+
+  /**
+   * buscarVisibilidade(idAssociado)
+   * HTTP: GET /api/v1/visibilidades/associado/{idAssociado}
+   * Retorna as preferências de visibilidade do associado.
+   * Usado no modal de edição para pré-preencher o toggle exibirAniversario
+   * com o valor real — não assumimos false como padrão.
+   */
+  buscarVisibilidade(idAssociado: number): Observable<AssociadoVisibilidadeResponseDto> {
+    return this.http.get<AssociadoVisibilidadeResponseDto>(
+      this.apiVisibilidade.porAssociado(idAssociado)
     );
   }
 
