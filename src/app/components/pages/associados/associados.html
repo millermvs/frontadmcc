@@ -165,8 +165,6 @@
             <th scope="col">CPF</th>
             <th scope="col" class="cell-equipe">Equipe</th>
             <th scope="col">Status</th>
-            <th scope="col">Ingresso</th>
-            <th scope="col">Vencimento</th>
             <th scope="col" class="col-acoes">Ações</th>
           </tr>
         </thead>
@@ -223,32 +221,18 @@
                   </span>
                 </td>
 
-                <!-- DATA DE INGRESSO -->
-                <td>
-                  <span class="text-muted-sm">{{ formatarData(associado.dataIngresso) }}</span>
-                </td>
-
-                <!-- DATA DE VENCIMENTO -->
-                <td>
-                  @if (associado.dataVencimento) {
-                    <span class="text-muted-sm">{{ formatarData(associado.dataVencimento) }}</span>
-                  } @else {
-                    <span class="text-muted-sm" title="Associado isento de anuidade">Isento</span>
-                  }
-                </td>
-
                 <!-- AÇÕES — habilitadas nos Blocos 3, 4 e 5 -->
                 <td class="cell-acoes">
                   <div class="acoes-group">
                     <!-- Editar — Bloco 4 -->
                     <button
-                      class="btn-acao btn-editar"
-                      title="Editar associado"
+                      class="btn-acao btn-informacoes-associado"
+                      title="Informações gerais do associado"
                       type="button"
                       data-bs-toggle="modal"
-                      data-bs-target="#modalEditarAssociado"
-                      (click)="abrirModalEdicao(associado)"
-                      aria-label="Editar {{ associado.nomeCompleto }}"
+                      data-bs-target="#modalInformacoesAssociado"
+                      (click)="abrirModalInformacoes(associado)"
+                      aria-label="Informações de {{ associado.nomeCompleto }}"
                     >
                       <i class="bi bi-person-lines-fill" aria-hidden="true"></i>
                     </button>                    
@@ -277,6 +261,19 @@
                       aria-label="Gerenciar equipe de {{ associado.nomeCompleto }}"
                     >
                       <i class="bi bi-people-fill" aria-hidden="true"></i>
+                    </button>
+
+                    <!-- Gerenciar endereços residenciais -->
+                    <button
+                      class="btn-acao btn-endereco"
+                      title="Gerenciar endereços residenciais"
+                      type="button"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalEnderecoAssociado"
+                      (click)="abrirModalEndereco(associado)"
+                      aria-label="Gerenciar endereços de {{ associado.nomeCompleto }}"
+                    >
+                      <i class="bi bi-house-fill" aria-hidden="true"></i>
                     </button>
 
                     <!-- Alterar status — Bloco 5 -->
@@ -379,6 +376,243 @@
 
   </div>
 
+</div>
+
+
+<!-- ============================================================================
+     MODAL — INFORMAÇÕES GERAIS DO ASSOCIADO
+     Aberto pelo botão .btn-editar na tabela.
+     Exibe todos os dados do associado em modo somente leitura,
+     organizados em seções: Pessoal | Administrativo | Vínculos.
+     Faz GET /api/v1/associados/{id} ao abrir — dados sempre frescos.
+     ============================================================================ -->
+<div
+  class="modal fade"
+  id="modalInformacoesAssociado"
+  tabindex="-1"
+  aria-labelledby="modalInformacoesAssociadoLabel"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-content">
+
+      <!-- HEADER -->
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="modalInformacoesAssociadoLabel">
+          <i class="bi bi-person-lines-fill me-2 text-success" aria-hidden="true"></i>
+          Informações do Associado
+          @if (associadoParaEditar()) {
+            — {{ associadoParaEditar()!.nomeCompleto }}
+          }
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar modal"
+        ></button>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body">
+
+        <!-- Spinner enquanto o GET carrega -->
+        @if (carregandoEdicao()) {
+          <div class="text-center py-5">
+            <div class="spinner-border text-success" role="status" aria-label="Carregando dados"></div>
+            <p class="mt-3 mb-0 text-muted small">Carregando informações...</p>
+          </div>
+
+        } @else if (erroModalEdicao()) {
+          <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+            <span>{{ erroModalEdicao() }}</span>
+          </div>
+
+        } @else if (associadoParaEditar()) {
+
+          <!-- ================================================================
+               SEÇÃO 1 — DADOS PESSOAIS
+               ================================================================ -->
+          <h6 class="section-titulo">Dados Pessoais</h6>
+
+          <div class="row g-3 mb-4">
+
+            <div class="col-md-7">
+              <label class="info-label">Nome Completo</label>
+              <div class="info-value">{{ associadoParaEditar()!.nomeCompleto }}</div>
+            </div>
+
+            <div class="col-md-5">
+              <label class="info-label">CPF</label>
+              <div class="info-value" style="font-family: monospace;">
+                {{ associadoParaEditar()!.cpf }}
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <label class="info-label">Data de Nascimento</label>
+              <div class="info-value">{{ formatarData(associadoParaEditar()!.dataNascimento) }}</div>
+            </div>
+
+            <div class="col-md-8">
+              <label class="info-label">E-mail Principal</label>
+              <div class="info-value">{{ associadoParaEditar()!.emailPrincipal }}</div>
+            </div>
+
+            <div class="col-md-5">
+              <label class="info-label">Telefone / WhatsApp</label>
+              <div class="info-value">{{ associadoParaEditar()!.telefonePrincipal }}</div>
+            </div>
+
+          </div>
+
+          <!-- ================================================================
+               SEÇÃO 2 — DADOS ADMINISTRATIVOS
+               ================================================================ -->
+          <h6 class="section-titulo mt-2">Dados Administrativos</h6>
+
+          <div class="row g-3 mb-4">
+
+            <div class="col-md-4">
+              <label class="info-label">Status</label>
+              <div class="mt-1">
+                <span [class]="classeStatus(associadoParaEditar()!.statusAssociado)">
+                  {{ LABELS_STATUS[associadoParaEditar()!.statusAssociado] }}
+                </span>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <label class="info-label">Data de Ingresso</label>
+              <div class="info-value">{{ formatarData(associadoParaEditar()!.dataIngresso) }}</div>
+            </div>
+
+            <div class="col-md-4">
+              <label class="info-label">Data de Vencimento</label>
+              <div class="info-value">
+                @if (associadoParaEditar()!.dataVencimento) {
+                  {{ formatarData(associadoParaEditar()!.dataVencimento) }}
+                } @else {
+                  <span class="text-muted">Isento</span>
+                }
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <label class="info-label">1ª Anuidade</label>
+              <div class="info-value">
+                @if (associadoParaEditar()!.dataPagamentoPrimeiraAnuidade) {
+                  {{ formatarData(associadoParaEditar()!.dataPagamentoPrimeiraAnuidade) }}
+                } @else {
+                  <span class="text-muted">Aguardando</span>
+                }
+              </div>
+            </div>
+
+            @if (associadoParaEditar()!.dataInicioPausa) {
+              <div class="col-md-4">
+                <label class="info-label">Início da Pausa</label>
+                <div class="info-value">{{ formatarData(associadoParaEditar()!.dataInicioPausa) }}</div>
+              </div>
+              <div class="col-md-4">
+                <label class="info-label">Previsão de Retorno</label>
+                <div class="info-value">
+                  @if (associadoParaEditar()!.dataPrevisaoRetorno) {
+                    {{ formatarData(associadoParaEditar()!.dataPrevisaoRetorno) }}
+                  } @else {
+                    <span class="text-muted">Não informado</span>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (associadoParaEditar()!.motivoStatusInativo) {
+              <div class="col-12">
+                <label class="info-label">Motivo da Inativação</label>
+                <div class="info-value">{{ associadoParaEditar()!.motivoStatusInativo }}</div>
+              </div>
+            }
+
+          </div>
+
+          <!-- ================================================================
+               SEÇÃO 3 — VÍNCULOS
+               ================================================================ -->
+          <h6 class="section-titulo mt-2">Vínculos</h6>
+
+          <div class="row g-3">
+
+            <div class="col-md-6">
+              <label class="info-label">Equipe Atual</label>
+              <div class="info-value">{{ associadoParaEditar()!.nomeEquipe }}</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="info-label">Equipe de Origem</label>
+              <div class="info-value">
+                {{ associadoParaEditar()!.nomeEquipeOrigem }}
+                <span class="info-badge">{{ associadoParaEditar()!.tipoOrigemEquipe === 'ORIGINAL' ? 'Original' : 'Colaborativa' }}</span>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="info-label">Cluster</label>
+              <div class="info-value">{{ associadoParaEditar()!.nomeCluster }}</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="info-label">Atuação Específica</label>
+              <div class="info-value">{{ associadoParaEditar()!.nomeAtuacaoEspecifica }}</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="info-label">Padrinho</label>
+              <div class="info-value">
+                @if (associadoParaEditar()!.nomePadrinho) {
+                  {{ associadoParaEditar()!.nomePadrinho }}
+                } @else {
+                  <span class="text-muted">Sem padrinho</span>
+                }
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="info-label">ID do Associado</label>
+              <div class="info-value" style="font-family: monospace;">#{{ associadoParaEditar()!.idAssociado }}</div>
+            </div>
+
+          </div>
+
+        }
+
+      </div>
+
+      <!-- FOOTER -->
+      <div class="modal-footer">
+
+        <!-- Botão "Gerar PDF" — à esquerda via me-auto -->
+        @if (associadoParaEditar() && !carregandoEdicao()) {
+          <button
+            type="button"
+            class="btn-gerar-pdf me-auto"
+            (click)="gerarFichaAssociado()"
+            title="Baixar ficha do associado em PDF"
+            aria-label="Gerar PDF da ficha de {{ associadoParaEditar()!.nomeCompleto }}"
+          >
+            <i class="bi bi-file-earmark-pdf-fill" aria-hidden="true"></i>
+            Gerar PDF
+          </button>
+        }
+
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          Fechar
+        </button>
+
+      </div>
+
+    </div>
+  </div>
 </div>
 
 
@@ -1279,7 +1513,7 @@
         <button
           type="button"
           class="btn-salvar-modal"
-          [disabled]="!formEquipe.dirty || formEquipe.invalid || carregandoModalEquipe()"
+          [disabled]="!formEquipe.dirty || formEquipe.invalid || carregandoModalEquipe() || +formEquipe.get('idEquipe')?.value === associadoParaEquipe()?.idEquipeAtual"
           (click)="salvarEquipe()"
         >
           @if (carregandoModalEquipe()) {
@@ -1298,28 +1532,34 @@
 </div>
 
 <!-- ============================================================================
-     MODAL — EDITAR ASSOCIADO
-     Aberto pelo botão .btn-editar na tabela.
-     Não exibe: padrinho, data de ingresso, cargo (cada um tem fluxo próprio).
-     O cargo ativo é enviado silenciosamente no PUT (backend exige @NotNull).
+     MODAL — GERENCIAR ENDEREÇOS RESIDENCIAIS
+     Aberto pelo botão .btn-endereco na tabela.
+
+     Fluxo em duas fases controlado por modoFormEndereco():
+       null     → Fase 1: lista de endereços cadastrados
+       'novo'   → Fase 2: formulário vazio (POST)
+       'editar' → Fase 2: formulário pré-preenchido (PUT)
+
+     O modal NÃO fecha automaticamente após salvar — o usuário pode
+     adicionar ou editar vários endereços antes de fechar.
      ============================================================================ -->
 <div
   class="modal fade"
-  id="modalEditarAssociado"
+  id="modalEnderecoAssociado"
   tabindex="-1"
-  aria-labelledby="modalEditarAssociadoLabel"
+  aria-labelledby="modalEnderecoAssociadoLabel"
   aria-hidden="true"
 >
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">
 
       <!-- HEADER -->
       <div class="modal-header">
-        <h5 class="modal-title" id="modalEditarAssociadoLabel">
-          <i class="bi bi-pencil-fill me-2"></i>
-          Editar Associado
-          @if (associadoParaEditar()) {
-            — {{ associadoParaEditar()!.nomeCompleto }}
+        <h5 class="modal-title" id="modalEnderecoAssociadoLabel">
+          <i class="bi bi-house-fill me-2" style="color: #0f766e;" aria-hidden="true"></i>
+          Endereços Residenciais
+          @if (associadoParaEndereco()) {
+            — {{ associadoParaEndereco()!.nomeCompleto }}
           }
         </h5>
         <button
@@ -1334,209 +1574,157 @@
       <div class="modal-body">
 
         <!-- ── SPINNER de carregamento inicial ── -->
-        @if (carregandoEdicao()) {
+        @if (carregandoEnderecos()) {
           <div class="text-center py-5">
-            <div class="spinner-border text-success" role="status" aria-hidden="true"></div>
-            <p class="mt-3 text-muted-sm">Carregando dados do associado...</p>
+            <div class="spinner-border" style="color: #0f766e;" role="status" aria-hidden="true"></div>
+            <p class="mt-3 text-muted-sm">Carregando endereços...</p>
           </div>
+
+        } @else if (modoFormEndereco() === null) {
+
+          <!-- ================================================================
+               FASE 1 — LISTA DE ENDEREÇOS
+               ================================================================ -->
+
+          @if (enderecosDoAssociado().length === 0) {
+            <!-- Estado vazio: associado sem endereços cadastrados -->
+            <div class="text-center py-4">
+              <i class="bi bi-house-slash fs-1 text-muted opacity-50" aria-hidden="true"></i>
+              <p class="mt-3 mb-1 fw-semibold text-muted">Nenhum endereço cadastrado</p>
+              <p class="text-muted-sm mb-0">Clique em "Adicionar Endereço" para cadastrar o primeiro.</p>
+            </div>
+
+          } @else {
+            <!-- Lista de endereços existentes -->
+            <div class="d-flex flex-column gap-3 mb-3">
+              @for (end of enderecosDoAssociado(); track end.idEndereco) {
+                <div class="p-3 rounded-3 border d-flex align-items-start justify-content-between gap-3"
+                     style="background: var(--cor-surface-alt);">
+
+                  <!-- Endereço formatado via helper -->
+                  <p class="mb-0" style="font-size: 14px; color: var(--cor-texto); line-height: 1.5;">
+                    {{ formatarEndereco(end) }}
+                  </p>
+
+                  <!-- Ações do card: copiar + editar -->
+                  <div class="d-flex gap-2 flex-shrink-0">
+                    <button
+                      type="button"
+                      class="btn-copiar-endereco"
+                      [class.btn-copiar-copiado]="idEnderecoCopiado() === end.idEndereco"
+                      (click)="copiarEndereco(end)"
+                      title="Copiar endereço completo"
+                      aria-label="Copiar endereço {{ end.rua }}, {{ end.numero }}"
+                    >
+                      @if (idEnderecoCopiado() === end.idEndereco) {
+                        <i class="bi bi-clipboard-check-fill me-1" aria-hidden="true"></i>
+                        Copiado!
+                      } @else {
+                        <i class="bi bi-clipboard me-1" aria-hidden="true"></i>
+                      }
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-acao btn-editar"
+                      title="Editar este endereço"
+                      (click)="ativarFormEditarEndereco(end)"
+                      aria-label="Editar endereço {{ end.rua }}, {{ end.numero }}"
+                    >
+                      <i class="bi bi-pencil-fill" aria-hidden="true"></i>
+                    </button>
+                  </div>
+
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Alerta de erro na carga -->
+          @if (erroModalEndereco()) {
+            <div class="alert alert-danger d-flex align-items-center gap-2 mt-3 mb-0" role="alert">
+              <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+              <span>{{ erroModalEndereco() }}</span>
+            </div>
+          }
 
         } @else {
 
-          <form [formGroup]="formEdicao" (ngSubmit)="salvarEdicao()" novalidate>
+          <!-- ================================================================
+               FASE 2 — FORMULÁRIO (novo ou edição)
+               ================================================================ -->
 
-            <!-- ============================================================
-                 SEÇÃO 1 — DADOS PESSOAIS
-                 ============================================================ -->
-            <h6 class="section-titulo">Dados Pessoais</h6>
+          <!-- Cabeçalho da fase com botão voltar -->
+          <div class="d-flex align-items-center mb-4 position-relative">
+  
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+              (click)="cancelarFormEndereco()"
+              title="Voltar para a lista de endereços"
+              aria-label="Voltar para a lista de endereços"
+            >
+              <i class="bi bi-arrow-left" aria-hidden="true"></i>              
+            </button>
 
+            <span class="fw-semibold position-absolute start-50 translate-middle-x" style="font-size: 14px; color: var(--cor-texto);">
+              @if (modoFormEndereco() === 'novo') {
+                Novo Endereço
+              } @else {
+                Editar Endereço
+              }
+            </span>
+            
+          </div>
+
+          <form [formGroup]="formEndereco" novalidate>
+
+            <!-- Linha 1: Rua + Número + Complemento -->
             <div class="row">
 
               <div class="col-md-6 mb-3">
-                <label for="edit-nomeCompleto" class="form-label">
-                  Nome Completo <span class="text-danger" aria-hidden="true">*</span>
-                </label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="edit-nomeCompleto"
-                  formControlName="nomeCompleto"
-                  placeholder="Nome completo sem abreviações"
-                  [class.is-invalid]="!!errosValidacaoEdicao()['nomeCompleto'] || (formEdicao.get('nomeCompleto')?.invalid && formEdicao.get('nomeCompleto')?.touched)"
-                />
-                @if (errosValidacaoEdicao()['nomeCompleto']) {
-                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['nomeCompleto'] }}</div>
-                } @else if (formEdicao.get('nomeCompleto')?.invalid && formEdicao.get('nomeCompleto')?.touched) {
-                  <div class="invalid-feedback">Nome completo é obrigatório.</div>
-                }
-              </div>
-
-              <div class="col-md-3 mb-3">
-                <label for="edit-cpf" class="form-label">CPF</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="edit-cpf"
-                  formControlName="cpf"
-                  readonly
-                  aria-describedby="edit-cpf-help"
-                />
-                <small id="edit-cpf-help" class="form-text text-muted">
-                  CPF não pode ser alterado após o cadastro.
-                </small>
-              </div>
-
-              <div class="col-md-3 mb-3">
-                <label for="edit-dataNascimento" class="form-label">
-                  Data de Nascimento <span class="text-danger" aria-hidden="true">*</span>
-                </label>
-                <input
-                  type="date"
-                  class="form-control"
-                  id="edit-dataNascimento"
-                  formControlName="dataNascimento"
-                  [class.is-invalid]="!!errosValidacaoEdicao()['dataNascimento'] || (formEdicao.get('dataNascimento')?.invalid && formEdicao.get('dataNascimento')?.touched)"
-                />
-                @if (errosValidacaoEdicao()['dataNascimento']) {
-                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['dataNascimento'] }}</div>
-                } @else if (formEdicao.get('dataNascimento')?.invalid && formEdicao.get('dataNascimento')?.touched) {
-                  <div class="invalid-feedback">Data de nascimento é obrigatória.</div>
-                }
-              </div>
-
-            </div>
-
-            <div class="row">
-
-              <div class="col-md-6 mb-3">
-                <label for="edit-emailPrincipal" class="form-label">
-                  E-mail Principal <span class="text-danger" aria-hidden="true">*</span>
-                </label>
-                <input
-                  type="email"
-                  class="form-control"
-                  id="edit-emailPrincipal"
-                  formControlName="emailPrincipal"
-                  placeholder="email@exemplo.com.br"
-                  [class.is-invalid]="!!errosValidacaoEdicao()['emailPrincipal'] || (formEdicao.get('emailPrincipal')?.errors?.['email'] && formEdicao.get('emailPrincipal')?.touched)"
-                />
-                @if (errosValidacaoEdicao()['emailPrincipal']) {
-                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['emailPrincipal'] }}</div>
-                } @else if (formEdicao.get('emailPrincipal')?.errors?.['email'] && formEdicao.get('emailPrincipal')?.touched) {
-                  <div class="invalid-feedback">E-mail inválido.</div>
-                }
-              </div>
-
-              <div class="col-md-6 mb-3">
-                <label for="edit-telefonePrincipal" class="form-label">
-                  Telefone / WhatsApp <span class="text-danger" aria-hidden="true">*</span>
-                </label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="edit-telefonePrincipal"
-                  formControlName="telefonePrincipal"
-                  placeholder="10 ou 11 dígitos"
-                  maxlength="11"
-                  inputmode="tel"
-                  [class.is-invalid]="!!errosValidacaoEdicao()['telefonePrincipal'] || (formEdicao.get('telefonePrincipal')?.errors?.['pattern'] && formEdicao.get('telefonePrincipal')?.touched)"
-                />
-                @if (errosValidacaoEdicao()['telefonePrincipal']) {
-                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['telefonePrincipal'] }}</div>
-                } @else if (formEdicao.get('telefonePrincipal')?.errors?.['pattern'] && formEdicao.get('telefonePrincipal')?.touched) {
-                  <div class="invalid-feedback">Digite 10 ou 11 dígitos (sem formatação).</div>
-                }
-              </div>
-
-            </div>
-
-            <!-- ============================================================
-                 SEÇÃO 2 — DADOS ADMINISTRATIVOS
-                 ============================================================ -->
-            <h6 class="section-titulo mt-4">Dados Administrativos</h6>
-
-            <div class="row align-items-end">
-
-              <div class="col-md-4 mb-3">
-                <label for="edit-dataPagamentoPrimeiraAnuidade" class="form-label">
-                  Data da 1ª Anuidade
-                </label>
-                <input
-                  type="date"
-                  class="form-control"
-                  id="edit-dataPagamentoPrimeiraAnuidade"
-                  formControlName="dataPagamentoPrimeiraAnuidade"
-                />
-                <small class="form-text text-muted">Opcional. Deixe em branco se ainda não pago.</small>
-              </div>
-
-              <div class="col-md-8 mb-3">
-                <div class="form-check form-switch mt-2">
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    id="edit-exibirAniversario"
-                    formControlName="exibirAniversario"
-                    role="switch"
-                  />
-                  <label class="form-check-label" for="edit-exibirAniversario">
-                    Exibir aniversário para toda a rede (apenas Dia/Mês)
-                  </label>
-                </div>
-              </div>
-
-            </div>
-
-            <!-- ============================================================
-                 SEÇÃO 3 — ENDEREÇO RESIDENCIAL
-                 ============================================================ -->
-            <h6 class="section-titulo mt-4">Endereço Residencial</h6>
-
-            <div class="row">
-
-              <div class="col-md-6 mb-3">
-                <label for="edit-rua" class="form-label">
+                <label for="end-rua" class="form-label">
                   Rua / Logradouro <span class="text-danger" aria-hidden="true">*</span>
                 </label>
                 <input
                   type="text"
                   class="form-control"
-                  id="edit-rua"
+                  id="end-rua"
                   formControlName="rua"
                   placeholder="Ex: Rua das Flores"
-                  [class.is-invalid]="!!errosValidacaoEdicao()['rua'] || (formEdicao.get('rua')?.invalid && formEdicao.get('rua')?.touched)"
+                  [class.is-invalid]="!!errosValidacaoEndereco()['rua'] || (formEndereco.get('rua')?.invalid && formEndereco.get('rua')?.touched)"
                 />
-                @if (errosValidacaoEdicao()['rua']) {
-                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['rua'] }}</div>
-                } @else if (formEdicao.get('rua')?.invalid && formEdicao.get('rua')?.touched) {
+                @if (errosValidacaoEndereco()['rua']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEndereco()['rua'] }}</div>
+                } @else if (formEndereco.get('rua')?.invalid && formEndereco.get('rua')?.touched) {
                   <div class="invalid-feedback">Rua é obrigatória.</div>
                 }
               </div>
 
               <div class="col-md-2 mb-3">
-                <label for="edit-numero" class="form-label">
+                <label for="end-numero" class="form-label">
                   Número <span class="text-danger" aria-hidden="true">*</span>
                 </label>
                 <input
                   type="text"
                   class="form-control"
-                  id="edit-numero"
+                  id="end-numero"
                   formControlName="numero"
                   placeholder="Ex: 123"
-                  [class.is-invalid]="!!errosValidacaoEdicao()['numero'] || (formEdicao.get('numero')?.invalid && formEdicao.get('numero')?.touched)"
+                  [class.is-invalid]="!!errosValidacaoEndereco()['numero'] || (formEndereco.get('numero')?.invalid && formEndereco.get('numero')?.touched)"
                 />
-                @if (errosValidacaoEdicao()['numero']) {
-                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['numero'] }}</div>
-                } @else if (formEdicao.get('numero')?.invalid && formEdicao.get('numero')?.touched) {
+                @if (errosValidacaoEndereco()['numero']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEndereco()['numero'] }}</div>
+                } @else if (formEndereco.get('numero')?.invalid && formEndereco.get('numero')?.touched) {
                   <div class="invalid-feedback">Número é obrigatório.</div>
                 }
               </div>
 
               <div class="col-md-4 mb-3">
-                <label for="edit-complemento" class="form-label">Complemento</label>
+                <label for="end-complemento" class="form-label">Complemento</label>
                 <input
                   type="text"
                   class="form-control"
-                  id="edit-complemento"
+                  id="end-complemento"
                   formControlName="complemento"
                   placeholder="Apto, sala, bloco (opcional)"
                 />
@@ -1544,84 +1732,85 @@
 
             </div>
 
+            <!-- Linha 2: Bairro + Cidade + UF + CEP -->
             <div class="row">
 
               <div class="col-md-4 mb-3">
-                <label for="edit-bairro" class="form-label">
+                <label for="end-bairro" class="form-label">
                   Bairro <span class="text-danger" aria-hidden="true">*</span>
                 </label>
                 <input
                   type="text"
                   class="form-control"
-                  id="edit-bairro"
+                  id="end-bairro"
                   formControlName="bairro"
                   placeholder="Nome do bairro"
-                  [class.is-invalid]="!!errosValidacaoEdicao()['bairro'] || (formEdicao.get('bairro')?.invalid && formEdicao.get('bairro')?.touched)"
+                  [class.is-invalid]="!!errosValidacaoEndereco()['bairro'] || (formEndereco.get('bairro')?.invalid && formEndereco.get('bairro')?.touched)"
                 />
-                @if (errosValidacaoEdicao()['bairro']) {
-                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['bairro'] }}</div>
-                } @else if (formEdicao.get('bairro')?.invalid && formEdicao.get('bairro')?.touched) {
+                @if (errosValidacaoEndereco()['bairro']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEndereco()['bairro'] }}</div>
+                } @else if (formEndereco.get('bairro')?.invalid && formEndereco.get('bairro')?.touched) {
                   <div class="invalid-feedback">Bairro é obrigatório.</div>
                 }
               </div>
 
               <div class="col-md-4 mb-3">
-                <label for="edit-cidade" class="form-label">
+                <label for="end-cidade" class="form-label">
                   Cidade <span class="text-danger" aria-hidden="true">*</span>
                 </label>
                 <input
                   type="text"
                   class="form-control"
-                  id="edit-cidade"
+                  id="end-cidade"
                   formControlName="cidade"
                   placeholder="Nome da cidade"
-                  [class.is-invalid]="!!errosValidacaoEdicao()['cidade'] || (formEdicao.get('cidade')?.invalid && formEdicao.get('cidade')?.touched)"
+                  [class.is-invalid]="!!errosValidacaoEndereco()['cidade'] || (formEndereco.get('cidade')?.invalid && formEndereco.get('cidade')?.touched)"
                 />
-                @if (errosValidacaoEdicao()['cidade']) {
-                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['cidade'] }}</div>
-                } @else if (formEdicao.get('cidade')?.invalid && formEdicao.get('cidade')?.touched) {
+                @if (errosValidacaoEndereco()['cidade']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEndereco()['cidade'] }}</div>
+                } @else if (formEndereco.get('cidade')?.invalid && formEndereco.get('cidade')?.touched) {
                   <div class="invalid-feedback">Cidade é obrigatória.</div>
                 }
               </div>
 
               <div class="col-md-2 mb-3">
-                <label for="edit-estado" class="form-label">
+                <label for="end-estado" class="form-label">
                   UF <span class="text-danger" aria-hidden="true">*</span>
                 </label>
                 <input
                   type="text"
                   class="form-control"
-                  id="edit-estado"
+                  id="end-estado"
                   formControlName="estado"
                   placeholder="SP"
                   maxlength="2"
                   style="text-transform: uppercase"
-                  [class.is-invalid]="!!errosValidacaoEdicao()['estado'] || (formEdicao.get('estado')?.invalid && formEdicao.get('estado')?.touched)"
+                  [class.is-invalid]="!!errosValidacaoEndereco()['estado'] || (formEndereco.get('estado')?.invalid && formEndereco.get('estado')?.touched)"
                 />
-                @if (errosValidacaoEdicao()['estado']) {
-                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['estado'] }}</div>
-                } @else if (formEdicao.get('estado')?.invalid && formEdicao.get('estado')?.touched) {
+                @if (errosValidacaoEndereco()['estado']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEndereco()['estado'] }}</div>
+                } @else if (formEndereco.get('estado')?.invalid && formEndereco.get('estado')?.touched) {
                   <div class="invalid-feedback">UF é obrigatória (2 letras).</div>
                 }
               </div>
 
               <div class="col-md-2 mb-3">
-                <label for="edit-cep" class="form-label">
+                <label for="end-cep" class="form-label">
                   CEP <span class="text-danger" aria-hidden="true">*</span>
                 </label>
                 <input
                   type="text"
                   class="form-control"
-                  id="edit-cep"
+                  id="end-cep"
                   formControlName="cep"
                   placeholder="8 dígitos"
                   maxlength="8"
                   inputmode="numeric"
-                  [class.is-invalid]="!!errosValidacaoEdicao()['cep'] || (formEdicao.get('cep')?.errors?.['pattern'] && formEdicao.get('cep')?.touched)"
+                  [class.is-invalid]="!!errosValidacaoEndereco()['cep'] || (formEndereco.get('cep')?.errors?.['pattern'] && formEndereco.get('cep')?.touched)"
                 />
-                @if (errosValidacaoEdicao()['cep']) {
-                  <div class="invalid-feedback">{{ errosValidacaoEdicao()['cep'] }}</div>
-                } @else if (formEdicao.get('cep')?.errors?.['pattern'] && formEdicao.get('cep')?.touched) {
+                @if (errosValidacaoEndereco()['cep']) {
+                  <div class="invalid-feedback">{{ errosValidacaoEndereco()['cep'] }}</div>
+                } @else if (formEndereco.get('cep')?.errors?.['pattern'] && formEndereco.get('cep')?.touched) {
                   <div class="invalid-feedback">CEP deve conter exatamente 8 dígitos.</div>
                 }
               </div>
@@ -1630,22 +1819,11 @@
 
           </form>
 
-          <!-- ALERTA: cargo silencioso não encontrado -->
-          @if (idCargoSilencioso() === null) {
-            <div class="alert alert-warning d-flex align-items-center gap-2 mt-3 mb-0" role="alert">
-              <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
-              <span>
-                Não foi possível identificar o cargo ativo deste associado.
-                Use o botão <strong>Gerenciar Cargos</strong> para atribuir um cargo antes de salvar.
-              </span>
-            </div>
-          }
-
-          <!-- ALERTA DE ERRO GERAL -->
-          @if (erroModalEdicao()) {
+          <!-- Alerta de erro geral -->
+          @if (erroModalEndereco()) {
             <div class="alert alert-danger d-flex align-items-center gap-2 mt-3 mb-0" role="alert">
               <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
-              <span>{{ erroModalEdicao() }}</span>
+              <span>{{ erroModalEndereco() }}</span>
             </div>
           }
 
@@ -1653,43 +1831,54 @@
 
       </div>
 
-      <!-- ── RODAPÉ ─────────────────────────────────────────────────────── -->
+      <!-- FOOTER -->
       <div class="modal-footer">
 
-        <!-- Botão OCULTO: acionado via ViewChild após sucesso no submit -->
-        <button
-          #btnFecharModalEdicao
-          type="button"
-          class="d-none"
-          data-bs-dismiss="modal"
-          aria-hidden="true"
-        ></button>
+        @if (modoFormEndereco() === null) {
+          <!-- Fase 1: botão Fechar + botão Adicionar -->
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            Fechar
+          </button>
+          <button
+            type="button"
+            class="btn-salvar-modal"
+            (click)="ativarFormNovoEndereco()"
+          >
+            <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>
+            Adicionar Endereço
+          </button>
 
-        <button
-          type="button"
-          class="btn btn-outline-secondary"
-          data-bs-dismiss="modal"
-        >
-          Cancelar
-        </button>
-
-        <button
-          type="button"
-          class="btn-salvar-modal"
-          [disabled]="!formEdicao.dirty || formEdicao.invalid || carregandoSalvarEdicao() || idCargoSilencioso() === null"
-          (click)="salvarEdicao()"
-        >
-          @if (carregandoSalvarEdicao()) {
-            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-            Salvando...
-          } @else {
-            <i class="bi bi-check-lg me-2" aria-hidden="true"></i>
-            Salvar Alterações
-          }
-        </button>
+        } @else {
+          <!-- Fase 2: botão Cancelar + botão Salvar -->
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            (click)="cancelarFormEndereco()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-salvar-modal"
+            [disabled]="(modoFormEndereco() === 'editar' && !formEndereco.dirty) || formEndereco.invalid || carregandoModalEndereco()"
+            (click)="salvarEndereco()"
+          >
+            @if (carregandoModalEndereco()) {
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Salvando...
+            } @else if (modoFormEndereco() === 'novo') {
+              <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>
+              Adicionar Endereço
+            } @else {
+              <i class="bi bi-check-lg me-2" aria-hidden="true"></i>
+              Salvar Alterações
+            }
+          </button>
+        }
 
       </div>
 
     </div>
   </div>
 </div>
+

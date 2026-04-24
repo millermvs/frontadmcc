@@ -460,6 +460,67 @@ body {
   border-color: #93c5fd;
 }
 
+/* Sky — visualizar informações do associado */
+.btn-informacoes-associado {
+  background: #f0f9ff;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
+.btn-informacoes-associado:hover {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+}
+
+/* Teal — gerenciar endereços residenciais */
+.btn-endereco {
+  background: #f0fdfa;
+  color: #0f766e;
+  border-color: #99f6e4;
+}
+
+.btn-endereco:hover {
+  background: #ccfbf1;
+  border-color: #5eead4;
+}
+
+/* ================================================
+   BOTÃO COPIAR ENDEREÇO
+   Usado no modal de equipes (local presencial) e
+   no modal de endereços residenciais de associados.
+   Movido para o global pois é compartilhado.
+   ================================================ */
+.btn-copiar-endereco {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-copiar-endereco:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.btn-copiar-copiado {
+  background: var(--cor-sucesso-bg) !important;
+  border-color: #86efac !important;
+  color: var(--cor-sucesso) !important;
+}
+
+.btn-copiar-endereco:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* ================================================
    STATUS CHIPS
    Pílulas coloridas de status usadas em tabelas e listas.

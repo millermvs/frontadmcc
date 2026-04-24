@@ -19,12 +19,16 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
+import { formatarEnderecoResidencial } from '../../../helpers/endereco.helper';
+import { gerarPdfAssociado } from '../../../helpers/pdf-associado.helper';
 import { forkJoin, of, Subject } from 'rxjs';
 import { catchError, debounceTime, switchMap } from 'rxjs/operators';
 import {
   AssociadoEditarEquipeRequestDto,
   AssociadoRequestDto,
   AssociadoResponseDto,
+  EnderecoResidencialRequestDto,
+  EnderecoResidencialResponseDto,
   LABELS_STATUS_ASSOCIADO,
   STATUS_ASSOCIADO_OPCOES,
   StatusAssociado,
@@ -307,6 +311,84 @@ export class Associados implements OnInit {
    * o botão salvar só habilita quando o usuário altera (form.dirty).
    */
   formEquipe: FormGroup = this.criarFormEquipe();
+
+  // =========================================================================
+  // SIGNALS — MODAL DE ENDEREÇO RESIDENCIAL
+  //
+  // Fluxo em duas fases:
+  //   Fase 1 (Lista): exibe os endereços cadastrados do associado com
+  //     botão "Editar" por linha e botão "Adicionar Novo Endereço".
+  //   Fase 2 (Form): exibe o formulário de criação ou edição.
+  //     modoFormEndereco controla qual fase está ativa:
+  //       null    → apenas a lista
+  //       'novo'  → formulário em branco (POST)
+  //       'editar'→ formulário pré-preenchido (PUT)
+  // =========================================================================
+
+  /**
+   * associadoParaEndereco
+   * Associado da linha clicada. Fonte de verdade do idAssociado nas chamadas HTTP.
+   */
+  associadoParaEndereco = signal<AssociadoResponseDto | null>(null);
+
+  /**
+   * enderecosDoAssociado
+   * Lista carregada via GET ao abrir o modal.
+   * Recarregada após cada POST/PUT bem-sucedido.
+   */
+  enderecosDoAssociado = signal<EnderecoResidencialResponseDto[]>([]);
+
+  /** Spinner que substitui o corpo do modal durante o GET inicial. */
+  carregandoEnderecos = signal(false);
+
+  /** Spinner do botão "Salvar Endereço" durante POST/PUT. */
+  carregandoModalEndereco = signal(false);
+
+  /** Mensagem de erro exibida no rodapé do modal. */
+  erroModalEndereco = signal<string | null>(null);
+
+  /** Erros por campo retornados pelo backend (400). */
+  errosValidacaoEndereco = signal<Record<string, string>>({});
+
+  /**
+   * modoFormEndereco
+   * Controla se o formulário está visível e em qual modo.
+   *   null     → só a lista de endereços
+   *   'novo'   → formulário vazio (POST)
+   *   'editar' → formulário pré-preenchido (PUT)
+   */
+  modoFormEndereco = signal<'novo' | 'editar' | null>(null);
+
+  /**
+   * enderecoParaEditar
+   * Endereço clicado para edição. Fornece o idEndereco para o PUT
+   * e os valores iniciais para o patchValue().
+   */
+  enderecoParaEditar = signal<EnderecoResidencialResponseDto | null>(null);
+
+  /**
+   * formEndereco
+   * Formulário do modal de endereço.
+   * Compartilhado entre criação e edição — resetado ou preenchido
+   * antes de exibir o formulário.
+   */
+  formEndereco: FormGroup = this.criarFormEndereco();
+
+  /**
+   * idEnderecoCopiado
+   * ID do endereço cujo botão "Copiar" foi clicado recentemente.
+   * Fica populado por 2 segundos para exibir o feedback visual ("Copiado!").
+   * null quando nenhum endereço foi copiado ou após o timeout.
+   */
+  idEnderecoCopiado = signal<number | null>(null);
+
+  /**
+   * formatarEndereco
+   * Exposição da função pura do helper para o template.
+   * Angular templates não acessam imports diretamente — a função precisa
+   * ser acessível via propriedade ou método do componente.
+   */
+  readonly formatarEndereco = formatarEnderecoResidencial;
 
   // =========================================================================
   // SIGNALS — DADOS DE SUPORTE (dropdowns do modal)
@@ -744,179 +826,58 @@ export class Associados implements OnInit {
   }
 
   // =========================================================================
-  // MÉTODOS PÚBLICOS — MODAL DE EDIÇÃO — Bloco 4
+  // MÉTODOS PÚBLICOS — MODAL DE INFORMAÇÕES
   // =========================================================================
 
   /**
-   * abrirModalEdicao(associado)
+   * abrirModalInformacoes(associado)
    *
-   * Chamado pelo (click) do botão "Editar" na tabela, antes do Bootstrap
-   * exibir o modal. Dispara um forkJoin com 4 GETs garantidos + 1 condicional:
+   * Chamado pelo (click) do botão "Informações" na tabela, antes do Bootstrap
+   * exibir o modal. Dispara um forkJoin com GETs:
    *
    *   Garantidos:
    *     - dadosAtuais     → dados frescos do associado (evita listagem desatualizada)
-   *     - cargosAssociado → para localizar o cargo ativo (cargo silencioso no PUT)
+   *     - cargosAssociado → para localizar o cargo ativo
    *     - enderecos       → o ResponseDto não traz endereço embutido
-   *     - visibilidade    → para pré-preencher exibirAniversario com o valor real
-   *
-   *   Condicional (of(null) se já em cache):
-   *     - cargos          → catálogo de cargos, necessário para o match silencioso
-   *
-   * Equipe, cluster e atuação não são editados aqui — cada um tem modal dedicado.
-   * Os valores originais são lidos de dadosAtuais e enviados silenciosamente no PUT.
+   * 
+
    *
    * Por que buscar dados frescos ao abrir e não usar o objeto da listagem?
    * A listagem pode estar desatualizada (outra aba editou o mesmo registro).
    * O GET por ID garante que o formulário parte de dados consistentes.
    */
-  abrirModalEdicao(associado: AssociadoResponseDto): void {
-    this.associadoParaEditar.set(associado); // valor provisório para o título do modal
+  abrirModalInformacoes(associado: AssociadoResponseDto): void {
+    this.associadoParaEditar.set(null);
     this.carregandoEdicao.set(true);
     this.erroModalEdicao.set(null);
-    this.errosValidacaoEdicao.set({});
 
-    forkJoin({
-      dadosAtuais:     this.associadoService.buscarAssociadoPorId(associado.idAssociado),
-      cargosAssociado: this.associadoCargoService.listarPorAssociado(associado.idAssociado),
-      enderecos:       this.associadoService.listarEnderecosResidenciais(associado.idAssociado),
-      visibilidade:    this.associadoService.buscarVisibilidade(associado.idAssociado),
-      cargos:          this.cargos().length > 0
-                         ? of(null)
-                         : this.cargoService.listar(0, 100),
-    }).subscribe({
-      next: ({ dadosAtuais, cargosAssociado, enderecos, visibilidade, cargos }) => {
-        // Atualiza cache condicional de cargos
-        if (cargos) this.cargos.set(cargos.items.filter((c: CargoLiderancaResponseDto) => c.ativo));
-
-        // Salva dados frescos como fonte de verdade
-        this.associadoParaEditar.set(dadosAtuais);
-
-        // Localiza cargo ativo e resolve o idCargoLideranca silencioso.
-        // AssociadoCargoLiderancaResponseDto não expõe idCargoLideranca,
-        // então fazemos match por nomeCargo no catálogo.
-        const cargoAtivo = cargosAssociado.find((c: AssociadoCargoLiderancaResponseDto) => c.ativo);
-        if (cargoAtivo) {
-          const nomeNorm = cargoAtivo.nomeCargo.trim().toLowerCase();
-          const match    = this.cargos().find(c => c.nomeCargo.trim().toLowerCase() === nomeNorm);
-          this.idCargoSilencioso.set(match?.idCargoLideranca ?? null);
-          this.dataInicioCargoSilencioso.set(cargoAtivo.dataInicio);
-        } else {
-          // Associado sem cargo ativo — situação anormal, bloqueamos o submit
-          this.idCargoSilencioso.set(null);
-          this.dataInicioCargoSilencioso.set(null);
-        }
-
-        const endereco = enderecos[0] ?? null;
-        this.formEdicao.patchValue({
-          nomeCompleto:                  dadosAtuais.nomeCompleto,
-          cpf:                           dadosAtuais.cpf,
-          emailPrincipal:                dadosAtuais.emailPrincipal,
-          telefonePrincipal:             dadosAtuais.telefonePrincipal,
-          dataNascimento:                dadosAtuais.dataNascimento,
-          dataPagamentoPrimeiraAnuidade: dadosAtuais.dataPagamentoPrimeiraAnuidade,
-          exibirAniversario:             visibilidade.exibirAniversario,
-          // Endereço residencial
-          rua:         endereco?.rua         ?? '',
-          numero:      endereco?.numero      ?? '',
-          complemento: endereco?.complemento ?? null,
-          bairro:      endereco?.bairro      ?? '',
-          cidade:      endereco?.cidade      ?? '',
-          estado:      endereco?.estado      ?? '',
-          cep:         endereco?.cep         ?? '',
-        }, { emitEvent: false });
-
-        this.carregandoEdicao.set(false);
+    this.associadoService.buscarAssociadoPorId(associado.idAssociado).subscribe({
+      next: (dados) => {
+        this.associadoParaEditar.set(dados);
       },
       error: (err: HttpErrorResponse) => {
-        console.error('Erro ao carregar dados do associado para edição:', err);
-        this.erroModalEdicao.set('Erro ao carregar os dados. Feche o modal e tente novamente.');
+        console.error('Erro ao carregar dados do associado:', err);
+        this.erroModalEdicao.set('Erro ao carregar dados. Feche e tente novamente.');
         this.carregandoEdicao.set(false);
       },
+      complete: () => this.carregandoEdicao.set(false),
     });
   }
 
   /**
-   * salvarEdicao()
+   * gerarFichaAssociado()
    *
-   * Monta o AssociadoRequestDto combinando:
-   *   - Campos editáveis do formulário (getRawValue() inclui o CPF disabled)
-   *   - Campos silenciosos do associadoParaEditar() (dataIngresso, idEquipeOrigem, etc.)
-   *   - Cargo silencioso (idCargoSilencioso + dataInicioCargoSilencioso)
+   * Delega ao helper puro a geração e download do PDF da ficha do associado.
+   * Só disponível quando associadoParaEditar() está preenchido (dados carregados).
    *
-   * Bloqueia o submit se idCargoSilencioso for null (cargo ativo não encontrado),
-   * pois o backend valida @NotNull em idCargoLideranca.
+   * Por que helper e não service?
+   * CLAUDE.md §3.1: helpers fazem transformação pura de dados — os dados do
+   * associado são transformados em um PDF sem nenhuma chamada HTTP envolvida.
    */
-  salvarEdicao(): void {
-    const original = this.associadoParaEditar();
-    if (!original) return;
-
-    // Guarda de cargo: se o match por nome falhou, o PUT retornaria 400 do backend.
-    // Melhor bloquear aqui com mensagem clara do que receber um erro genérico.
-    if (this.idCargoSilencioso() === null) {
-      this.erroModalEdicao.set(
-        'Cargo ativo do associado não encontrado no sistema. Entre em contato com o suporte.'
-      );
-      return;
-    }
-
-    this.carregandoSalvarEdicao.set(true);
-    this.erroModalEdicao.set(null);
-    this.errosValidacaoEdicao.set({});
-
-    const val = this.formEdicao.getRawValue();
-
-    const dto: AssociadoRequestDto = {
-      // ── Campos editáveis pelo usuário ────────────────────────
-      nomeCompleto:                  val.nomeCompleto?.trim(),
-      cpf:                           (val.cpf as string).replace(/\D/g, ''),
-      emailPrincipal:                val.emailPrincipal?.trim(),
-      telefonePrincipal:             (val.telefonePrincipal as string).replace(/\D/g, ''),
-      dataNascimento:                val.dataNascimento,
-      dataPagamentoPrimeiraAnuidade: val.dataPagamentoPrimeiraAnuidade || null,
-      exibirAniversario:             val.exibirAniversario ?? false,
-      rua:                           val.rua?.trim(),
-      numero:                        val.numero?.trim(),
-      complemento:                   val.complemento?.trim() || null,
-      bairro:                        val.bairro?.trim(),
-      cidade:                        val.cidade?.trim(),
-      estado:                        (val.estado as string).toUpperCase().trim(),
-      cep:                           (val.cep as string).replace(/\D/g, ''),
-
-      // ── Campos silenciosos (originais, não editáveis neste modal) ─
-      dataIngresso:        original.dataIngresso,
-      tipoOrigemEquipe:    original.tipoOrigemEquipe,
-      statusAssociado:     original.statusAssociado,
-      idEquipeOrigem:      original.idEquipeOrigem,
-      idEquipeAtual:       original.idEquipeAtual,       // editado via modal de equipe
-      idCluster:           original.idCluster,           // editado via modal de cluster (futuro)
-      idAtuacaoEspecifica: original.idAtuacaoEspecifica, // editado via modal de cluster (futuro)
-      idPadrinho:          original.idPadrinho,
-
-      // ── Cargo silencioso (obrigatório no backend, invisível na UI) ─
-      idCargoLideranca: this.idCargoSilencioso()!,
-      dataInicioCargo:  this.dataInicioCargoSilencioso()!,
-    };
-
-    this.associadoService.editarAssociado(original.idAssociado, dto).subscribe({
-      next: () => {
-        this.btnFecharEdicao.nativeElement.click();
-        this.carregarAssociados(this.paginaAtual()); // mantém a página atual após edição
-        // TODO: toastService.sucesso('Associado atualizado com sucesso!');
-      },
-      error: (err: HttpErrorResponse) => {
-        console.error('Erro ao editar associado:', err);
-        if (err.status === 400 && err.error?.errors) {
-          this.errosValidacaoEdicao.set(this.normalizarErros(err.error.errors));
-          this.erroModalEdicao.set('Corrija os campos destacados.');
-        } else {
-          this.erroModalEdicao.set(this.extrairMensagemErro(err));
-        }
-        this.carregandoSalvarEdicao.set(false);
-      },
-      complete: () => {
-        this.carregandoSalvarEdicao.set(false);
-      },
-    });
+  gerarFichaAssociado(): void {
+    const assoc = this.associadoParaEditar();
+    if (!assoc) return;
+    gerarPdfAssociado(assoc);
   }
 
   // =========================================================================
@@ -974,6 +935,174 @@ export class Associados implements OnInit {
       },
       complete: () => {
         this.carregandoModalEquipe.set(false);
+      },
+    });
+  }
+
+  // =========================================================================
+  // MÉTODOS PÚBLICOS — MODAL DE ENDEREÇO RESIDENCIAL
+  // =========================================================================
+
+  /**
+   * abrirModalEndereco(associado)
+   *
+   * Chamado pelo (click) do botão de endereço na tabela, antes do Bootstrap
+   * exibir o modal. Registra o associado clicado, reseta os estados e
+   * carrega a lista de endereços via GET.
+   *
+   * Não usa forkJoin — apenas uma requisição, sem dados de suporte adicionais.
+   */
+  abrirModalEndereco(associado: AssociadoResponseDto): void {
+    this.associadoParaEndereco.set(associado);
+    this.erroModalEndereco.set(null);
+    this.errosValidacaoEndereco.set({});
+    this.modoFormEndereco.set(null);
+    this.enderecoParaEditar.set(null);
+    this.enderecosDoAssociado.set([]);
+    this.carregandoEnderecos.set(true);
+
+    this.associadoService.listarEnderecosResidenciais(associado.idAssociado).subscribe({
+      next: (enderecos) => {
+        this.enderecosDoAssociado.set(enderecos);
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao carregar endereços residenciais:', err);
+        this.erroModalEndereco.set('Erro ao carregar endereços. Feche o modal e tente novamente.');
+        this.carregandoEnderecos.set(false);
+      },
+      complete: () => this.carregandoEnderecos.set(false),
+    });
+  }
+
+  /**
+   * ativarFormNovoEndereco()
+   *
+   * Exibe o formulário em branco para adicionar um novo endereço (POST).
+   * Chamado pelo botão "Adicionar Novo Endereço" na fase de lista.
+   */
+  ativarFormNovoEndereco(): void {
+    this.enderecoParaEditar.set(null);
+    this.formEndereco.reset();
+    this.erroModalEndereco.set(null);
+    this.errosValidacaoEndereco.set({});
+    this.modoFormEndereco.set('novo');
+  }
+
+  /**
+   * ativarFormEditarEndereco(endereco)
+   *
+   * Exibe o formulário pré-preenchido para editar um endereço existente (PUT).
+   * Chamado pelo botão "Editar" de cada linha na lista de endereços.
+   *
+   * patchValue() com { emitEvent: false } — não dispara validações prematuras.
+   * O botão "Salvar" só habilita quando o usuário modificar ao menos um campo (form.dirty).
+   */
+  ativarFormEditarEndereco(endereco: EnderecoResidencialResponseDto): void {
+    this.enderecoParaEditar.set(endereco);
+    this.erroModalEndereco.set(null);
+    this.errosValidacaoEndereco.set({});
+    this.formEndereco.patchValue({
+      rua:         endereco.rua,
+      numero:      endereco.numero,
+      complemento: endereco.complemento,
+      bairro:      endereco.bairro,
+      cidade:      endereco.cidade,
+      estado:      endereco.estado,
+      cep:         endereco.cep,
+    }, { emitEvent: false });
+    this.modoFormEndereco.set('editar');
+  }
+
+  /**
+   * cancelarFormEndereco()
+   *
+   * Volta para a fase de lista sem salvar.
+   * Chamado pelo botão "Cancelar" no formulário de novo/edição.
+   */
+  cancelarFormEndereco(): void {
+    this.modoFormEndereco.set(null);
+    this.enderecoParaEditar.set(null);
+    this.erroModalEndereco.set(null);
+    this.errosValidacaoEndereco.set({});
+  }
+
+  /**
+   * copiarEndereco(endereco)
+   *
+   * Formata o endereço via helper e grava no clipboard do usuário.
+   * Exibe feedback visual no botão copiado por 2 segundos (mesmo padrão
+   * do modal de equipe — idEnderecoCopiado controla qual card mudou).
+   */
+  copiarEndereco(endereco: EnderecoResidencialResponseDto): void {
+    const texto = formatarEnderecoResidencial(endereco);
+    navigator.clipboard.writeText(texto).then(() => {
+      this.idEnderecoCopiado.set(endereco.idEndereco);
+      setTimeout(() => this.idEnderecoCopiado.set(null), 2000);
+    });
+  }
+
+  /**
+   * salvarEndereco()
+   *
+   * Monta o EnderecoResidencialRequestDto e chama POST ou PUT conforme o modo:
+   *   'novo'   → POST /api/v1/enderecos-residenciais/associado/{idAssociado}
+   *   'editar' → PUT  /api/v1/enderecos-residenciais/{idEndereco}
+   *
+   * Após sucesso:
+   *   - Recarrega a lista de endereços (GET) para refletir o novo/editado
+   *   - Volta para a fase de lista (modoFormEndereco = null)
+   *   - O modal permanece aberto — o usuário pode adicionar mais endereços
+   */
+  salvarEndereco(): void {
+    const associado = this.associadoParaEndereco();
+    if (!associado) return;
+
+    this.carregandoModalEndereco.set(true);
+    this.erroModalEndereco.set(null);
+    this.errosValidacaoEndereco.set({});
+
+    const val = this.formEndereco.getRawValue();
+    const dto: EnderecoResidencialRequestDto = {
+      rua:         val.rua?.trim(),
+      numero:      val.numero?.trim(),
+      complemento: val.complemento?.trim() || null,
+      bairro:      val.bairro?.trim(),
+      cidade:      val.cidade?.trim(),
+      estado:      (val.estado as string).toUpperCase().trim(),
+      cep:         (val.cep as string).replace(/\D/g, ''),
+    };
+
+    const modo     = this.modoFormEndereco();
+    const endereco = this.enderecoParaEditar();
+
+    // Escolhe POST ou PUT conforme o modo atual
+    const operacao$ = modo === 'editar' && endereco
+      ? this.associadoService.editarEnderecoResidencial(endereco.idEndereco, dto)
+      : this.associadoService.cadastrarEnderecoResidencial(associado.idAssociado, dto);
+
+    operacao$.subscribe({
+      next: () => {
+        // Recarrega a lista para refletir a alteração
+        this.associadoService.listarEnderecosResidenciais(associado.idAssociado).subscribe({
+          next:  (enderecos) => this.enderecosDoAssociado.set(enderecos),
+          error: (err)       => console.error('Erro ao recarregar endereços:', err),
+        });
+        // Volta para a lista sem fechar o modal
+        this.modoFormEndereco.set(null);
+        this.enderecoParaEditar.set(null);
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao salvar endereço residencial:', err);
+        if (err.status === 400 && err.error?.errors) {
+          this.errosValidacaoEndereco.set(this.normalizarErros(err.error.errors));
+          this.erroModalEndereco.set('Corrija os campos destacados.');
+        } else {
+          this.erroModalEndereco.set(this.extrairMensagemErro(err));
+        }
+        this.carregandoModalEndereco.set(false);
+      },
+      complete: () => {
+        this.carregandoModalEndereco.set(false);
       },
     });
   }
@@ -1279,6 +1408,25 @@ export class Associados implements OnInit {
   private criarFormEquipe(): FormGroup {
     return this.fb.group({
       idEquipe: [null, Validators.required],
+    });
+  }
+
+  /**
+   * criarFormEndereco()
+   *
+   * Factory do FormGroup do modal de endereço residencial.
+   * Compartilhado entre criação (reset) e edição (patchValue).
+   * CEP: apenas 8 dígitos (sem hífen) — mesmo padrão do cadastro e edição.
+   */
+  private criarFormEndereco(): FormGroup {
+    return this.fb.group({
+      rua:         ['', Validators.required],
+      numero:      ['', Validators.required],
+      complemento: [null],
+      bairro:      ['', Validators.required],
+      cidade:      ['', Validators.required],
+      estado:      ['', [Validators.required, Validators.maxLength(2)]],
+      cep:         ['', [Validators.required, Validators.pattern(/^\d{8}$/)]],
     });
   }
 

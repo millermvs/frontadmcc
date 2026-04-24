@@ -6,7 +6,7 @@
  *   - KPI cards: .kpi-card, .kpi-icon, .kpi-value, .kpi-label
  *   - Filter bar: .filter-bar, .filter-search-input, .filter-select
  *   - Table wrapper: .table-card, .table-wrapper
- *   - Action buttons: .btn-acao, .btn-editar, .btn-inativar, .btn-reativar
+ *   - Action buttons: .btn-acao, .btn-editar, .btn-inativar, .btn-reativar, .btn-informacoes-associado
  *   - Status chips: .status-chip, .status-ativa, .status-pre-ativo, .status-inativa
  *   - Empty state: .empty-state, .empty-icon, .empty-title, .empty-subtitle
  *   - Modal save button: .btn-salvar-modal
@@ -439,6 +439,79 @@
   font-size: 11px;
   color: var(--cor-texto-secundario);
   margin-top: 1px;
+}
+
+/* ================================================
+   BOTÃO GERAR PDF — rodapé do modal de informações
+   Vermelho suave (tom PDF/documento), alinhado à
+   esquerda via me-auto do Bootstrap.
+   ================================================ */
+.btn-gerar-pdf {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-gerar-pdf:hover {
+  background: #ffe4e6;
+  border-color: #fda4af;
+}
+
+.btn-gerar-pdf:focus-visible {
+  outline: 2px solid #be123c;
+  outline-offset: 2px;
+}
+
+/* ================================================
+   MODAL INFORMAÇÕES — campos somente leitura
+   Label em maiúsculas + valor em destaque.
+   Padrão de exibição: label acima do valor (coluna).
+   ================================================ */
+.info-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--cor-texto-secundario);
+  margin-bottom: 4px;
+}
+
+.info-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cor-texto);
+  padding: 8px 12px;
+  background: var(--cor-surface-alt);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-sm);
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  word-break: break-word;
+}
+
+/* Badge inline dentro de .info-value (ex: "Original" ao lado do nome da equipe) */
+.info-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--cor-info-bg);
+  color: var(--cor-info);
+  white-space: nowrap;
 }
 
 /* ================================================

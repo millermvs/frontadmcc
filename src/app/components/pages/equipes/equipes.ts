@@ -292,10 +292,10 @@ export class Equipes implements OnInit {
 
   /**
    * diretorEquipeAtivo
-   * DE ativo da equipe selecionada (dataFim === null) ou null se não houver.
+   * DE ativo da equipe selecionada (ativo === true) ou false se não houver.
    */
   diretorEquipeAtivo = computed(() =>
-    this.diretoresEquipe().find(d => d.dataFim === null) ?? null
+    this.diretoresEquipe().find(d => d.ativo === true) 
   );
 
   /**
@@ -303,7 +303,7 @@ export class Equipes implements OnInit {
    * DTs ativos agrupados — pode haver DT1, DT2 e DT3 simultaneamente.
    */
   diretoresTeritorioAtivos = computed(() =>
-    this.diretoresTerritorio().filter(d => d.dataFim === null)
+    this.diretoresTerritorio().filter(d => d.ativo === true)
   );
 
   /**
@@ -330,7 +330,7 @@ export class Equipes implements OnInit {
   /**
    * niveisDisponiveis
    * Níveis de DT que ainda não têm um vínculo ativo nesta equipe.
-   * Filtra NIVEL_1/2/3 removendo os que já têm ativo (dataFim === null).
+   * Filtra NIVEL_1/2/3 removendo os que já têm ativo (ativo === true).
    * Recalcula automaticamente após cada POST bem-sucedido.
    */
   niveisDisponiveis = computed(() => {

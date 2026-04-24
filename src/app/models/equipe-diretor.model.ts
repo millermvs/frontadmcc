@@ -101,6 +101,7 @@ export interface EquipeDiretorTerritorioResponseDto {
   nivel:               NivelDiretorTerritorio;
   dataInicio:          string;       // yyyy-MM-dd
   dataFim:             string | null; // null = vigência indeterminada
+  ativo:               boolean;      // true = dataFim null, false = dataFim preenchida
 }
 
 /**
