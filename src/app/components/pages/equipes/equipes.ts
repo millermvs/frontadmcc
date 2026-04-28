@@ -138,6 +138,25 @@ export class Equipes implements OnInit {
   @ViewChild('modalDiretoresEl')
   private modalDiretoresEl!: ElementRef<HTMLElement>;
 
+  /**
+   * Referências ao elemento DOM dos modais de confirmação de encerramento
+   * de cargo de Diretor de Equipe e Diretor de Território.
+   * Abertos via bootstrap.Modal.getOrCreateInstance(el).show() para empilhar
+   * sobre o modal de diretores sem gerar backdrop duplo.
+   */
+  @ViewChild('modalConfirmarEncerramentoDiretorEquipeEl')
+  private modalConfirmarEncerramentoDiretorEquipeEl!: ElementRef<HTMLElement>;
+
+  @ViewChild('modalConfirmarEncerramentoDiretorTerritorioEl')
+  private modalConfirmarEncerramentoDiretorTerritorioEl!: ElementRef<HTMLElement>;
+
+  /** Botões ocultos acionados via ViewChild para fechar os modais de confirmação. */
+  @ViewChild('btnFecharModalConfirmacaoDiretorEquipe')
+  private btnFecharConfirmacaoDiretorEquipe!: ElementRef<HTMLButtonElement>;
+
+  @ViewChild('btnFecharModalConfirmacaoDiretorTerritorio')
+  private btnFecharConfirmacaoDiretorTerritorio!: ElementRef<HTMLButtonElement>;
+
   // =========================================================================
   // SIGNALS — LISTAGEM
   // =========================================================================
@@ -250,10 +269,19 @@ export class Equipes implements OnInit {
   errosValidacaoDiretor   = signal<Record<string, string>>({});
 
   /**
+   * diretorEquipeParaEncerrar / diretorTerritorioParaEncerrar
+   * Registro selecionado para encerramento. Preenchido em preparar...()
+   * ao clicar no botão encerrar — fonte de verdade para o PUT em encerrar...().
+   * Null enquanto nenhuma confirmação estiver pendente.
+   */
+  diretorEquipeParaEncerrar     = signal<EquipeDiretorEquipeResponseDto | null>(null);
+  diretorTerritorioParaEncerrar = signal<EquipeDiretorTerritorioResponseDto | null>(null);
+
+  /**
    * encerrandoDiretorEquipeId / encerrandoDiretorTerritorioId
-   * Armazena o ID do registro cujo botão "Encerrar" foi clicado.
-   * Usado para exibir spinner no botão correto e desabilitá-lo enquanto
-   * o PUT está em andamento — sem bloquear os demais botões da tabela.
+   * Armazena o ID do registro cujo PUT de encerramento está em andamento.
+   * Usado para exibir spinner e desabilitar o botão "Confirmar" no modal
+   * de confirmação enquanto a requisição não termina.
    */
   encerrandoDiretorEquipeId     = signal<number | null>(null);
   encerrandoDiretorTerritorioId = signal<number | null>(null);
@@ -752,14 +780,48 @@ export class Equipes implements OnInit {
   }
 
   /**
-   * encerrarCargoDiretorEquipe(diretor)
+   * prepararEncerramentoDiretorEquipe(diretor)
    *
-   * Envia PUT para o endpoint de Diretor de Equipe com dataFim = hoje.
+   * Chamado pelo (click) do botão encerrar na tabela de DE.
+   * Registra o diretor selecionado e abre o modal de confirmação via API
+   * do Bootstrap (getOrCreateInstance + show) — evita race condition de
+   * backdrop duplo ao empilhar sobre o modal de diretores já aberto.
+   */
+  prepararEncerramentoDiretorEquipe(diretor: EquipeDiretorEquipeResponseDto): void {
+    this.diretorEquipeParaEncerrar.set(diretor);
+    this.encerrandoDiretorEquipeId.set(null);
+    bootstrap.Modal.getOrCreateInstance(
+      this.modalConfirmarEncerramentoDiretorEquipeEl.nativeElement
+    ).show();
+  }
+
+  /**
+   * prepararEncerramentoDiretorTerritorio(diretor)
+   *
+   * Mesmo padrão do prepararEncerramentoDiretorEquipe, mas para DT.
+   */
+  prepararEncerramentoDiretorTerritorio(diretor: EquipeDiretorTerritorioResponseDto): void {
+    this.diretorTerritorioParaEncerrar.set(diretor);
+    this.encerrandoDiretorTerritorioId.set(null);
+    bootstrap.Modal.getOrCreateInstance(
+      this.modalConfirmarEncerramentoDiretorTerritorioEl.nativeElement
+    ).show();
+  }
+
+  /**
+   * encerrarCargoDiretorEquipe()
+   *
+   * Chamado pelo botão "Confirmar" no modal de confirmação de encerramento de DE.
+   * Lê o diretor de diretorEquipeParaEncerrar() e envia PUT com dataFim = hoje.
    * Mantém todos os campos originais (idEquipe, idAssociado, dataInicio)
    * — o backend exige o objeto completo mesmo para encerramento parcial.
-   * Após sucesso, atualiza o registro no signal sem recarregar a lista.
+   * Após sucesso: fecha o modal de confirmação via botão oculto (ViewChild) —
+   * o modal de diretores permanece aberto e o registro é atualizado no signal.
    */
-  encerrarCargoDiretorEquipe(diretor: EquipeDiretorEquipeResponseDto): void {
+  encerrarCargoDiretorEquipe(): void {
+    const diretor = this.diretorEquipeParaEncerrar();
+    if (!diretor) return;
+
     this.encerrandoDiretorEquipeId.set(diretor.idDiretorEquipe);
     this.erroModalDiretor.set(null);
 
@@ -772,12 +834,15 @@ export class Equipes implements OnInit {
 
     this.equipeDiretorService.editarDiretorEquipe(diretor.idDiretorEquipe, dto).subscribe({
       next: (atualizado) => {
+        this.btnFecharConfirmacaoDiretorEquipe.nativeElement.click();
         this.diretoresEquipe.update(lista =>
           lista.map(d => d.idDiretorEquipe === atualizado.idDiretorEquipe ? atualizado : d)
         );
-        this.carregarEquipes(0); // para atualizar "FROMAÇÃO" na tabela
+        this.diretorEquipeParaEncerrar.set(null);
+        this.carregarEquipes(0);
       },
       error: (err: HttpErrorResponse) => {
+        this.btnFecharConfirmacaoDiretorEquipe.nativeElement.click();
         this.erroModalDiretor.set(this.extrairMensagemErro(err));
         this.encerrandoDiretorEquipeId.set(null);
       },
@@ -786,12 +851,15 @@ export class Equipes implements OnInit {
   }
 
   /**
-   * encerrarCargoDiretorTerritorio(diretor)
+   * encerrarCargoDiretorTerritorio()
    *
-   * Mesmo padrão do encerrarCargoDiretorEquipe, mas para Diretor de Território.
+   * Mesmo padrão do encerrarCargoDiretorEquipe(), mas para Diretor de Território.
    * O campo nivel é obrigatório no RequestDto — preservado do registro original.
    */
-  encerrarCargoDiretorTerritorio(diretor: EquipeDiretorTerritorioResponseDto): void {
+  encerrarCargoDiretorTerritorio(): void {
+    const diretor = this.diretorTerritorioParaEncerrar();
+    if (!diretor) return;
+
     this.encerrandoDiretorTerritorioId.set(diretor.idDiretorTerritorio);
     this.erroModalDiretor.set(null);
 
@@ -805,12 +873,15 @@ export class Equipes implements OnInit {
 
     this.equipeDiretorService.editarDiretorTerritorio(diretor.idDiretorTerritorio, dto).subscribe({
       next: (atualizado) => {
+        this.btnFecharConfirmacaoDiretorTerritorio.nativeElement.click();
         this.diretoresTerritorio.update(lista =>
           lista.map(d => d.idDiretorTerritorio === atualizado.idDiretorTerritorio ? atualizado : d)
         );
-        this.carregarEquipes(0); // para atualizar "FROMAÇÃO" na tabela        
+        this.diretorTerritorioParaEncerrar.set(null);
+        this.carregarEquipes(0);
       },
       error: (err: HttpErrorResponse) => {
+        this.btnFecharConfirmacaoDiretorTerritorio.nativeElement.click();
         this.erroModalDiretor.set(this.extrairMensagemErro(err));
         this.encerrandoDiretorTerritorioId.set(null);
       },

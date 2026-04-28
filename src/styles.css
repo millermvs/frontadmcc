@@ -664,6 +664,31 @@ body {
 }
 
 /* ================================================
+   AVISO DE REGISTRO — MODAIS DE CONFIRMAÇÃO
+   Bloco informativo azul usado em modais de ação
+   destrutiva (encerrar cargo, alterar status, etc.)
+   para indicar ao usuário que a ação ficará registrada.
+   Global pois é reutilizado em múltiplos componentes.
+   ================================================ */
+.aviso-registro-db {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  background: var(--cor-info-bg);
+  color: var(--cor-info);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.aviso-registro-db i {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* ================================================
    RESPONSIVO — PAGE LAYOUT (768px)
    Ajustes para o esqueleto de página em tablet.
    Cada componente pode sobrescrever com seus próprios

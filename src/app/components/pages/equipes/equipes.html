@@ -1158,16 +1158,11 @@
                   @if (d.dataFim === null) {
                   <div class="acoes-group">
                     <button class="btn-acao btn-inativar"
-                      (click)="encerrarCargoDiretorEquipe(d)"
+                      (click)="prepararEncerramentoDiretorEquipe(d)"
                       title="Encerrar cargo"
                       type="button"
-                      [disabled]="encerrandoDiretorEquipeId() === d.idDiretorEquipe"
                       aria-label="Encerrar cargo de {{ d.nomeAssociado }}">
-                      @if (encerrandoDiretorEquipeId() === d.idDiretorEquipe) {
-                      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                      } @else {
                       <i class="bi bi-slash-circle-fill" aria-hidden="true"></i>
-                      }
                     </button>
                   </div>
                   } @else {
@@ -1195,16 +1190,11 @@
                   @if (d.dataFim === null) {
                   <div class="acoes-group">
                     <button class="btn-acao btn-inativar"
-                      (click)="encerrarCargoDiretorTerritorio(d)"
+                      (click)="prepararEncerramentoDiretorTerritorio(d)"
                       title="Encerrar cargo"
                       type="button"
-                      [disabled]="encerrandoDiretorTerritorioId() === d.idDiretorTerritorio"
                       aria-label="Encerrar cargo de {{ d.nomeAssociado }}">
-                      @if (encerrandoDiretorTerritorioId() === d.idDiretorTerritorio) {
-                      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                      } @else {
                       <i class="bi bi-slash-circle-fill" aria-hidden="true"></i>
-                      }
                     </button>
                   </div>
                   } @else {
@@ -1243,4 +1233,177 @@
 
     </div>
   </div>
+
+<!-- ============================================================================
+     MODAL — CONFIRMAR ENCERRAMENTO DE DIRETOR DE EQUIPE
+     Aberto via bootstrap.Modal API (não data-bs-toggle) para empilhar sobre o
+     modal de diretores sem gerar backdrop duplo. Sem formulário — apenas confirmação.
+     O botão oculto (#btnFecharModalConfirmacaoDiretorEquipe) é acionado via ViewChild
+     para fechar programaticamente após o PUT bem-sucedido.
+     ============================================================================ -->
+<div
+  #modalConfirmarEncerramentoDiretorEquipeEl
+  class="modal fade"
+  id="modalConfirmarEncerramentoDiretorEquipe"
+  tabindex="-1"
+  aria-labelledby="modalConfirmarEncerramentoDiretorEquipeLabel"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalConfirmarEncerramentoDiretorEquipeLabel">
+          <i class="bi bi-slash-circle-fill text-danger me-2" aria-hidden="true"></i>
+          Encerrar cargo de Diretor de Equipe
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+          [disabled]="encerrandoDiretorEquipeId() !== null"
+        ></button>
+      </div>
+
+      <div class="modal-body">
+        @if (diretorEquipeParaEncerrar()) {
+          <p class="mb-2" style="font-size: 15px;">
+            Você está prestes a encerrar o cargo de
+            <strong>Diretor de Equipe</strong>
+            de <strong>{{ diretorEquipeParaEncerrar()!.nomeAssociado }}</strong>.
+          </p>
+          <p class="mb-3" style="font-size: 14px; color: var(--cor-texto-secundario);">
+            A data de término será registrada como hoje. O cargo poderá ser atribuído novamente no futuro.
+          </p>
+          <div class="aviso-registro-db">
+            <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+            Esta ação ficará registrada no banco de dados para controle administrativo.
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <!-- Botão oculto: acionado via ViewChild para fechar o modal após sucesso -->
+        <button
+          #btnFecharModalConfirmacaoDiretorEquipe
+          type="button"
+          data-bs-dismiss="modal"
+          style="display: none;"
+          aria-hidden="true"
+        ></button>
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal"
+          [disabled]="encerrandoDiretorEquipeId() !== null"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-danger"
+          (click)="encerrarCargoDiretorEquipe()"
+          [disabled]="encerrandoDiretorEquipeId() !== null"
+        >
+          @if (encerrandoDiretorEquipeId() !== null) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Encerrando...
+          } @else {
+            <i class="bi bi-slash-circle-fill me-2" aria-hidden="true"></i>
+            Sim, encerrar
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================================
+     MODAL — CONFIRMAR ENCERRAMENTO DE DIRETOR DE TERRITÓRIO
+     Mesmo padrão do modal de Diretor de Equipe acima.
+     ============================================================================ -->
+<div
+  #modalConfirmarEncerramentoDiretorTerritorioEl
+  class="modal fade"
+  id="modalConfirmarEncerramentoDiretorTerritorio"
+  tabindex="-1"
+  aria-labelledby="modalConfirmarEncerramentoDiretorTerritorioLabel"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalConfirmarEncerramentoDiretorTerritorioLabel">
+          <i class="bi bi-slash-circle-fill text-danger me-2" aria-hidden="true"></i>
+          Encerrar cargo de Diretor de Território
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+          [disabled]="encerrandoDiretorTerritorioId() !== null"
+        ></button>
+      </div>
+
+      <div class="modal-body">
+        @if (diretorTerritorioParaEncerrar()) {
+          <p class="mb-2" style="font-size: 15px;">
+            Você está prestes a encerrar o cargo de
+            <strong>Diretor de Território</strong>
+            de <strong>{{ diretorTerritorioParaEncerrar()!.nomeAssociado }}</strong>.
+          </p>
+          <p class="mb-3" style="font-size: 14px; color: var(--cor-texto-secundario);">
+            A data de término será registrada como hoje. O cargo poderá ser atribuído novamente no futuro.
+          </p>
+          <div class="aviso-registro-db">
+            <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+            Esta ação ficará registrada no banco de dados para controle administrativo.
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <!-- Botão oculto: acionado via ViewChild para fechar o modal após sucesso -->
+        <button
+          #btnFecharModalConfirmacaoDiretorTerritorio
+          type="button"
+          data-bs-dismiss="modal"
+          style="display: none;"
+          aria-hidden="true"
+        ></button>
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal"
+          [disabled]="encerrandoDiretorTerritorioId() !== null"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-danger"
+          (click)="encerrarCargoDiretorTerritorio()"
+          [disabled]="encerrandoDiretorTerritorioId() !== null"
+        >
+          @if (encerrandoDiretorTerritorioId() !== null) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Encerrando...
+          } @else {
+            <i class="bi bi-slash-circle-fill me-2" aria-hidden="true"></i>
+            Sim, encerrar
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
 </div>

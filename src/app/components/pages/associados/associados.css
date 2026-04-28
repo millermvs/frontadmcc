@@ -514,28 +514,7 @@
   white-space: nowrap;
 }
 
-/* ================================================
-   AVISO REGISTRO DB — modal de confirmação de ativação
-   Pequeno aviso informativo em azul (info) que comunica
-   ao ADM que a ação fica registrada no banco.
-   ================================================ */
-.aviso-registro-db {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  background: var(--cor-info-bg);
-  color: var(--cor-info);
-  border-radius: var(--radius-sm);
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.5;
-}
-
-.aviso-registro-db i {
-  margin-top: 2px;
-  flex-shrink: 0;
-}
+/* .aviso-registro-db → movido para styles.css (global) pois é reutilizado em múltiplos componentes. */
 
 /* ================================================
    RESPONSIVO — TABLET (768px)
