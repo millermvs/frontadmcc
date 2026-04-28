@@ -276,16 +276,33 @@
                       <i class="bi bi-house-fill" aria-hidden="true"></i>
                     </button>
 
-                    <!-- Alterar status — Bloco 5 -->
+                    <!-- Alterar status — Bloco 5.2 -->
                     <button
                       class="btn-acao btn-inativar"
-                      title="Alterar status (Bloco 5)"
+                      title="Alterar status"
                       type="button"
-                      disabled
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalAlterarStatus"
+                      (click)="abrirModalAlterarStatus(associado)"
                       aria-label="Alterar status de {{ associado.nomeCompleto }}"
                     >
                       <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
                     </button>
+
+                    <!-- Renovar anuidade — Bloco 5.3 (oculto para PREATIVO) -->
+                    @if (associado.statusAssociado !== 'PREATIVO') {
+                      <button
+                        class="btn-acao btn-renovar"
+                        title="Renovar anuidade"
+                        type="button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalRenovarAnuidade"
+                        (click)="abrirModalRenovar(associado)"
+                        aria-label="Renovar anuidade de {{ associado.nomeCompleto }}"
+                      >
+                        <i class="bi bi-calendar-check-fill" aria-hidden="true"></i>
+                      </button>
+                    }
 
                     <!-- Confirmar cadastro — aparece só para PREATIVO -->
                     @if (associado.statusAssociado === 'PREATIVO') {
@@ -1260,63 +1277,7 @@
 
         } @else {
 
-          <!-- ── SEÇÃO 1: Cargos cadastrados ── -->
-          <h6 class="section-titulo">Cargos cadastrados</h6>
-
-          @if (cargosDoAssociado().length === 0) {
-            <p class="text-muted-sm mb-4">Este associado ainda não possui cargos cadastrados.</p>
-          } @else {
-            <div class="table-responsive mb-4">
-              <table class="table table-sm table-hover align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th>Cargo</th>
-                    <th>Início</th>
-                    <th>Término</th>
-                    <th>Situação</th>
-                    <th>Ação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (cargo of cargosDoAssociado(); track cargo.idAssociadoCargo) {
-                    <tr>
-                      <td>{{ cargo.nomeCargo }}</td>
-                      <td>{{ formatarData(cargo.dataInicio) }}</td>
-                      <td>{{ formatarData(cargo.dataFim) }}</td>
-                      <td>
-                        <span [class]="cargo.ativo
-                          ? 'status-chip status-ativa'
-                          : 'status-chip status-inativa'">
-                          {{ cargo.ativo ? 'Ativo' : 'Encerrado' }}
-                        </span>
-                      </td>
-                      <td>
-                        @if (cargo.ativo) {
-                          <div class="acoes-group">
-                            <button
-                              class="btn-acao btn-inativar"
-                              type="button"
-                              title="Encerrar cargo"
-                              (click)="prepararEncerramentoCargo(cargo)"
-                              aria-label="Encerrar cargo {{ cargo.nomeCargo }}"
-                            >
-                              <i class="bi bi-slash-circle-fill" aria-hidden="true"></i>
-                            </button>
-                          </div>
-                        } @else {
-                          <span class="text-muted">—</span>
-                        }
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-
-          <hr class="my-3">
-
-          <!-- ── SEÇÃO 2: Atribuir novo cargo ── -->
+          <!-- ── SEÇÃO 1: Atribuir novo cargo ── -->
           <h6 class="section-titulo">Atribuir novo cargo</h6>
 
           @if (cargosDisponiveis().length === 0) {
@@ -1371,6 +1332,64 @@
               </div>
             </form>
           }
+
+          <hr class="my-4">
+
+          <!-- ── SEÇÃO 2: Cargos cadastrados ── -->
+          <h6 class="section-titulo">Cargos cadastrados</h6>
+
+          @if (cargosDoAssociado().length === 0) {
+            <p class="text-muted-sm mb-4">Este associado ainda não possui cargos cadastrados.</p>
+          } @else {
+            <div class="table-responsive mb-4">
+              <table class="table table-sm table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Cargo</th>
+                    <th>Início</th>
+                    <th>Término</th>
+                    <th>Situação</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (cargo of cargosDoAssociado(); track cargo.idAssociadoCargo) {
+                    <tr>
+                      <td>{{ cargo.nomeCargo }}</td>
+                      <td>{{ formatarData(cargo.dataInicio) }}</td>
+                      <td>{{ formatarData(cargo.dataFim) }}</td>
+                      <td>
+                        <span [class]="cargo.ativo
+                          ? 'status-chip status-ativa'
+                          : 'status-chip status-inativa'">
+                          {{ cargo.ativo ? 'Ativo' : 'Encerrado' }}
+                        </span>
+                      </td>
+                      <td>
+                        @if (cargo.ativo) {
+                          <div class="acoes-group">
+                            <button
+                              class="btn-acao btn-inativar"
+                              type="button"
+                              title="Encerrar cargo"
+                              (click)="prepararEncerramentoCargo(cargo)"
+                              aria-label="Encerrar cargo {{ cargo.nomeCargo }}"
+                            >
+                              <i class="bi bi-slash-circle-fill" aria-hidden="true"></i>
+                            </button>
+                          </div>
+                        } @else {
+                          <span class="text-muted">—</span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          
 
           <!-- ── Alerta de erro geral ── -->
           @if (erroModalCargo()) {
@@ -2074,6 +2093,310 @@
           } @else {
             <i class="bi bi-slash-circle-fill me-2" aria-hidden="true"></i>
             Sim, encerrar
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL — ALTERAR STATUS (Bloco 5.2)
+     ============================================================ -->
+<div
+  class="modal fade"
+  id="modalAlterarStatus"
+  tabindex="-1"
+  aria-labelledby="modalAlterarStatusLabel"
+  aria-modal="true"
+  role="dialog"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalAlterarStatusLabel">
+          <i class="bi bi-arrow-left-right me-2 text-danger"></i>
+          Alterar Status
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
+      </div>
+
+      <div class="modal-body">
+
+        @if (associadoParaAlterarStatus(); as assoc) {
+
+          <!-- Contexto do associado -->
+          <div class="mb-4 p-3 rounded-3" style="background: var(--cor-surface-alt); border: 1px solid var(--cor-borda);">
+            <div class="d-flex align-items-center gap-3">
+              <div
+                class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                style="width: 40px; height: 40px; background: var(--cor-primaria); color: #fff; font-size: 14px; font-weight: 700;"
+              >
+                {{ iniciais(assoc.nomeCompleto) }}
+              </div>
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: var(--cor-texto);">{{ assoc.nomeCompleto }}</div>
+                <div class="d-flex align-items-center gap-2 mt-1">
+                  <span [class]="classeStatus(assoc.statusAssociado)">{{ LABELS_STATUS[assoc.statusAssociado] }}</span>
+                  <span style="font-size: 12px; color: var(--cor-texto-secundario);">→ será alterado para</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <form [formGroup]="formAlterarStatus" novalidate>
+
+            <!-- Select: novo status -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="statusNovoSelect">
+                Novo Status <span class="text-danger">*</span>
+              </label>
+              <select
+                id="statusNovoSelect"
+                class="form-select"
+                formControlName="statusNovo"
+                [class.is-invalid]="(formAlterarStatus.get('statusNovo')?.invalid && formAlterarStatus.get('statusNovo')?.touched) || !!errosValidacaoAlterarStatus()['statusNovo']"
+              >
+                <option [ngValue]="null" disabled>Selecione o novo status...</option>
+                @for (opcao of statusOpcoesParaAlteracao(); track opcao.valor) {
+                  <option [value]="opcao.valor">{{ opcao.label }}</option>
+                }
+              </select>
+              @if (errosValidacaoAlterarStatus()['statusNovo']) {
+                <div class="invalid-feedback">{{ errosValidacaoAlterarStatus()['statusNovo'] }}</div>
+              } @else if (formAlterarStatus.get('statusNovo')?.invalid && formAlterarStatus.get('statusNovo')?.touched) {
+                <div class="invalid-feedback">Selecione o novo status.</div>
+              }
+            </div>
+
+            <!-- Campos condicionais: PAUSA PROGRAMADA -->
+            @if (statusNovoSelecionado() === 'INATIVO_PAUSA_PROGRAMADA') {
+              <div class="row g-3 mb-3">
+                <div class="col-6">
+                  <label class="form-label fw-semibold" for="dataInicioPausa">
+                    Início da Pausa <span class="text-danger">*</span>
+                  </label>
+                  <input
+                    id="dataInicioPausa"
+                    type="date"
+                    class="form-control"
+                    formControlName="dataInicioPausa"
+                    [class.is-invalid]="(formAlterarStatus.get('dataInicioPausa')?.invalid && formAlterarStatus.get('dataInicioPausa')?.touched) || !!errosValidacaoAlterarStatus()['dataInicioPausa']"
+                  />
+                  @if (errosValidacaoAlterarStatus()['dataInicioPausa']) {
+                    <div class="invalid-feedback">{{ errosValidacaoAlterarStatus()['dataInicioPausa'] }}</div>
+                  } @else if (formAlterarStatus.get('dataInicioPausa')?.invalid && formAlterarStatus.get('dataInicioPausa')?.touched) {
+                    <div class="invalid-feedback">Informe a data de início da pausa.</div>
+                  }
+                </div>
+                <div class="col-6">
+                  <label class="form-label fw-semibold" for="dataPrevisaoRetorno">
+                    Previsão de Retorno <span class="text-danger">*</span>
+                  </label>
+                  <input
+                    id="dataPrevisaoRetorno"
+                    type="date"
+                    class="form-control"
+                    formControlName="dataPrevisaoRetorno"
+                    [class.is-invalid]="(formAlterarStatus.get('dataPrevisaoRetorno')?.invalid && formAlterarStatus.get('dataPrevisaoRetorno')?.touched) || !!errosValidacaoAlterarStatus()['dataPrevisaoRetorno']"
+                  />
+                  @if (errosValidacaoAlterarStatus()['dataPrevisaoRetorno']) {
+                    <div class="invalid-feedback">{{ errosValidacaoAlterarStatus()['dataPrevisaoRetorno'] }}</div>
+                  } @else if (formAlterarStatus.get('dataPrevisaoRetorno')?.invalid && formAlterarStatus.get('dataPrevisaoRetorno')?.touched) {
+                    <div class="invalid-feedback">Informe a previsão de retorno.</div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Campos condicionais: DESISTÊNCIA, DESLIGADO, FALECIMENTO, OUTRO -->
+            @if (
+              statusNovoSelecionado() === 'INATIVO_DESISTENCIA' ||
+              statusNovoSelecionado() === 'INATIVO_DESLIGADO'   ||
+              statusNovoSelecionado() === 'INATIVO_FALECIMENTO' ||
+              statusNovoSelecionado() === 'INATIVO_OUTRO'
+            ) {
+              <div class="mb-3">
+                <label class="form-label fw-semibold" for="motivoStatus">
+                  Motivo
+                  @if (statusNovoSelecionado() === 'INATIVO_DESISTENCIA' || statusNovoSelecionado() === 'INATIVO_DESLIGADO') {
+                    <span class="text-danger">*</span>
+                  }
+                </label>
+                <textarea
+                  id="motivoStatus"
+                  class="form-control"
+                  formControlName="motivo"
+                  rows="3"
+                  placeholder="Descreva o motivo da alteração de status..."
+                  [class.is-invalid]="(formAlterarStatus.get('motivo')?.invalid && formAlterarStatus.get('motivo')?.touched) || !!errosValidacaoAlterarStatus()['motivo']"
+                ></textarea>
+                @if (errosValidacaoAlterarStatus()['motivo']) {
+                  <div class="invalid-feedback">{{ errosValidacaoAlterarStatus()['motivo'] }}</div>
+                } @else if (formAlterarStatus.get('motivo')?.invalid && formAlterarStatus.get('motivo')?.touched) {
+                  <div class="invalid-feedback">O motivo é obrigatório para este status.</div>
+                }
+              </div>
+            }
+
+          </form>
+
+          <!-- Alerta especial para falecimento -->
+          @if (statusNovoSelecionado() === 'INATIVO_FALECIMENTO') {
+            <div class="alert alert-warning d-flex align-items-start gap-2 py-2 mb-0" role="alert">
+              <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+              <small>Ao confirmar, o sistema disparará automaticamente o protocolo de seguro funeral vinculado a este associado.</small>
+            </div>
+          }
+        }
+
+        <!-- Erro do modal -->
+        @if (erroModalAlterarStatus()) {
+          <div class="alert alert-danger d-flex align-items-center gap-2 mt-3 mb-0 py-2" role="alert">
+            <i class="bi bi-exclamation-circle-fill flex-shrink-0"></i>
+            <small>{{ erroModalAlterarStatus() }}</small>
+          </div>
+        }
+
+      </div>
+
+      <div class="modal-footer">
+        <button
+          #btnFecharModalAlterarStatus
+          type="button"
+          class="btn btn-light"
+          data-bs-dismiss="modal"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn-salvar-modal"
+          (click)="salvarAlteracaoStatus()"
+          [disabled]="formAlterarStatus.invalid || carregandoAlterarStatus()"
+        >
+          @if (carregandoAlterarStatus()) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Salvando...
+          } @else {
+            <i class="bi bi-check-circle-fill me-2"></i>
+            Salvar Alteração
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL — RENOVAR ANUIDADE (Bloco 5.3)
+     ============================================================ -->
+<div
+  class="modal fade"
+  id="modalRenovarAnuidade"
+  tabindex="-1"
+  aria-labelledby="modalRenovarAnuidadeLabel"
+  aria-modal="true"
+  role="dialog"
+>
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalRenovarAnuidadeLabel">
+          <i class="bi bi-calendar-check-fill me-2" style="color: #a16207;"></i>
+          Renovar Anuidade
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
+      </div>
+
+      <div class="modal-body">
+
+        @if (associadoParaRenovar(); as assoc) {
+
+          <!-- Contexto: dados atuais do associado -->
+          <div class="mb-4 p-3 rounded-3" style="background: var(--cor-surface-alt); border: 1px solid var(--cor-borda);">
+            <div style="font-size: 13px; color: var(--cor-texto-secundario); font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px;">Associado</div>
+            <div style="font-size: 15px; font-weight: 700; color: var(--cor-texto); margin-top: 2px;">{{ assoc.nomeCompleto }}</div>
+            <div class="mt-2 d-flex gap-4">
+              <div>
+                <div style="font-size: 11px; color: var(--cor-texto-secundario); text-transform: uppercase; letter-spacing: 0.4px;">Vencimento atual</div>
+                <div style="font-size: 14px; font-weight: 600; color: var(--cor-texto);">{{ formatarData(assoc.dataVencimento) }}</div>
+              </div>
+              <div>
+                <div style="font-size: 11px; color: var(--cor-texto-secundario); text-transform: uppercase; letter-spacing: 0.4px;">Status</div>
+                <span [class]="classeStatus(assoc.statusAssociado)">{{ LABELS_STATUS[assoc.statusAssociado] }}</span>
+              </div>
+            </div>
+          </div>
+
+          <form [formGroup]="formRenovar" novalidate>
+            <div class="mb-2">
+              <label class="form-label fw-semibold" for="dataPagamentoRenovar">
+                Data de Pagamento <span class="text-danger">*</span>
+              </label>
+              <input
+                id="dataPagamentoRenovar"
+                type="date"
+                class="form-control"
+                formControlName="dataPagamento"
+                [class.is-invalid]="(formRenovar.get('dataPagamento')?.invalid && formRenovar.get('dataPagamento')?.touched) || !!errosValidacaoRenovar()['dataPagamento']"
+              />
+              @if (errosValidacaoRenovar()['dataPagamento']) {
+                <div class="invalid-feedback">{{ errosValidacaoRenovar()['dataPagamento'] }}</div>
+              } @else if (formRenovar.get('dataPagamento')?.invalid && formRenovar.get('dataPagamento')?.touched) {
+                <div class="invalid-feedback">Informe a data de pagamento.</div>
+              }
+              <div class="form-text">O novo vencimento será calculado automaticamente (+12 meses).</div>
+            </div>
+          </form>
+
+        }
+
+        <!-- Erro do modal -->
+        @if (erroModalRenovar()) {
+          <div class="alert alert-danger d-flex align-items-center gap-2 mt-3 mb-0 py-2" role="alert">
+            <i class="bi bi-exclamation-circle-fill flex-shrink-0"></i>
+            <small>{{ erroModalRenovar() }}</small>
+          </div>
+        }
+
+      </div>
+
+      <div class="modal-footer">
+        <button
+          #btnFecharModalRenovar
+          type="button"
+          class="btn btn-light"
+          data-bs-dismiss="modal"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn-salvar-modal"
+          (click)="salvarRenovacao()"
+          [disabled]="formRenovar.invalid || carregandoRenovar()"
+        >
+          @if (carregandoRenovar()) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Renovando...
+          } @else {
+            <i class="bi bi-calendar-check-fill me-2"></i>
+            Confirmar Renovação
           }
         </button>
       </div>

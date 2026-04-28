@@ -725,6 +725,7 @@ export class Equipes implements OnInit {
         next: (novo) => {
           this.diretoresEquipe.update(lista => [...lista, novo]);
           this.resetarFormDiretor();
+          this.carregarEquipes(0); // para atualizar "FROMAÇÃO" na tabela
         },
         error: (err: HttpErrorResponse) => this.tratarErroDiretor(err),
         complete: () => this.carregandoModalDiretor.set(false),
@@ -742,6 +743,7 @@ export class Equipes implements OnInit {
         next: (novo) => {
           this.diretoresTerritorio.update(lista => [...lista, novo]);
           this.resetarFormDiretor();
+          this.carregarEquipes(0); // para atualizar "FROMAÇÃO" na tabela         
         },
         error: (err: HttpErrorResponse) => this.tratarErroDiretor(err),
         complete: () => this.carregandoModalDiretor.set(false),
@@ -773,6 +775,7 @@ export class Equipes implements OnInit {
         this.diretoresEquipe.update(lista =>
           lista.map(d => d.idDiretorEquipe === atualizado.idDiretorEquipe ? atualizado : d)
         );
+        this.carregarEquipes(0); // para atualizar "FROMAÇÃO" na tabela
       },
       error: (err: HttpErrorResponse) => {
         this.erroModalDiretor.set(this.extrairMensagemErro(err));
@@ -805,6 +808,7 @@ export class Equipes implements OnInit {
         this.diretoresTerritorio.update(lista =>
           lista.map(d => d.idDiretorTerritorio === atualizado.idDiretorTerritorio ? atualizado : d)
         );
+        this.carregarEquipes(0); // para atualizar "FROMAÇÃO" na tabela        
       },
       error: (err: HttpErrorResponse) => {
         this.erroModalDiretor.set(this.extrairMensagemErro(err));
@@ -1092,6 +1096,7 @@ export class Equipes implements OnInit {
 
     this.equipesService.listarEquipes(page, this.tamanhoPagina()).subscribe({
       next: (response) => {
+        console.log('Equipes carregadas:', response);
         const equipesComExtras: Equipe[] = response.items.map(equipe => ({
           ...equipe,          
           membros: equipe.numeroComponentes,

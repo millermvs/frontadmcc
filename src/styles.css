@@ -484,6 +484,18 @@ body {
   border-color: #5eead4;
 }
 
+/* Âmbar — renovar anuidade */
+.btn-renovar {
+  background: #fefce8;
+  color: #a16207;
+  border-color: #fde68a;
+}
+
+.btn-renovar:hover {
+  background: #fef9c3;
+  border-color: #fcd34d;
+}
+
 /* ================================================
    BOTÃO COPIAR ENDEREÇO
    Usado no modal de equipes (local presencial) e

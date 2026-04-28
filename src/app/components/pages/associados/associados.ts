@@ -24,9 +24,11 @@ import { gerarPdfAssociado } from '../../../helpers/pdf-associado.helper';
 import { forkJoin, of, Subject } from 'rxjs';
 import { catchError, debounceTime, switchMap } from 'rxjs/operators';
 import {
+  AssociadoAlterarStatusRequestDto,
   AssociadoEditarEquipeRequestDto,
   AssociadoRequestDto,
   AssociadoResponseDto,
+  AssociadoRenovarAnuidadeRequestDto,
   EnderecoResidencialRequestDto,
   EnderecoResidencialResponseDto,
   LABELS_STATUS_ASSOCIADO,
@@ -40,6 +42,7 @@ import {
   AssociadoCargoLiderancaResponseDto,
 } from '../../../models/associado-cargo.model';
 import { EquipeResponseDto } from '../../../models/equipe.model';
+import { AuthService } from '../../../core/auth/auth.service';
 import { AssociadoService } from '../../../services/associado.service';
 import { AssociadoCargoService } from '../../../services/associado-cargo.service';
 import { CargoLiderancaService } from '../../../services/cargo-lideranca.service';
@@ -104,6 +107,7 @@ export class Associados implements OnInit {
   // INJEÇÕES
   // =========================================================================
 
+  private authService           = inject(AuthService);
   private associadoService      = inject(AssociadoService);
   private associadoCargoService = inject(AssociadoCargoService);
   private equipeService         = inject(EquipeService);
@@ -132,6 +136,12 @@ export class Associados implements OnInit {
 
   @ViewChild('btnFecharModalConfirmacao')
   private btnFecharConfirmacao!: ElementRef<HTMLButtonElement>;
+
+  @ViewChild('btnFecharModalAlterarStatus')
+  private btnFecharAlterarStatus!: ElementRef<HTMLButtonElement>;
+
+  @ViewChild('btnFecharModalRenovar')
+  private btnFecharRenovar!: ElementRef<HTMLButtonElement>;
 
   /**
    * Referência ao elemento DOM do modal de confirmação de encerramento de cargo.
@@ -447,6 +457,64 @@ export class Associados implements OnInit {
   /** Mensagem de erro exibida dentro do modal de confirmação. */
   erroConfirmacao        = signal<string | null>(null);
 
+  // =========================================================================
+  // SIGNALS — MODAL ALTERAR STATUS (Bloco 5.2)
+  //
+  // statusNovoSelecionado espelha o valor do select em um signal, permitindo
+  // que o template use @if reativamente para exibir os campos condicionais
+  // sem precisar ler form.get('statusNovo')?.value diretamente no template.
+  // =========================================================================
+
+  /** Associado da linha clicada. Fonte de verdade do id no PATCH. */
+  associadoParaAlterarStatus = signal<AssociadoResponseDto | null>(null);
+
+  /** Controla o spinner do botão "Salvar" durante o PATCH. */
+  carregandoAlterarStatus    = signal(false);
+
+  /** Mensagem de erro exibida dentro do modal de alteração de status. */
+  erroModalAlterarStatus     = signal<string | null>(null);
+
+  /** Erros por campo retornados pelo backend (400) no modal de alterar status. */
+  errosValidacaoAlterarStatus = signal<Record<string, string>>({});
+
+  /**
+   * statusNovoSelecionado
+   * Espelha o valor do select de status. Atualizado pelo observarStatusAlteracao()
+   * via valueChanges. Usado no template para @if dos campos condicionais.
+   */
+  statusNovoSelecionado = signal<StatusAssociado | null>(null);
+
+  /**
+   * statusOpcoesParaAlteracao
+   * Computed: filtra o STATUS_OPCOES removendo o status atual do associado.
+   * Evita que o ADM "altere" para o mesmo status que já está ativo.
+   */
+  statusOpcoesParaAlteracao = computed(() => {
+    const associado = this.associadoParaAlterarStatus();
+    if (!associado) return this.STATUS_OPCOES;
+    return this.STATUS_OPCOES.filter(op => op.valor !== associado.statusAssociado);
+  });
+
+  formAlterarStatus: FormGroup = this.criarFormAlterarStatus();
+
+  // =========================================================================
+  // SIGNALS — MODAL RENOVAR ANUIDADE (Bloco 5.3)
+  // =========================================================================
+
+  /** Associado da linha clicada. Fonte de verdade do id no PATCH. */
+  associadoParaRenovar = signal<AssociadoResponseDto | null>(null);
+
+  /** Controla o spinner do botão "Confirmar Renovação" durante o PATCH. */
+  carregandoRenovar    = signal(false);
+
+  /** Mensagem de erro exibida dentro do modal de renovação. */
+  erroModalRenovar     = signal<string | null>(null);
+
+  /** Erros por campo retornados pelo backend (400) no modal de renovação. */
+  errosValidacaoRenovar = signal<Record<string, string>>({});
+
+  formRenovar: FormGroup = this.criarFormRenovar();
+
   /**
    * formatarEndereco
    * Exposição da função pura do helper para o template.
@@ -552,8 +620,9 @@ export class Associados implements OnInit {
     ).subscribe(() => this.carregarAssociados(0));
 
     // Inicia os observadores dos modais
-    this.observarCluster(); // cadastro
-    this.observarPadrinho();
+    this.observarCluster();         // cadastro: cascata cluster → atuação específica
+    this.observarPadrinho();        // cadastro: debounce autocomplete padrinho
+    this.observarStatusAlteracao(); // 5.2: campos condicionais do modal de status
 
     // Carga inicial da listagem
     this.carregarAssociados();
@@ -953,6 +1022,8 @@ export class Associados implements OnInit {
         this.cargoParaEncerrar.set(null);
       },
       error: (err: HttpErrorResponse) => {
+        // Fecha o modal de confirmação — o modal de cargos permanece aberto
+        this.btnFecharConfirmacaoCargo.nativeElement.click();
         console.error('Erro ao encerrar cargo:', err);
         this.erroModalCargo.set(this.extrairMensagemErro(err));
         this.encerrandoCargoId.set(null);
@@ -1295,6 +1366,137 @@ export class Associados implements OnInit {
   }
 
   // =========================================================================
+  // MÉTODOS PÚBLICOS — ALTERAR STATUS (Bloco 5.2)
+  // =========================================================================
+
+  /**
+   * abrirModalAlterarStatus(associado)
+   *
+   * Registra o associado clicado, reseta o formulário e limpa o signal
+   * de status selecionado para garantir que nenhum campo condicional
+   * apareça na abertura do modal.
+   * O Bootstrap abre o modal via data-bs-toggle no botão da tabela.
+   */
+  abrirModalAlterarStatus(associado: AssociadoResponseDto): void {
+    this.associadoParaAlterarStatus.set(associado);
+    this.erroModalAlterarStatus.set(null);
+    this.errosValidacaoAlterarStatus.set({});
+    this.statusNovoSelecionado.set(null);
+    this.formAlterarStatus.reset();
+  }
+
+  /**
+   * salvarAlteracaoStatus()
+   *
+   * Monta o AssociadoAlterarStatusRequestDto e executa PATCH.
+   * idRegistradoPor vem do usuário logado via AuthService (idAssociado).
+   * Campos condicionais são enviados conforme o status: os não aplicáveis
+   * ficam null (o backend valida e ignora campos proibidos).
+   *
+   * Após sucesso: fecha modal + toast descritivo + reload da página atual.
+   */
+  salvarAlteracaoStatus(): void {
+    const associado = this.associadoParaAlterarStatus();
+    if (!associado) return;
+
+    this.carregandoAlterarStatus.set(true);
+    this.erroModalAlterarStatus.set(null);
+
+    const val = this.formAlterarStatus.getRawValue();
+
+    const dto: AssociadoAlterarStatusRequestDto = {
+      statusNovo:          val.statusNovo,
+      motivo:              val.motivo?.trim() || null,
+      dataInicioPausa:     val.dataInicioPausa     || null,
+      dataPrevisaoRetorno: val.dataPrevisaoRetorno  || null,
+      idRegistradoPor:     this.authService.usuario()?.idAssociado ?? 0,
+    };
+
+    this.associadoService.alterarStatus(associado.idAssociado, dto).subscribe({
+      next: () => {
+        this.btnFecharAlterarStatus.nativeElement.click();
+        this.carregarAssociados(this.paginaAtual());
+        const novoLabel = this.LABELS_STATUS[val.statusNovo as StatusAssociado] ?? val.statusNovo;
+        this.toastService.sucesso(
+          `Status de ${associado.nomeCompleto} alterado para "${novoLabel}" com sucesso!`
+        );
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao alterar status:', err);
+        if (err.status === 400 && err.error?.errors) {
+          this.errosValidacaoAlterarStatus.set(this.normalizarErros(err.error.errors));
+          this.erroModalAlterarStatus.set('Corrija os campos destacados.');
+        } else {
+          this.erroModalAlterarStatus.set(this.extrairMensagemErro(err));
+        }
+        this.carregandoAlterarStatus.set(false);
+      },
+      complete: () => this.carregandoAlterarStatus.set(false),
+    });
+  }
+
+  // =========================================================================
+  // MÉTODOS PÚBLICOS — RENOVAR ANUIDADE (Bloco 5.3)
+  // =========================================================================
+
+  /**
+   * abrirModalRenovar(associado)
+   *
+   * Registra o associado clicado e pré-preenche dataPagamento com hoje.
+   * O modal exibe o nome e vencimento atual do associado para contexto.
+   */
+  abrirModalRenovar(associado: AssociadoResponseDto): void {
+    this.associadoParaRenovar.set(associado);
+    this.erroModalRenovar.set(null);
+    this.errosValidacaoRenovar.set({});
+    this.formRenovar.reset({ dataPagamento: this.obterDataHoje() });
+  }
+
+  /**
+   * salvarRenovacao()
+   *
+   * Executa PATCH /renovar-anuidade com { dataPagamento }.
+   * O backend calcula o novo vencimento (+ 12 meses) e retorna o
+   * AssociadoResponseDto atualizado — usamos dataVencimento do retorno
+   * para exibir o novo vencimento no toast.
+   *
+   * Erros 422 comuns tratados pelo extrairMensagemErro():
+   *   - "Cadastro ainda não confirmado."
+   *   - "Associado isento de anuidade."
+   */
+  salvarRenovacao(): void {
+    const associado = this.associadoParaRenovar();
+    if (!associado) return;
+
+    this.carregandoRenovar.set(true);
+    this.erroModalRenovar.set(null);
+
+    const val = this.formRenovar.getRawValue();
+    const dto: AssociadoRenovarAnuidadeRequestDto = { dataPagamento: val.dataPagamento };
+
+    this.associadoService.renovarAnuidade(associado.idAssociado, dto).subscribe({
+      next: (atualizado) => {
+        this.btnFecharRenovar.nativeElement.click();
+        this.carregarAssociados(this.paginaAtual());
+        const novoVencimento = this.formatarData(atualizado.dataVencimento);
+        this.toastService.sucesso(
+          `Anuidade de ${associado.nomeCompleto} renovada! Novo vencimento: ${novoVencimento}.`
+        );
+      },
+      error: (err: HttpErrorResponse) => {
+        if (err.status === 400 && err.error?.errors) {
+          this.errosValidacaoRenovar.set(this.normalizarErros(err.error.errors));
+          this.erroModalRenovar.set('Corrija os campos destacados.');
+        } else {
+          this.erroModalRenovar.set(this.extrairMensagemErro(err));
+        }
+        this.carregandoRenovar.set(false);
+      },
+      complete: () => this.carregandoRenovar.set(false),
+    });
+  }
+
+  // =========================================================================
   // MÉTODOS PÚBLICOS — AUTOCOMPLETE DE PADRINHO
   // =========================================================================
 
@@ -1614,6 +1816,82 @@ export class Associados implements OnInit {
       cidade:      ['', Validators.required],
       estado:      ['', [Validators.required, Validators.maxLength(2)]],
       cep:         ['', [Validators.required, Validators.pattern(/^\d{8}$/)]],
+    });
+  }
+
+  /**
+   * criarFormAlterarStatus()
+   *
+   * Factory do FormGroup do modal de alteração de status.
+   * Os três campos condicionais começam sem Validators.required —
+   * o observarStatusAlteracao() adiciona/remove os validators em runtime
+   * conforme o status selecionado.
+   */
+  private criarFormAlterarStatus(): FormGroup {
+    return this.fb.group({
+      statusNovo:          [null, Validators.required],
+      motivo:              [null],              // required para DESISTENCIA / DESLIGADO
+      dataInicioPausa:     [null],              // required para PAUSA_PROGRAMADA
+      dataPrevisaoRetorno: [null],              // required para PAUSA_PROGRAMADA
+    });
+  }
+
+  /**
+   * observarStatusAlteracao()
+   *
+   * Reage às mudanças do select statusNovo:
+   *   1. Atualiza statusNovoSelecionado() para o template reagir com @if.
+   *   2. Reseta os campos condicionais (evita enviar dados de uma seleção anterior).
+   *   3. Adiciona/remove Validators.required nos campos correspondentes.
+   *
+   * Lógica de validators por status (conforme PRD §9.1 / GUIA §9.1):
+   *   INATIVO_PAUSA_PROGRAMADA  → dataInicioPausa + dataPrevisaoRetorno obrigatórios
+   *   INATIVO_DESISTENCIA       → motivo obrigatório
+   *   INATIVO_DESLIGADO         → motivo obrigatório
+   *   ATIVO / INATIVO_FALECIMENTO / INATIVO_OUTRO → sem campos obrigatórios extras
+   */
+  private observarStatusAlteracao(): void {
+    const motivoCtrl       = this.formAlterarStatus.get('motivo')!;
+    const inicioPausaCtrl  = this.formAlterarStatus.get('dataInicioPausa')!;
+    const retornoCtrl      = this.formAlterarStatus.get('dataPrevisaoRetorno')!;
+
+    this.formAlterarStatus.get('statusNovo')!.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((status: StatusAssociado | null) => {
+        this.statusNovoSelecionado.set(status);
+
+        // Reseta campos condicionais e remove validators anteriores
+        motivoCtrl.reset(null);
+        inicioPausaCtrl.reset(null);
+        retornoCtrl.reset(null);
+        motivoCtrl.removeValidators(Validators.required);
+        inicioPausaCtrl.removeValidators(Validators.required);
+        retornoCtrl.removeValidators(Validators.required);
+
+        if (status === 'INATIVO_PAUSA_PROGRAMADA') {
+          inicioPausaCtrl.addValidators(Validators.required);
+          retornoCtrl.addValidators(Validators.required);
+        } else if (status === 'INATIVO_DESISTENCIA' || status === 'INATIVO_DESLIGADO') {
+          motivoCtrl.addValidators(Validators.required);
+        }
+        // ATIVO, INATIVO_FALECIMENTO, INATIVO_OUTRO: motivo aparece mas opcional
+
+        motivoCtrl.updateValueAndValidity();
+        inicioPausaCtrl.updateValueAndValidity();
+        retornoCtrl.updateValueAndValidity();
+      });
+  }
+
+  /**
+   * criarFormRenovar()
+   *
+   * Factory do FormGroup do modal de renovação de anuidade.
+   * Um único campo: dataPagamento (pré-preenchido com hoje em abrirModalRenovar).
+   * Não usa validarDataNaoFutura — o pagamento pode ser confirmado no dia atual.
+   */
+  private criarFormRenovar(): FormGroup {
+    return this.fb.group({
+      dataPagamento: [this.obterDataHoje(), Validators.required],
     });
   }
 
