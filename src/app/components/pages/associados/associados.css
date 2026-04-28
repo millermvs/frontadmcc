@@ -107,8 +107,10 @@
 
 .associado-row:hover { background: var(--cor-surface-alt); }
 
-/* Linha de associado inativo — opacidade reduzida */
-.row-inativo { opacity: 0.65; }
+/* Linha de associado inativo — opacidade reduzida nas células de dados.
+   A célula de ações (.cell-acoes) fica excluída para que os botões ainda
+   funcionais (informações, endereço, alterar status) mantenham a cor normal. */
+.row-inativo td:not(.cell-acoes) { opacity: 0.65; }
 
 .associados-table td {
   padding: 14px 18px;

@@ -400,6 +400,11 @@ body {
   outline-offset: 2px;
 }
 
+.btn-acao:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 /* Verde — edição / detalhes */
 .btn-editar {
   background: #f0fdf4;

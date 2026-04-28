@@ -246,6 +246,7 @@
                       data-bs-target="#modalCargosAssociado"
                       (click)="abrirModalCargo(associado)"
                       aria-label="Gerenciar cargos de {{ associado.nomeCompleto }}"
+                      [disabled]="associado.statusAssociado.startsWith('INATIVO_')"
                     >
                       <i class="bi bi-briefcase-fill" aria-hidden="true"></i>
                     </button>
@@ -259,6 +260,7 @@
                       data-bs-target="#modalEquipeAssociado"
                       (click)="abrirModalEquipe(associado)"
                       aria-label="Gerenciar equipe de {{ associado.nomeCompleto }}"
+                      [disabled]="associado.statusAssociado.startsWith('INATIVO_')"
                     >
                       <i class="bi bi-people-fill" aria-hidden="true"></i>
                     </button>
@@ -272,6 +274,7 @@
                       data-bs-target="#modalEnderecoAssociado"
                       (click)="abrirModalEndereco(associado)"
                       aria-label="Gerenciar endereços de {{ associado.nomeCompleto }}"
+                      [disabled]="associado.statusAssociado.startsWith('INATIVO_')"
                     >
                       <i class="bi bi-house-fill" aria-hidden="true"></i>
                     </button>
@@ -299,6 +302,7 @@
                         data-bs-target="#modalRenovarAnuidade"
                         (click)="abrirModalRenovar(associado)"
                         aria-label="Renovar anuidade de {{ associado.nomeCompleto }}"
+                        [disabled]="associado.statusAssociado.startsWith('INATIVO_')"
                       >
                         <i class="bi bi-calendar-check-fill" aria-hidden="true"></i>
                       </button>
@@ -643,10 +647,10 @@
      (#btnFecharModalNovoAssociado) — CLAUDE.md §2.2 proíbe getElementById.
 
      Seções do formulário:
-       1. Dados Pessoais       (nome, cpf, e-mail, telefone, nascimento, ingresso)
-       2. Dados Administrativos (1ª anuidade, toggle aniversário)
-       3. Vínculos             (equipe, cluster→atuação, cargo, padrinho)
-       4. Endereço Residencial  (rua, número, complemento, bairro, cidade, UF, CEP)
+       1. Dados Pessoais      (nome, cpf, e-mail, telefone, nascimento, ingresso)
+       2. Vínculos            (equipe, padrinho*, cluster→atuação, cargo)
+       3. Endereço Residencial (CEP, rua, número, bairro, cidade, UF, complemento)
+     * padrinho obrigatório — validação manual pré-submit (signal fora do FormGroup)
      ========================================================================== -->
 <div
   class="modal fade"
@@ -703,10 +707,12 @@
                   id="nomeCompleto"
                   formControlName="nomeCompleto"
                   placeholder="Nome completo sem abreviações"
-                  [class.is-invalid]="!!errosValidacao()['nomeCompleto']"
+                  [class.is-invalid]="!!errosValidacao()['nomeCompleto'] || (formCadastro.get('nomeCompleto')?.invalid && formCadastro.get('nomeCompleto')?.touched)"
                 />
                 @if (errosValidacao()['nomeCompleto']) {
                   <div class="invalid-feedback">{{ errosValidacao()['nomeCompleto'] }}</div>
+                } @else if (formCadastro.get('nomeCompleto')?.invalid && formCadastro.get('nomeCompleto')?.touched) {
+                  <div class="invalid-feedback">Nome completo é obrigatório.</div>
                 }
               </div>
 
@@ -722,12 +728,15 @@
                   placeholder="Somente 11 dígitos"
                   maxlength="11"
                   inputmode="numeric"
-                  [class.is-invalid]="!!errosValidacao()['cpf'] || (formCadastro.get('cpf')?.errors?.['pattern'] && formCadastro.get('cpf')?.touched)"
+                  [class.is-invalid]="!!errosValidacao()['cpf'] || (formCadastro.get('cpf')?.invalid && formCadastro.get('cpf')?.touched)"
                 />
                 @if (errosValidacao()['cpf']) {
                   <div class="invalid-feedback">{{ errosValidacao()['cpf'] }}</div>
-                } @else if (formCadastro.get('cpf')?.errors?.['pattern'] && formCadastro.get('cpf')?.touched) {
-                  <div class="invalid-feedback">Digite exatamente 11 dígitos (sem pontuação).</div>
+                } @else if (formCadastro.get('cpf')?.invalid && formCadastro.get('cpf')?.touched) {
+                  <div class="invalid-feedback">
+                    @if (formCadastro.get('cpf')?.errors?.['required']) { CPF é obrigatório. }
+                    @else { Digite exatamente 11 dígitos (sem pontuação). }
+                  </div>
                 }
               </div>
 
@@ -740,10 +749,15 @@
                   class="form-control"
                   id="dataNascimento"
                   formControlName="dataNascimento"
-                  [class.is-invalid]="!!errosValidacao()['dataNascimento']"
+                  [class.is-invalid]="!!errosValidacao()['dataNascimento'] || (formCadastro.get('dataNascimento')?.invalid && formCadastro.get('dataNascimento')?.touched)"
                 />
                 @if (errosValidacao()['dataNascimento']) {
                   <div class="invalid-feedback">{{ errosValidacao()['dataNascimento'] }}</div>
+                } @else if (formCadastro.get('dataNascimento')?.invalid && formCadastro.get('dataNascimento')?.touched) {
+                  <div class="invalid-feedback">
+                    @if (formCadastro.get('dataNascimento')?.errors?.['required']) { Data de nascimento é obrigatória. }
+                    @else { O associado deve ter no mínimo 16 anos. }
+                  </div>
                 }
               </div>
 
@@ -761,12 +775,15 @@
                   id="emailPrincipal"
                   formControlName="emailPrincipal"
                   placeholder="email@exemplo.com"
-                  [class.is-invalid]="!!errosValidacao()['emailPrincipal'] || (formCadastro.get('emailPrincipal')?.errors?.['email'] && formCadastro.get('emailPrincipal')?.touched)"
+                  [class.is-invalid]="!!errosValidacao()['emailPrincipal'] || (formCadastro.get('emailPrincipal')?.invalid && formCadastro.get('emailPrincipal')?.touched)"
                 />
                 @if (errosValidacao()['emailPrincipal']) {
                   <div class="invalid-feedback">{{ errosValidacao()['emailPrincipal'] }}</div>
-                } @else if (formCadastro.get('emailPrincipal')?.errors?.['email'] && formCadastro.get('emailPrincipal')?.touched) {
-                  <div class="invalid-feedback">E-mail inválido.</div>
+                } @else if (formCadastro.get('emailPrincipal')?.invalid && formCadastro.get('emailPrincipal')?.touched) {
+                  <div class="invalid-feedback">
+                    @if (formCadastro.get('emailPrincipal')?.errors?.['required']) { E-mail é obrigatório. }
+                    @else { E-mail inválido. }
+                  </div>
                 }
               </div>
 
@@ -782,12 +799,15 @@
                   placeholder="10 ou 11 dígitos"
                   maxlength="11"
                   inputmode="tel"
-                  [class.is-invalid]="!!errosValidacao()['telefonePrincipal'] || (formCadastro.get('telefonePrincipal')?.errors?.['pattern'] && formCadastro.get('telefonePrincipal')?.touched)"
+                  [class.is-invalid]="!!errosValidacao()['telefonePrincipal'] || (formCadastro.get('telefonePrincipal')?.invalid && formCadastro.get('telefonePrincipal')?.touched)"
                 />
                 @if (errosValidacao()['telefonePrincipal']) {
                   <div class="invalid-feedback">{{ errosValidacao()['telefonePrincipal'] }}</div>
-                } @else if (formCadastro.get('telefonePrincipal')?.errors?.['pattern'] && formCadastro.get('telefonePrincipal')?.touched) {
-                  <div class="invalid-feedback">Digite 10 ou 11 dígitos (sem formatação).</div>
+                } @else if (formCadastro.get('telefonePrincipal')?.invalid && formCadastro.get('telefonePrincipal')?.touched) {
+                  <div class="invalid-feedback">
+                    @if (formCadastro.get('telefonePrincipal')?.errors?.['required']) { Telefone é obrigatório. }
+                    @else { Digite 10 ou 11 dígitos (sem formatação). }
+                  </div>
                 }
               </div>
 
@@ -800,57 +820,23 @@
                   class="form-control"
                   id="dataIngresso"
                   formControlName="dataIngresso"
-                  [class.is-invalid]="!!errosValidacao()['dataIngresso'] || (formCadastro.get('dataIngresso')?.errors?.['dataFutura'] && formCadastro.get('dataIngresso')?.touched)"
+                  [class.is-invalid]="!!errosValidacao()['dataIngresso'] || (formCadastro.get('dataIngresso')?.invalid && formCadastro.get('dataIngresso')?.touched)"
                 />
                 @if (errosValidacao()['dataIngresso']) {
                   <div class="invalid-feedback">{{ errosValidacao()['dataIngresso'] }}</div>
-                } @else if (formCadastro.get('dataIngresso')?.errors?.['dataFutura'] && formCadastro.get('dataIngresso')?.touched) {
-                  <div class="invalid-feedback">A data de ingresso não pode ser futura.</div>
+                } @else if (formCadastro.get('dataIngresso')?.invalid && formCadastro.get('dataIngresso')?.touched) {
+                  <div class="invalid-feedback">
+                    @if (formCadastro.get('dataIngresso')?.errors?.['required']) { Data de ingresso é obrigatória. }
+                    @else { A data de ingresso não pode ser futura. }
+                  </div>
                 }
               </div>
 
             </div>
 
             <!-- ============================================================
-                 SEÇÃO 2 — DADOS ADMINISTRATIVOS
-                 ============================================================ -->
-            <h6 class="section-titulo mt-4">Dados Administrativos</h6>
-
-            <div class="row align-items-end">
-
-              <div class="col-md-4 mb-3">
-                <label for="dataPagamentoPrimeiraAnuidade" class="form-label">
-                  Data da 1ª Anuidade
-                </label>
-                <input
-                  type="date"
-                  class="form-control"
-                  id="dataPagamentoPrimeiraAnuidade"
-                  formControlName="dataPagamentoPrimeiraAnuidade"
-                />
-                <small class="form-text text-muted">Opcional. Deixe em branco se ainda não pago.</small>
-              </div>
-
-              <div class="col-md-8 mb-3">
-                <div class="form-check form-switch mt-2">
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    id="exibirAniversario"
-                    formControlName="exibirAniversario"
-                    role="switch"
-                  />
-                  <label class="form-check-label" for="exibirAniversario">
-                    Exibir aniversário para toda a rede (apenas Dia/Mês)
-                  </label>
-                </div>
-              </div>
-
-            </div>
-
-            <!-- ============================================================
                  SEÇÃO 3 — VÍNCULOS
-                 Ordem: Equipe | Padrinho | Cluster | Atuação | Cargo | DataCargo
+                 Ordem: Equipe | Padrinho | Cluster | Atuação | Cargo
                  ============================================================ -->
             <h6 class="section-titulo mt-4">Vínculos</h6>
 
@@ -865,7 +851,7 @@
                   class="form-select"
                   id="idEquipe"
                   formControlName="idEquipe"
-                  [class.is-invalid]="!!errosValidacao()['idEquipe']"
+                  [class.is-invalid]="!!errosValidacao()['idEquipe'] || (formCadastro.get('idEquipe')?.invalid && formCadastro.get('idEquipe')?.touched)"
                 >
                   <option [ngValue]="null">-- Selecione a equipe --</option>
                   @for (equipe of equipes(); track equipe.idEquipe) {
@@ -874,18 +860,20 @@
                 </select>
                 @if (errosValidacao()['idEquipe']) {
                   <div class="invalid-feedback">{{ errosValidacao()['idEquipe'] }}</div>
+                } @else if (formCadastro.get('idEquipe')?.invalid && formCadastro.get('idEquipe')?.touched) {
+                  <div class="invalid-feedback">Selecione uma equipe.</div>
                 }
               </div>
 
               <div class="col-md-6 mb-3">
                 <label class="form-label">
-                  Padrinho
-                  <span class="text-muted small fw-normal">(opcional)</span>
+                  Padrinho <span class="text-danger" aria-hidden="true">*</span>
                 </label>
 
                 <!-- Autocomplete: o input é de busca (UI), não um formControl.
                      O dado real é idPadrinhoSelecionado() — um signal separado.
-                     mousedown nas sugestões dispara antes do blur do input. -->
+                     mousedown nas sugestões dispara antes do blur do input.
+                     O CPF é exibido nas sugestões para diferenciar homônimos. -->
                 <div class="padrinho-autocomplete-wrap">
                   <input
                     type="text"
@@ -893,6 +881,7 @@
                     placeholder="Buscar por nome do associado..."
                     [value]="nomePadrinhoInput()"
                     [class.is-valid]="!!idPadrinhoSelecionado()"
+                    [class.is-invalid]="!!erroPadrinho() && !idPadrinhoSelecionado()"
                     (input)="atualizarNomePadrinho($any($event.target).value)"
                     (focus)="mostrarSugestoesPadrinho.set(sugestoesPadrinho().length > 0)"
                     (blur)="fecharSugestoesPadrinho()"
@@ -930,7 +919,9 @@
                           <div class="padrinho-avatar" aria-hidden="true">{{ iniciais(assoc.nomeCompleto) }}</div>
                           <div>
                             <span class="padrinho-nome">{{ assoc.nomeCompleto }}</span>
-                            <small class="padrinho-equipe">{{ assoc.nomeEquipe }}</small>
+                            <small class="padrinho-equipe">
+                              {{ mascararCpf(assoc.cpf) }} · {{ assoc.nomeEquipe }}
+                            </small>
                           </div>
                         </li>
                       }
@@ -943,6 +934,8 @@
                     <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
                     Padrinho selecionado.
                   </small>
+                } @else if (erroPadrinho()) {
+                  <div class="invalid-feedback d-block">{{ erroPadrinho() }}</div>
                 } @else {
                   <small class="form-text text-muted">Digite pelo menos 2 letras para buscar.</small>
                 }
@@ -961,7 +954,7 @@
                   class="form-select"
                   id="idCluster"
                   formControlName="idCluster"
-                  [class.is-invalid]="!!errosValidacao()['idCluster']"
+                  [class.is-invalid]="!!errosValidacao()['idCluster'] || (formCadastro.get('idCluster')?.invalid && formCadastro.get('idCluster')?.touched)"
                 >
                   <option [ngValue]="null">-- Selecione o cluster --</option>
                   @for (cluster of clusters(); track cluster.idCluster) {
@@ -970,6 +963,8 @@
                 </select>
                 @if (errosValidacao()['idCluster']) {
                   <div class="invalid-feedback">{{ errosValidacao()['idCluster'] }}</div>
+                } @else if (formCadastro.get('idCluster')?.invalid && formCadastro.get('idCluster')?.touched) {
+                  <div class="invalid-feedback">Selecione um cluster.</div>
                 }
               </div>
 
@@ -983,7 +978,7 @@
                   class="form-select"
                   id="idAtuacaoEspecifica"
                   formControlName="idAtuacaoEspecifica"
-                  [class.is-invalid]="!!errosValidacao()['idAtuacaoEspecifica']"
+                  [class.is-invalid]="!!errosValidacao()['idAtuacaoEspecifica'] || (formCadastro.get('idAtuacaoEspecifica')?.invalid && formCadastro.get('idAtuacaoEspecifica')?.touched)"
                 >
                   <option [ngValue]="null">
                     {{ formCadastro.get('idCluster')?.value
@@ -996,6 +991,8 @@
                 </select>
                 @if (errosValidacao()['idAtuacaoEspecifica']) {
                   <div class="invalid-feedback">{{ errosValidacao()['idAtuacaoEspecifica'] }}</div>
+                } @else if (formCadastro.get('idAtuacaoEspecifica')?.invalid && formCadastro.get('idAtuacaoEspecifica')?.touched) {
+                  <div class="invalid-feedback">Selecione a atuação específica.</div>
                 }
               </div>
 
@@ -1007,44 +1004,59 @@
                   value="Associado"
                   readonly
                   aria-label="Cargo atribuído automaticamente: Associado"
+                  [class.is-invalid]="!!errosValidacao()['idCargoLideranca']"
                 >
-                <small class="text-muted-sm">Atribuído automaticamente. Altere após o cadastro.</small>
-              </div>
-
-            </div>
-
-            <!-- Linha 3: Data de início do cargo -->
-            <div class="row">
-
-              <div class="col-md-4 mb-3">
-                <label for="dataInicioCargo" class="form-label">
-                  Data de Início do Cargo <span class="text-danger" aria-hidden="true">*</span>
-                </label>
-                <input
-                  type="date"
-                  class="form-control"
-                  id="dataInicioCargo"
-                  formControlName="dataInicioCargo"
-                  [class.is-invalid]="!!errosValidacao()['dataInicioCargo'] || (formCadastro.get('dataInicioCargo')?.errors?.['dataFutura'] && formCadastro.get('dataInicioCargo')?.touched)"
-                />
+                @if (errosValidacao()['idCargoLideranca']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['idCargoLideranca'] }}</div>
+                } @else {
+                  <small class="text-muted-sm">Atribuído automaticamente.</small>
+                }
+                <!-- dataInicioCargo: preenchido automaticamente — erro exibido aqui se o backend rejeitar -->
                 @if (errosValidacao()['dataInicioCargo']) {
-                  <div class="invalid-feedback">{{ errosValidacao()['dataInicioCargo'] }}</div>
-                } @else if (formCadastro.get('dataInicioCargo')?.errors?.['dataFutura'] && formCadastro.get('dataInicioCargo')?.touched) {
-                  <div class="invalid-feedback">A data de início do cargo não pode ser futura.</div>
+                  <div class="text-danger small mt-1">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ errosValidacao()['dataInicioCargo'] }}
+                  </div>
                 }
               </div>
 
             </div>
+
+            <!-- dataInicioCargo: preenchido automaticamente com a data de hoje (não exibido ao usuário) -->
 
             <!-- ============================================================
                  SEÇÃO 4 — ENDEREÇO RESIDENCIAL
                  ============================================================ -->
             <h6 class="section-titulo mt-4">Endereço Residencial</h6>
 
-            <!-- Linha 1: Rua + Número -->
+            <!-- Linha 1: CEP + Rua + Número
+                 CEP primeiro — futuro ponto de entrada para autopreenchimento via API -->
             <div class="row">
 
-              <div class="col-md-8 mb-3">
+              <div class="col-md-2 mb-3">
+                <label for="cep" class="form-label">
+                  CEP <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="cep"
+                  formControlName="cep"
+                  placeholder="00000000"
+                  maxlength="8"
+                  inputmode="numeric"
+                  [class.is-invalid]="!!errosValidacao()['cep'] || (formCadastro.get('cep')?.invalid && formCadastro.get('cep')?.touched)"
+                />
+                @if (errosValidacao()['cep']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['cep'] }}</div>
+                } @else if (formCadastro.get('cep')?.invalid && formCadastro.get('cep')?.touched) {
+                  <div class="invalid-feedback">
+                    @if (formCadastro.get('cep')?.errors?.['required']) { CEP é obrigatório. }
+                    @else { 8 dígitos, sem hífen. }
+                  </div>
+                }
+              </div>
+
+              <div class="col-md-7 mb-3">
                 <label for="rua" class="form-label">
                   Rua / Logradouro <span class="text-danger" aria-hidden="true">*</span>
                 </label>
@@ -1054,14 +1066,16 @@
                   id="rua"
                   formControlName="rua"
                   placeholder="Ex: Rua das Flores"
-                  [class.is-invalid]="!!errosValidacao()['rua']"
+                  [class.is-invalid]="!!errosValidacao()['rua'] || (formCadastro.get('rua')?.invalid && formCadastro.get('rua')?.touched)"
                 />
                 @if (errosValidacao()['rua']) {
                   <div class="invalid-feedback">{{ errosValidacao()['rua'] }}</div>
+                } @else if (formCadastro.get('rua')?.invalid && formCadastro.get('rua')?.touched) {
+                  <div class="invalid-feedback">Rua / Logradouro é obrigatório.</div>
                 }
               </div>
 
-              <div class="col-md-4 mb-3">
+              <div class="col-md-3 mb-3">
                 <label for="numero" class="form-label">
                   Número <span class="text-danger" aria-hidden="true">*</span>
                 </label>
@@ -1071,28 +1085,19 @@
                   id="numero"
                   formControlName="numero"
                   placeholder="Ex: 123"
-                  [class.is-invalid]="!!errosValidacao()['numero']"
+                  [class.is-invalid]="!!errosValidacao()['numero'] || (formCadastro.get('numero')?.invalid && formCadastro.get('numero')?.touched)"
                 />
                 @if (errosValidacao()['numero']) {
                   <div class="invalid-feedback">{{ errosValidacao()['numero'] }}</div>
+                } @else if (formCadastro.get('numero')?.invalid && formCadastro.get('numero')?.touched) {
+                  <div class="invalid-feedback">Número é obrigatório.</div>
                 }
               </div>
 
             </div>
 
-            <!-- Linha 2: Complemento + Bairro + CEP -->
+            <!-- Linha 2: Bairro + Cidade + UF -->
             <div class="row">
-
-              <div class="col-md-4 mb-3">
-                <label for="complemento" class="form-label">Complemento</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="complemento"
-                  formControlName="complemento"
-                  placeholder="Apto, Bloco... (opcional)"
-                />
-              </div>
 
               <div class="col-md-4 mb-3">
                 <label for="bairro" class="form-label">
@@ -1104,40 +1109,16 @@
                   id="bairro"
                   formControlName="bairro"
                   placeholder="Ex: Centro"
-                  [class.is-invalid]="!!errosValidacao()['bairro']"
+                  [class.is-invalid]="!!errosValidacao()['bairro'] || (formCadastro.get('bairro')?.invalid && formCadastro.get('bairro')?.touched)"
                 />
                 @if (errosValidacao()['bairro']) {
                   <div class="invalid-feedback">{{ errosValidacao()['bairro'] }}</div>
+                } @else if (formCadastro.get('bairro')?.invalid && formCadastro.get('bairro')?.touched) {
+                  <div class="invalid-feedback">Bairro é obrigatório.</div>
                 }
               </div>
 
-              <div class="col-md-4 mb-3">
-                <label for="cep" class="form-label">
-                  CEP <span class="text-danger" aria-hidden="true">*</span>
-                </label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="cep"
-                  formControlName="cep"
-                  placeholder="Somente 8 dígitos"
-                  maxlength="8"
-                  inputmode="numeric"
-                  [class.is-invalid]="!!errosValidacao()['cep'] || (formCadastro.get('cep')?.errors?.['pattern'] && formCadastro.get('cep')?.touched)"
-                />
-                @if (errosValidacao()['cep']) {
-                  <div class="invalid-feedback">{{ errosValidacao()['cep'] }}</div>
-                } @else if (formCadastro.get('cep')?.errors?.['pattern'] && formCadastro.get('cep')?.touched) {
-                  <div class="invalid-feedback">Digite exatamente 8 dígitos (sem hífen).</div>
-                }
-              </div>
-
-            </div>
-
-            <!-- Linha 3: Cidade + UF -->
-            <div class="row">
-
-              <div class="col-md-7 mb-3">
+              <div class="col-md-6 mb-3">
                 <label for="cidade" class="form-label">
                   Cidade <span class="text-danger" aria-hidden="true">*</span>
                 </label>
@@ -1147,10 +1128,12 @@
                   id="cidade"
                   formControlName="cidade"
                   placeholder="Ex: São Paulo"
-                  [class.is-invalid]="!!errosValidacao()['cidade']"
+                  [class.is-invalid]="!!errosValidacao()['cidade'] || (formCadastro.get('cidade')?.invalid && formCadastro.get('cidade')?.touched)"
                 />
                 @if (errosValidacao()['cidade']) {
                   <div class="invalid-feedback">{{ errosValidacao()['cidade'] }}</div>
+                } @else if (formCadastro.get('cidade')?.invalid && formCadastro.get('cidade')?.touched) {
+                  <div class="invalid-feedback">Cidade é obrigatória.</div>
                 }
               </div>
 
@@ -1166,10 +1149,34 @@
                   placeholder="SP"
                   maxlength="2"
                   style="text-transform: uppercase"
-                  [class.is-invalid]="!!errosValidacao()['estado']"
+                  [class.is-invalid]="!!errosValidacao()['estado'] || (formCadastro.get('estado')?.invalid && formCadastro.get('estado')?.touched)"
                 />
                 @if (errosValidacao()['estado']) {
                   <div class="invalid-feedback">{{ errosValidacao()['estado'] }}</div>
+                } @else if (formCadastro.get('estado')?.invalid && formCadastro.get('estado')?.touched) {
+                  <div class="invalid-feedback">UF é obrigatória (2 letras).</div>
+                }
+              </div>
+
+            </div>
+
+            <!-- Linha 3: Complemento (opcional, por último) -->
+            <div class="row">
+
+              <div class="col-md-6 mb-3">
+                <label for="complemento" class="form-label">
+                  Complemento <span class="text-muted small fw-normal">(opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="complemento"
+                  formControlName="complemento"
+                  placeholder="Apto, Bloco, Casa..."
+                  [class.is-invalid]="!!errosValidacao()['complemento']"
+                />
+                @if (errosValidacao()['complemento']) {
+                  <div class="invalid-feedback">{{ errosValidacao()['complemento'] }}</div>
                 }
               </div>
 
@@ -1179,18 +1186,19 @@
 
         }
 
-        <!-- ALERTA DE ERRO GERAL (exibido abaixo do form) -->
-        @if (erroModal()) {
-          <div class="alert alert-danger d-flex align-items-center gap-2 mt-3 mb-0" role="alert">
-            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
-            <span>{{ erroModal() }}</span>
-          </div>
-        }
+        
 
       </div>
 
       <!-- ── RODAPÉ ─────────────────────────────────────────────────────── -->
       <div class="modal-footer">
+        <!-- ALERTA DE ERRO GERAL (exibido abaixo do form) -->
+        @if (erroModal()) {
+          <div class="alert alert-danger d-flex align-items-center gap-2 mb-0 flex-fill" role="alert">
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+            <span>{{ erroModal() }}</span>
+          </div>
+        }
 
         <!-- Botão OCULTO: acionado via ViewChild após sucesso no submit.
              O Bootstrap fecha o modal ao disparar data-bs-dismiss. -->
@@ -2205,6 +2213,7 @@
                     type="date"
                     class="form-control"
                     formControlName="dataPrevisaoRetorno"
+                    [min]="formAlterarStatus.get('dataInicioPausa')?.value || null"
                     [class.is-invalid]="(formAlterarStatus.get('dataPrevisaoRetorno')?.invalid && formAlterarStatus.get('dataPrevisaoRetorno')?.touched) || !!errosValidacaoAlterarStatus()['dataPrevisaoRetorno']"
                   />
                   @if (errosValidacaoAlterarStatus()['dataPrevisaoRetorno']) {

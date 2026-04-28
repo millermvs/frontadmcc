@@ -79,6 +79,24 @@ function validarDataNaoFutura(control: AbstractControl): ValidationErrors | null
   return data > hoje ? { dataFutura: true } : null;
 }
 
+// ============================================================================
+// VALIDADOR CUSTOMIZADO — Idade mínima de 16 anos
+//
+// Calcula o limite subtraindo 16 anos da data atual.
+// Ex: hoje = 28/04/2026 → limite = 28/04/2010.
+// Datas posteriores ao limite (nascidos após 28/04/2010) são inválidas.
+// Mesmo padrão de validarDataNaoFutura: função pura fora da classe para
+// evitar ambiguidade de contexto (this) ao passar como referência ao FormBuilder.
+// ============================================================================
+function validarIdadeMinima16Anos(control: AbstractControl): ValidationErrors | null {
+  if (!control.value) return null;
+  const data  = new Date(control.value + 'T00:00:00');
+  const limite = new Date();
+  limite.setFullYear(limite.getFullYear() - 16);
+  limite.setHours(0, 0, 0, 0);
+  return data > limite ? { idadeMinima: true } : null;
+}
+
 /**
  * ASSOCIADOS PAGE COMPONENT
  *
@@ -555,6 +573,14 @@ export class Associados implements OnInit {
   buscandoPadrinho         = signal(false);
 
   /**
+   * erroPadrinho
+   * Mensagem de erro exibida inline abaixo do campo de padrinho quando o
+   * usuário tenta submeter sem selecionar um padrinho.
+   * Limpo no resetarFormularioCadastro() e ao selecionar um padrinho.
+   */
+  erroPadrinho = signal<string | null>(null);
+
+  /**
    * padrinhoSubject
    *
    * Canal de debounce para a busca de padrinho. Cada keystroke emite aqui;
@@ -768,11 +794,12 @@ export class Associados implements OnInit {
    */
   resetarFormularioCadastro(): void {
     this.formCadastro.reset({
-      exibirAniversario: false,
+      exibirAniversario: true,
       dataInicioCargo:   this.obterDataHoje(),
     });
     this.erroModal.set(null);
     this.errosValidacao.set({});
+    this.erroPadrinho.set(null);
     this.idPadrinhoSelecionado.set(null);
     this.nomePadrinhoInput.set('');
     this.sugestoesPadrinho.set([]);
@@ -795,6 +822,17 @@ export class Associados implements OnInit {
    * idEquipe e idEquipeOrigem recebem o MESMO valor no cadastro (conforme PRD).
    */
   salvarNovoAssociado(): void {
+    // Marca todos os campos como tocados — exibe erros inline mesmo nos campos
+    // que o usuário não interagiu, dando feedback visual completo no submit.
+    this.formCadastro.markAllAsTouched();
+
+    // Padrinho é obrigatório — campo fora do FormGroup, validação manual
+    if (!this.idPadrinhoSelecionado()) {
+      this.erroPadrinho.set('Selecione um padrinho para continuar.');
+      return;
+    }
+    this.erroPadrinho.set(null);
+
     this.carregandoModal.set(true);
     this.erroModal.set(null);
     this.errosValidacao.set({});
@@ -847,11 +885,34 @@ export class Associados implements OnInit {
       },
       error: (err: HttpErrorResponse) => {
         console.error('Erro ao cadastrar associado:', err);
-        if (err.status === 400 && err.error?.errors) {
-          this.errosValidacao.set(this.normalizarErros(err.error.errors));
-          this.erroModal.set('Corrija os campos destacados.');
+        if (err.error?.errors) {
+          // Backend retornou erros por campo (normalmente 400) — exibe inline
+          const errosNormalizados = this.normalizarErros(err.error.errors);
+
+          // idPadrinho não é FormControl — redireciona para o signal erroPadrinho
+          if (errosNormalizados['idPadrinho']) {
+            this.erroPadrinho.set(errosNormalizados['idPadrinho']);
+            delete errosNormalizados['idPadrinho'];
+          }
+
+          this.errosValidacao.set(errosNormalizados);
+          this.mostrarErroModal('Corrija os campos destacados.');
+        } else if (err.status === 409) {
+          // Conflito de unicidade — mapeia a mensagem ao campo pela palavra-chave
+          const msg = err.error?.message ?? 'Dado duplicado. Verifique os campos.';
+          const errosMapeados: Record<string, string> = {};
+          if (/cpf/i.test(msg))          errosMapeados['cpf'] = msg;
+          else if (/e-?mail/i.test(msg)) errosMapeados['emailPrincipal'] = msg;
+          else if (/cnpj/i.test(msg))    errosMapeados['cnpj'] = msg;
+
+          if (Object.keys(errosMapeados).length > 0) {
+            this.errosValidacao.set(errosMapeados);
+            this.mostrarErroModal('Corrija os campos destacados.');
+          } else {
+            this.mostrarErroModal(msg);
+          }
         } else {
-          this.erroModal.set(this.extrairMensagemErro(err));
+          this.mostrarErroModal(this.extrairMensagemErro(err));
         }
         this.carregandoModal.set(false);
       },
@@ -1521,9 +1582,10 @@ export class Associados implements OnInit {
    */
   selecionarPadrinho(assoc: AssociadoResponseDto): void {
     this.idPadrinhoSelecionado.set(assoc.idAssociado);
-    this.nomePadrinhoInput.set(assoc.nomeCompleto);
+    this.nomePadrinhoInput.set(`${assoc.nomeCompleto} — ${this.mascararCpf(assoc.cpf)}`);
     this.sugestoesPadrinho.set([]);
     this.mostrarSugestoesPadrinho.set(false);
+    this.erroPadrinho.set(null);
   }
 
   /**
@@ -1667,7 +1729,7 @@ export class Associados implements OnInit {
       cpf:               [{ value: '', disabled: true }], // identificação, não editável
       emailPrincipal:    ['', [Validators.required, Validators.email]],
       telefonePrincipal: ['', [Validators.required, Validators.pattern(/^\d{10,11}$/)]],
-      dataNascimento:    ['', Validators.required],
+      dataNascimento:    ['', [Validators.required, validarIdadeMinima16Anos]],
 
       // ── Dados administrativos ────────────────────────────────────────────
       dataPagamentoPrimeiraAnuidade: [null], // opcional
@@ -1880,6 +1942,18 @@ export class Associados implements OnInit {
         inicioPausaCtrl.updateValueAndValidity();
         retornoCtrl.updateValueAndValidity();
       });
+
+    // Quando o usuário muda a data de início da pausa, limpa a previsão de
+    // retorno caso ela já tenha sido preenchida com uma data anterior à nova
+    // data de início — evita que um valor inválido passe despercebido.
+    inicioPausaCtrl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((novoInicio: string | null) => {
+        const retornoAtual = retornoCtrl.value as string | null;
+        if (novoInicio && retornoAtual && retornoAtual < novoInicio) {
+          retornoCtrl.reset(null);
+        }
+      });
   }
 
   /**
@@ -1913,7 +1987,7 @@ export class Associados implements OnInit {
       cpf:               ['', [Validators.required, Validators.pattern(/^\d{11}$/)]],
       emailPrincipal:    ['', [Validators.required, Validators.email]],
       telefonePrincipal: ['', [Validators.required, Validators.pattern(/^\d{10,11}$/)]],
-      dataNascimento:    ['', Validators.required],
+      dataNascimento:    ['', [Validators.required, validarIdadeMinima16Anos]],
 
       // ── Dados administrativos ────────────────────────────────────────────
       dataIngresso:                  ['', [Validators.required, validarDataNaoFutura]],
@@ -1930,7 +2004,8 @@ export class Associados implements OnInit {
       // após o forkJoin carregar os cargos.
       idCargoLideranca:    [{ value: null, disabled: true }, Validators.required],
       dataInicioCargo:     [this.obterDataHoje(), [Validators.required, validarDataNaoFutura]],
-      exibirAniversario:   [false],
+      // Sempre true — o toggle foi removido do formulário (PRD: aniversário visível por padrão)
+      exibirAniversario:   [true],
 
       // ── Endereço residencial ─────────────────────────────────────────────
       rua:         ['', Validators.required],
@@ -1952,10 +2027,17 @@ export class Associados implements OnInit {
    * que é o que o template usa para acesso direto em errosValidacao().
    */
   private normalizarErros(errors: Record<string, string>): Record<string, string> {
+    // Mapa de renomeação: chave do DTO Java → nome do FormControl Angular.
+    // Necessário quando o campo do backend tem nome diferente do controle do formulário.
+    const renomear: Record<string, string> = {
+      idEquipeAtual: 'idEquipe',
+    };
+
     const resultado: Record<string, string> = {};
     for (const [chave, mensagem] of Object.entries(errors)) {
       const chaveSimples = chave.includes('.') ? chave.split('.').pop()! : chave;
-      resultado[chaveSimples] = mensagem;
+      const chaveFinal   = renomear[chaveSimples] ?? chaveSimples;
+      resultado[chaveFinal] = mensagem;
     }
     return resultado;
   }
@@ -1972,6 +2054,17 @@ export class Associados implements OnInit {
     const mes  = String(hoje.getMonth() + 1).padStart(2, '0');
     const dia  = String(hoje.getDate()).padStart(2, '0');
     return `${ano}-${mes}-${dia}`;
+  }
+
+  /**
+   * mostrarErroModal(mensagem)
+   *
+   * Define o sinal erroModal e agenda auto-dismiss após 3 segundos.
+   * Centraliza o comportamento para evitar repetição em cada handler.
+   */
+  private mostrarErroModal(mensagem: string): void {
+    this.erroModal.set(mensagem);
+    setTimeout(() => this.erroModal.set(null), 3000);
   }
 
   /**
