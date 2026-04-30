@@ -506,11 +506,18 @@ export class Associados implements OnInit {
    * statusOpcoesParaAlteracao
    * Computed: filtra o STATUS_OPCOES removendo o status atual do associado.
    * Evita que o ADM "altere" para o mesmo status que já está ativo.
+   *
+   * Regra adicional: PREATIVO é um status de entrada — uma vez que o associado
+   * está ATIVO, não faz sentido retroceder para pré-ativo. A opção é ocultada.
    */
   statusOpcoesParaAlteracao = computed(() => {
     const associado = this.associadoParaAlterarStatus();
     if (!associado) return this.STATUS_OPCOES;
-    return this.STATUS_OPCOES.filter(op => op.valor !== associado.statusAssociado);
+    return this.STATUS_OPCOES.filter(op => {
+      if (op.valor === associado.statusAssociado) return false;
+      if (associado.statusAssociado === 'ATIVO' && op.valor === 'PREATIVO') return false;
+      return true;
+    });
   });
 
   formAlterarStatus: FormGroup = this.criarFormAlterarStatus();
