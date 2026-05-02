@@ -9,6 +9,8 @@ import {
   OnInit,
   signal,
   ViewChild,
+ 
+  WritableSignal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
@@ -29,6 +31,7 @@ import {
   AssociadoRequestDto,
   AssociadoResponseDto,
   AssociadoRenovarAnuidadeRequestDto,
+  AssociadoVisibilidadeResponseDto,
   EnderecoResidencialRequestDto,
   EnderecoResidencialResponseDto,
   LABELS_STATUS_ASSOCIADO,
@@ -49,6 +52,22 @@ import { CargoLiderancaService } from '../../../services/cargo-lideranca.service
 import { ClusterService } from '../../../services/cluster.service';
 import { EquipeService } from '../../../services/equipe.service';
 import { ToastService } from '../../../services/toast.service';
+import { EmpresaService } from '../../../services/empresa.service';
+import {
+  EmpresaCadastroRequestDto,
+  EmpresaEnderecoComercialRequestDto,
+  EmpresaRequestDto,
+  EmpresaResponseDto,
+} from '../../../models/empresa.model';
+import { AssociadoAnuidadeService } from '../../../services/associado-anuidade.service';
+import { AssociadoGrupamentoService } from '../../../services/associado-grupamento.service';
+import { PerfilAssociadoService } from '../../../services/perfil-associado.service';
+import { AssociadoGrupamentoResponseDto } from '../../../models/associado-grupamento.model';
+import {
+  AssociadoAnuidadeResponseDto,
+  AssociadoRenovacaoResponseDto,
+} from '../../../models/associado-anuidade.model';
+import { PerfilAssociadoResponseDto } from '../../../models/perfil-associado.model';
 
 // ============================================================================
 // SHIM DE TIPO — bootstrap (global JS carregado via angular.json)
@@ -132,7 +151,11 @@ export class Associados implements OnInit {
   private cargoService          = inject(CargoLiderancaService);
   private clusterService        = inject(ClusterService);
   private toastService          = inject(ToastService);
-  private fb                    = inject(FormBuilder);
+  private empresaService             = inject(EmpresaService);
+  private associadoAnuidadeService   = inject(AssociadoAnuidadeService);
+  private associadoGrupamentoService = inject(AssociadoGrupamentoService);
+  private perfilAssociadoService     = inject(PerfilAssociadoService);
+  private fb                         = inject(FormBuilder);
   private destroyRef            = inject(DestroyRef);
 
   // =========================================================================
@@ -162,6 +185,24 @@ export class Associados implements OnInit {
   private btnFecharRenovar!: ElementRef<HTMLButtonElement>;
 
   /**
+   * Referência ao elemento DOM do modal de cargos.
+   * Aberto programaticamente via bootstrap.Modal.getOrCreateInstance(el).show()
+   * porque abrirModalCargo() precisa fazer um forkJoin de GETs antes de exibir
+   * o modal. Mesmo padrão de modalEmpresaRef.
+   */
+  @ViewChild('modalCargosAssociado')
+  private modalCargosRef!: ElementRef<HTMLElement>;
+
+  /**
+   * Referência ao elemento DOM do modal de endereço.
+   * Aberto programaticamente após o GET inicial concluir — mesmo padrão de
+   * modalCargosRef e modalEmpresaRef. Em caso de erro o modal não abre,
+   * usuário recebe toast.
+   */
+  @ViewChild('modalEnderecoAssociado')
+  private modalEnderecoRef!: ElementRef<HTMLElement>;
+
+  /**
    * Referência ao elemento DOM do modal de confirmação de encerramento de cargo.
    * Aberto via bootstrap.Modal.getOrCreateInstance(el).show() para evitar
    * race condition de backdrop duplo ao empilhar sobre o modal de cargos.
@@ -172,6 +213,42 @@ export class Associados implements OnInit {
   /** Botão oculto para fechar o modal de confirmação de encerramento via ViewChild. */
   @ViewChild('btnFecharModalConfirmacaoCargo')
   private btnFecharConfirmacaoCargo!: ElementRef<HTMLButtonElement>;
+
+  /**
+   * Botão oculto para fechar o modal de empresa via ViewChild.
+   * Usado nos fluxos de sucesso de salvarEmpresa() — evita document.querySelector.
+   */
+  @ViewChild('btnFecharModalEmpresa')
+  private btnFecharEmpresa!: ElementRef<HTMLButtonElement>;
+
+  /**
+   * Referência ao elemento DOM do modal de empresa.
+   * Aberto programaticamente via bootstrap.Modal.getOrCreateInstance(el).show()
+   * porque abrirModalEmpresa() precisa fazer um GET antes de exibir o modal
+   * (determinar modo cadastro vs. edição). Mesmo padrão de modalConfirmarEncerramentoCargo.
+   */
+  @ViewChild('modalEmpresaAssociado')
+  private modalEmpresaRef!: ElementRef<HTMLElement>;
+
+  /**
+   * Referência ao elemento DOM do modal de informações (Bloco 7).
+   * Aberto programaticamente via forkJoin — garante que todos os dados
+   * secundários estejam carregados antes de exibir o modal.
+   */
+  @ViewChild('modalInformacoesAssociado')
+  private modalInfoRef!: ElementRef<HTMLElement>;
+
+  /**
+   * Referência ao elemento DOM do submodal de edição de dados pessoais (Tarefa 7.3).
+   * Empilhado sobre o modal de informações — mesmo padrão do modal de confirmação
+   * de encerramento de cargo sobre o modal de cargos.
+   */
+  @ViewChild('modalEditarDadosPessoais')
+  private modalEditarDadosPessoaisRef!: ElementRef<HTMLElement>;
+
+  /** Botão oculto para fechar o submodal de edição de dados pessoais via ViewChild. */
+  @ViewChild('btnFecharModalEditarDadosPessoais')
+  private btnFecharModalEditarDadosPessoais!: ElementRef<HTMLButtonElement>;
 
   // =========================================================================
   // SIGNALS — LISTAGEM
@@ -184,6 +261,7 @@ export class Associados implements OnInit {
   equipes         = signal<EquipeResponseDto[]>([]);
   totalAssociados = signal(0);
   carregandoLista = signal(false);
+
 
   /**
    * buscaSubject
@@ -256,8 +334,11 @@ export class Associados implements OnInit {
    */
   cargosDoAssociado = signal<AssociadoCargoLiderancaResponseDto[]>([]);
 
-  /** Controla o spinner enquanto o forkJoin inicial carrega os dados do modal. */
-  carregandoCargos = signal(false);
+  /**
+   * Controla o spinner do botão de cargos na tabela enquanto o forkJoin inicial
+   * roda — antes do modal ser aberto. Mesmo padrão de carregandoVerificarEmpresa.
+   */
+  carregandoVerificarCargos = signal(false);
 
   /** Controla o spinner do botão "Atribuir Cargo" durante o POST. */
   carregandoModalCargo = signal(false);
@@ -414,7 +495,12 @@ export class Associados implements OnInit {
   enderecosDoAssociado = signal<EnderecoResidencialResponseDto[]>([]);
 
   /** Spinner que substitui o corpo do modal durante o GET inicial. */
-  carregandoEnderecos = signal(false);
+  /**
+   * Controla o spinner do botão de endereço na tabela enquanto o GET inicial
+   * roda — antes do modal ser aberto. Mesmo padrão de carregandoVerificarCargos
+   * e carregandoVerificarEmpresa.
+   */
+  carregandoVerificarEndereco = signal(false);
 
   /** Spinner do botão "Salvar Endereço" durante POST/PUT. */
   carregandoModalEndereco = signal(false);
@@ -540,6 +626,89 @@ export class Associados implements OnInit {
 
   formRenovar: FormGroup = this.criarFormRenovar();
 
+  // =========================================================================
+  // SIGNALS — MODAL DE EMPRESA (Bloco 6)
+  //
+  // Fluxo em duas fases, espelhando o modal de endereços residenciais:
+  //   Fase 1 (modoFormEmpresa === null)     → lista de empresas do associado
+  //   Fase 2 (modoFormEmpresa === 'novo')   → formulário vazio (POST atômico)
+  //   Fase 2 (modoFormEmpresa === 'editar') → formulário pré-preenchido (dois PUTs)
+  //
+  // Abertura: GET /api/v1/empresas/associado/{id} → carrega lista → abre modal.
+  // O modal NÃO fecha ao salvar — volta para a Fase 1 com a lista atualizada.
+  // =========================================================================
+
+  /**
+   * associadoParaEmpresa
+   * Associado da linha clicada. Fonte de verdade do idAssociado nos requests HTTP.
+   * Null enquanto o modal está fechado.
+   */
+  associadoParaEmpresa = signal<AssociadoResponseDto | null>(null);
+
+  /**
+   * empresasDoAssociado
+   * Lista de empresas carregadas na Fase 1. Atualizada sem reload de página
+   * após cada cadastro ou edição bem-sucedidos.
+   */
+  empresasDoAssociado = signal<EmpresaResponseDto[]>([]);
+
+  /**
+   * modoFormEmpresa
+   * Controla qual fase o modal exibe:
+   *   null     → Fase 1: lista de empresas
+   *   'novo'   → Fase 2: formulário vazio (POST)
+   *   'editar' → Fase 2: formulário pré-preenchido (PUT)
+   */
+  modoFormEmpresa = signal<null | 'novo' | 'editar'>(null);
+
+  /**
+   * idEmpresaAtual
+   * Preenchido ao ativar o modo edição. Usado na URL do PUT /api/v1/empresas/{id}.
+   */
+  idEmpresaAtual = signal<number | null>(null);
+
+  /**
+   * idEnderecoComercialAtual
+   * Preenchido ao ativar o modo edição com o idEnderecoComercial retornado pelo
+   * GET /api/v1/enderecos-comerciais/empresa/{idEmpresa}.
+   * CRÍTICO: sem este ID não é possível editar o endereço.
+   */
+  idEnderecoComercialAtual = signal<number | null>(null);
+
+  /**
+   * carregandoVerificarEmpresa
+   * Spinner no botão "Empresa" da tabela enquanto o GET inicial
+   * (buscarEmpresaPorAssociado) está em andamento. Evita duplo clique.
+   */
+  carregandoVerificarEmpresa = signal(false);
+
+  /**
+   * carregandoEdicaoEmpresa
+   * Spinner que substitui o formulário enquanto o GET de endereço
+   * (buscarEnderecoPorEmpresa) está em andamento ao abrir a edição.
+   */
+  carregandoEdicaoEmpresa = signal(false);
+
+  /**
+   * carregandoModalEmpresa
+   * Spinner do botão "Salvar" durante o POST (novo) ou o forkJoin de PUTs (editar).
+   */
+  carregandoModalEmpresa = signal(false);
+
+  /** Mensagem de erro exibida no rodapé do modal de empresa. */
+  erroModalEmpresa = signal<string | null>(null);
+
+  /** Erros por campo retornados pelo backend (400). Exibidos inline no template. */
+  errosValidacaoEmpresa = signal<Record<string, string>>({});
+
+  /**
+   * formEmpresa
+   * Painel A (empresa): razaoSocial, cnpj, nomeFantasia.
+   * Painel B (endereço comercial): rua, numero, complemento, bairro, cidade, estado, cep.
+   * Compartilhado entre cadastro e edição — resetado ou pré-preenchido via patchValue().
+   */
+  formEmpresa: FormGroup = this.criarFormEmpresa();
+
   /**
    * formatarEndereco
    * Exposição da função pura do helper para o template.
@@ -547,6 +716,45 @@ export class Associados implements OnInit {
    * ser acessível via propriedade ou método do componente.
    */
   readonly formatarEndereco = formatarEnderecoResidencial;
+
+  // =========================================================================
+  // SIGNALS — MODAL DE INFORMAÇÕES (Bloco 7)
+  //
+  // Dados carregados via forkJoin ao abrir o modal (Tarefa 7.2).
+  // Um spinner no botão da tabela cobre o período de carregamento.
+  // O modal só abre após o forkJoin completar com sucesso.
+  // =========================================================================
+
+  /** Spinner no botão da tabela enquanto o forkJoin carrega. */
+  carregandoVerificarInfo = signal(false);
+
+  /** Dados das 9 seções da modal de informações */
+  enderecosInfoAssociado   = signal<EnderecoResidencialResponseDto[]>([]);
+  cargosInfoAssociado      = signal<AssociadoCargoLiderancaResponseDto[]>([]);
+  empresasInfoAssociado    = signal<EmpresaResponseDto[]>([]);
+  grupamentosInfoAssociado = signal<AssociadoGrupamentoResponseDto[]>([]);
+  anuidadesInfoAssociado   = signal<AssociadoAnuidadeResponseDto[]>([]);
+  renovacoesInfoAssociado  = signal<AssociadoRenovacaoResponseDto[]>([]);
+  perfilInfoAssociado      = signal<PerfilAssociadoResponseDto | null>(null);
+
+  /** Visibilidade do associado — necessária para montar o PUT de dados pessoais. */
+  visibilidadeInfoAssociado = signal<AssociadoVisibilidadeResponseDto | null>(null);
+
+  // =========================================================================
+  // SIGNALS — SUBMODAL EDITAR DADOS PESSOAIS (Tarefa 7.3)
+  // =========================================================================
+
+  /** Spinner do botão "Salvar Alterações" no submodal de dados pessoais. */
+  carregandoEditarDados     = signal(false);
+
+  /** Mensagem de erro exibida no rodapé do submodal. */
+  erroModalEditarDados      = signal<string | null>(null);
+
+  /** Erros por campo retornados pelo backend (400). */
+  errosValidacaoEditarDados = signal<Record<string, string>>({});
+
+  /** Formulário reativo do submodal (4 campos editáveis). */
+  formEditarDados: FormGroup = this.criarFormEditarDados();
 
   // =========================================================================
   // SIGNALS — DADOS DE SUPORTE (dropdowns do modal)
@@ -640,6 +848,9 @@ export class Associados implements OnInit {
   totalInativos  = computed(() =>
     this.associados().filter(a => (a.statusAssociado as string).startsWith('INATIVO')).length
   );
+
+  /** Verificação de perfil ADM — usada no template para controle de visibilidade. */
+  readonly isAdm = computed(() => this.authService.temPermissao('ADM_CC'));
 
   // =========================================================================
   // LIFECYCLE
@@ -936,11 +1147,15 @@ export class Associados implements OnInit {
   /**
    * abrirModalCargo(associado)
    *
-   * Chamado pelo (click) do botão de cargo na tabela, antes do Bootstrap
-   * exibir o modal. Registra o associado clicado, reseta o formulário e
-   * carrega em paralelo:
+   * Chamado pelo (click) do botão de cargo na tabela. Carrega em paralelo:
    *   - Cargos do associado (sempre frescos — GET por associado)
    *   - Catálogo de cargos (só se ainda não estiver em memória)
+   *
+   * Por que não usa data-bs-toggle?
+   * Mesmo padrão de abrirModalEmpresa: o modal só é exibido após o forkJoin
+   * concluir, evitando que o usuário veja um modal "fantasma" com header
+   * preenchido e body em spinner caso a rede esteja lenta ou o GET falhe.
+   * O spinner fica no botão da tabela (carregandoVerificarCargos) durante a espera.
    *
    * Por que forkJoin com of(null)?
    * Se o catálogo já foi carregado (ex: modal de cadastro aberto antes),
@@ -948,11 +1163,13 @@ export class Associados implements OnInit {
    * desnecessário. O bloco next verifica catalogo !== null antes de setar.
    */
   abrirModalCargo(associado: AssociadoResponseDto): void {
+    // Limpa estado antes do GET para que o modal abra zerado
     this.associadoParaCargo.set(associado);
+    this.cargosDoAssociado.set([]);
     this.erroModalCargo.set(null);
     this.errosValidacaoCargo.set({});
     this.formCargo.reset({ dataInicio: this.obterDataHoje() });
-    this.carregandoCargos.set(true);
+    this.carregandoVerificarCargos.set(true);
 
     forkJoin({
       cargosAssociado: this.associadoCargoService.listarPorAssociado(associado.idAssociado),
@@ -966,13 +1183,15 @@ export class Associados implements OnInit {
           // Filtra apenas ativos para os selects (mesmo critério do modal de cadastro)
           this.cargos.set(catalogo.items.filter((c: CargoLiderancaResponseDto) => c.ativo));
         }
+        this.carregandoVerificarCargos.set(false);
+        bootstrap.Modal.getOrCreateInstance(this.modalCargosRef.nativeElement).show();
       },
       error: (err: HttpErrorResponse) => {
         console.error('Erro ao carregar dados do modal de cargo:', err);
-        this.erroModalCargo.set('Erro ao carregar dados. Feche e tente novamente.');
-        this.carregandoCargos.set(false);
+        this.carregandoVerificarCargos.set(false);
+        this.toastService.erro('Erro ao carregar cargos. Tente novamente.');
+        // Modal não é aberto — usuário recebe feedback via toast
       },
-      complete: () => this.carregandoCargos.set(false),
     });
   }
 
@@ -1013,13 +1232,14 @@ export class Associados implements OnInit {
         console.error('Erro ao atribuir cargo:', err);
         if (err.status === 400 && err.error?.errors) {
           this.errosValidacaoCargo.set(this.normalizarErros(err.error.errors));
-          this.erroModalCargo.set('Corrija os campos destacados.');
+          this.mostrarErroNaModal(this.erroModalCargo, 'Corrija os campos destacados.');
         } else if (err.status === 409) {
-          this.erroModalCargo.set(
+          this.mostrarErroNaModal(
+            this.erroModalCargo,
             err.error?.message ?? 'Este associado já possui este cargo ativo.'
           );
         } else {
-          this.erroModalCargo.set(this.extrairMensagemErro(err));
+          this.mostrarErroNaModal(this.erroModalCargo, this.extrairMensagemErro(err));
         }
         this.carregandoModalCargo.set(false);
       },
@@ -1066,7 +1286,7 @@ export class Associados implements OnInit {
       c => c.nomeCargo.trim().toLowerCase() === cargo.nomeCargo.trim().toLowerCase()
     );
     if (!cargoNoCatalogo) {
-      this.erroModalCargo.set('Cargo não encontrado no catálogo. Feche e reabra o modal.');
+      this.mostrarErroNaModal(this.erroModalCargo, 'Cargo não encontrado no catálogo. Feche e reabra o modal.');
       return;
     }
 
@@ -1093,7 +1313,7 @@ export class Associados implements OnInit {
         // Fecha o modal de confirmação — o modal de cargos permanece aberto
         this.btnFecharConfirmacaoCargo.nativeElement.click();
         console.error('Erro ao encerrar cargo:', err);
-        this.erroModalCargo.set(this.extrairMensagemErro(err));
+        this.mostrarErroNaModal(this.erroModalCargo, this.extrairMensagemErro(err));
         this.encerrandoCargoId.set(null);
       },
       complete: () => this.encerrandoCargoId.set(null),
@@ -1101,41 +1321,159 @@ export class Associados implements OnInit {
   }
 
   // =========================================================================
-  // MÉTODOS PÚBLICOS — MODAL DE INFORMAÇÕES
+  // MÉTODOS PÚBLICOS — MODAL DE INFORMAÇÕES (Bloco 7)
   // =========================================================================
 
   /**
    * abrirModalInformacoes(associado)
    *
-   * Chamado pelo (click) do botão "Informações" na tabela, antes do Bootstrap
-   * exibir o modal. Dispara um forkJoin com GETs:
-   *
-   *   Garantidos:
-   *     - dadosAtuais     → dados frescos do associado (evita listagem desatualizada)
-   *     - cargosAssociado → para localizar o cargo ativo
-   *     - enderecos       → o ResponseDto não traz endereço embutido
-   * 
-
-   *
-   * Por que buscar dados frescos ao abrir e não usar o objeto da listagem?
-   * A listagem pode estar desatualizada (outra aba editou o mesmo registro).
-   * O GET por ID garante que o formulário parte de dados consistentes.
+   * Dispara um forkJoin com 8 GETs em paralelo (Tarefa 7.2).
+   * O modal só abre após todos os GETs completarem. Se o GET principal
+   * (associado) falhar, exibe toast e não abre o modal.
+   * GETs secundários usam catchError(() => of([])) para que uma falha
+   * isolada não bloqueie as demais seções.
    */
   abrirModalInformacoes(associado: AssociadoResponseDto): void {
-    this.associadoParaEditar.set(null);
-    this.carregandoEdicao.set(true);
-    this.erroModalEdicao.set(null);
+    this.carregandoVerificarInfo.set(true);
+    // Set imediato para o @if do spinner no template funcionar por comparação de ID.
+    this.associadoParaEditar.set(associado);
 
-    this.associadoService.buscarAssociadoPorId(associado.idAssociado).subscribe({
-      next: (dados) => {
-        this.associadoParaEditar.set(dados);
+    forkJoin({
+      dados:        this.associadoService.buscarAssociadoPorId(associado.idAssociado),
+      enderecos:    this.associadoService.listarEnderecosResidenciais(associado.idAssociado)
+                      .pipe(catchError(() => of([]))),
+      cargos:       this.associadoCargoService.listarPorAssociado(associado.idAssociado)
+                      .pipe(catchError(() => of([]))),
+      empresas:     this.empresaService.buscarEmpresaPorAssociado(associado.idAssociado)
+                      .pipe(catchError(() => of({ items: [] as EmpresaResponseDto[] }))),
+      grupamentos:  this.associadoGrupamentoService.listarPorAssociado(associado.idAssociado)
+                      .pipe(catchError(() => of([]))),
+      anuidades:    this.associadoAnuidadeService.listarAnuidades(associado.idAssociado)
+                      .pipe(catchError(() => of([]))),
+      renovacoes:   this.associadoAnuidadeService.listarRenovacoes(associado.idAssociado)
+                      .pipe(catchError(() => of([]))),
+      perfil:       this.perfilAssociadoService.buscarPorAssociado(associado.idAssociado)
+                      .pipe(catchError(() => of(null))),
+      visibilidade: this.associadoService.buscarVisibilidade(associado.idAssociado)
+                      .pipe(catchError(() => of(null))),
+    }).subscribe({
+      next: (r) => {
+        this.associadoParaEditar.set(r.dados);
+        this.enderecosInfoAssociado.set(r.enderecos as EnderecoResidencialResponseDto[]);
+        this.cargosInfoAssociado.set(r.cargos as AssociadoCargoLiderancaResponseDto[]);
+        this.empresasInfoAssociado.set((r.empresas as { items: EmpresaResponseDto[] }).items);
+        this.grupamentosInfoAssociado.set(r.grupamentos as AssociadoGrupamentoResponseDto[]);
+        this.anuidadesInfoAssociado.set(r.anuidades as AssociadoAnuidadeResponseDto[]);
+        this.renovacoesInfoAssociado.set(r.renovacoes as AssociadoRenovacaoResponseDto[]);
+        this.perfilInfoAssociado.set(r.perfil as PerfilAssociadoResponseDto | null);
+        this.visibilidadeInfoAssociado.set(r.visibilidade as AssociadoVisibilidadeResponseDto | null);
+        bootstrap.Modal.getOrCreateInstance(this.modalInfoRef.nativeElement).show();
       },
       error: (err: HttpErrorResponse) => {
         console.error('Erro ao carregar dados do associado:', err);
-        this.erroModalEdicao.set('Erro ao carregar dados. Feche e tente novamente.');
-        this.carregandoEdicao.set(false);
+        this.associadoParaEditar.set(null);
+        this.toastService.erro(this.extrairMensagemErro(err));
+        this.carregandoVerificarInfo.set(false);
       },
-      complete: () => this.carregandoEdicao.set(false),
+      complete: () => this.carregandoVerificarInfo.set(false),
+    });
+  }
+
+  /**
+   * abrirSubmodalEditarDados()
+   *
+   * Abre o submodal de edição de dados pessoais (Tarefa 7.3) empilhado
+   * sobre o modal de informações. Usa bootstrap.Modal.getOrCreateInstance
+   * via ViewChild — mesmo padrão do modal de confirmação de encerramento
+   * de cargo sobre o modal de cargos (evita race condition de backdrop duplo).
+   */
+  abrirSubmodalEditarDados(): void {
+    const assoc = this.associadoParaEditar();
+    if (!assoc) return;
+
+    this.erroModalEditarDados.set(null);
+    this.errosValidacaoEditarDados.set({});
+
+    this.formEditarDados.patchValue({
+      nomeCompleto:    assoc.nomeCompleto,
+      emailPrincipal:  assoc.emailPrincipal,
+      telefonePrincipal: assoc.telefonePrincipal,
+      dataNascimento:  assoc.dataNascimento,
+    });
+
+    bootstrap.Modal.getOrCreateInstance(
+      this.modalEditarDadosPessoaisRef.nativeElement
+    ).show();
+  }
+
+  /**
+   * salvarDadosPessoais()
+   *
+   * Submete o formulário de edição de dados pessoais.
+   * Sucesso: fecha o submodal, atualiza associadoParaEditar() com o retorno
+   * do backend (o modal de informações por baixo reflete os novos dados
+   * imediatamente), exibe toast verde.
+   */
+  salvarDadosPessoais(): void {
+    if (this.formEditarDados.invalid || !this.associadoParaEditar()) return;
+
+    const id    = this.associadoParaEditar()!.idAssociado;
+    const atual = this.associadoParaEditar()!;
+
+    // Localiza o cargo ativo no signal cargosInfoAssociado e resolve o idCargoLideranca
+    // via match de nomeCargo no catálogo. AssociadoCargoLiderancaResponseDto não expõe FK.
+    const cargoAtivo     = this.cargosInfoAssociado().find(c => c.ativo);
+    const cargoCatalogo  = cargoAtivo
+      ? this.cargos().find(c => c.nomeCargo.trim().toLowerCase() === cargoAtivo.nomeCargo.trim().toLowerCase())
+      : null;
+    const primeiroEndereco = this.enderecosInfoAssociado()[0];
+
+    const dto: AssociadoRequestDto = {
+      nomeCompleto:                    this.formEditarDados.get('nomeCompleto')!.value as string,
+      cpf:                             atual.cpf,
+      emailPrincipal:                  this.formEditarDados.get('emailPrincipal')!.value as string,
+      telefonePrincipal:               this.formEditarDados.get('telefonePrincipal')!.value as string,
+      dataNascimento:                  this.formEditarDados.get('dataNascimento')!.value as string,
+      dataIngresso:                    atual.dataIngresso,
+      dataPagamentoPrimeiraAnuidade:   atual.dataPagamentoPrimeiraAnuidade,
+      tipoOrigemEquipe:                atual.tipoOrigemEquipe,
+      statusAssociado:                 atual.statusAssociado,
+      idEquipeAtual:                   atual.idEquipeAtual,
+      idEquipeOrigem:                  atual.idEquipeOrigem,
+      idCluster:                       atual.idCluster,
+      idAtuacaoEspecifica:             atual.idAtuacaoEspecifica,
+      idPadrinho:                      atual.idPadrinho,
+      idCargoLideranca:                cargoCatalogo?.idCargoLideranca ?? 0,
+      dataInicioCargo:                 cargoAtivo?.dataInicio ?? this.obterDataHoje(),
+      exibirAniversario:               this.visibilidadeInfoAssociado()?.exibirAniversario ?? false,
+      rua:                             primeiroEndereco?.rua ?? '',
+      numero:                          primeiroEndereco?.numero ?? '',
+      complemento:                     primeiroEndereco?.complemento ?? null,
+      bairro:                          primeiroEndereco?.bairro ?? '',
+      cidade:                          primeiroEndereco?.cidade ?? '',
+      estado:                          primeiroEndereco?.estado ?? '',
+      cep:                             primeiroEndereco?.cep ?? '',
+    };
+
+    this.carregandoEditarDados.set(true);
+    this.erroModalEditarDados.set(null);
+    this.errosValidacaoEditarDados.set({});
+
+    this.associadoService.editarAssociado(id, dto).subscribe({
+      next: (atualizado) => {
+        this.associadoParaEditar.set(atualizado);
+        this.btnFecharModalEditarDadosPessoais.nativeElement.click();
+        this.toastService.sucesso(`Dados de ${atualizado.nomeCompleto} atualizados com sucesso.`);
+        this.carregarAssociados(this.paginaAtual());
+      },
+      error: (err: HttpErrorResponse) => {
+        if (err.status === 400 && err.error?.errors) {
+          this.errosValidacaoEditarDados.set(this.normalizarErros(err.error.errors));
+        }
+        this.mostrarErroNaModal(this.erroModalEditarDados, this.extrairMensagemErro(err));
+        this.carregandoEditarDados.set(false);
+      },
+      complete: () => this.carregandoEditarDados.set(false),
     });
   }
 
@@ -1143,16 +1481,21 @@ export class Associados implements OnInit {
    * gerarFichaAssociado()
    *
    * Delega ao helper puro a geração e download do PDF da ficha do associado.
-   * Só disponível quando associadoParaEditar() está preenchido (dados carregados).
-   *
-   * Por que helper e não service?
-   * CLAUDE.md §3.1: helpers fazem transformação pura de dados — os dados do
-   * associado são transformados em um PDF sem nenhuma chamada HTTP envolvida.
+   * Recebe todos os dados já carregados pelo forkJoin (Tarefa 7.5).
    */
   gerarFichaAssociado(): void {
     const assoc = this.associadoParaEditar();
     if (!assoc) return;
-    gerarPdfAssociado(assoc);
+    gerarPdfAssociado(
+      assoc,
+      this.cargosInfoAssociado(),
+      this.enderecosInfoAssociado(),
+      this.empresasInfoAssociado(),
+      this.grupamentosInfoAssociado(),
+      this.anuidadesInfoAssociado(),
+      this.renovacoesInfoAssociado(),
+      this.perfilInfoAssociado(),
+    );
   }
 
   // =========================================================================
@@ -1206,7 +1549,7 @@ export class Associados implements OnInit {
       },
       error: (err: HttpErrorResponse) => {
         console.error('Erro ao transferir equipe do associado:', err);
-        this.erroModalEquipe.set(this.extrairMensagemErro(err));
+        this.mostrarErroNaModal(this.erroModalEquipe, this.extrairMensagemErro(err));
         this.carregandoModalEquipe.set(false);
       },
       complete: () => {
@@ -1222,9 +1565,13 @@ export class Associados implements OnInit {
   /**
    * abrirModalEndereco(associado)
    *
-   * Chamado pelo (click) do botão de endereço na tabela, antes do Bootstrap
-   * exibir o modal. Registra o associado clicado, reseta os estados e
-   * carrega a lista de endereços via GET.
+   * Chamado pelo (click) do botão de endereço na tabela.
+   * Carrega a lista de endereços residenciais e abre o modal apenas após o GET
+   * concluir — mesmo padrão de abrirModalCargo e abrirModalEmpresa.
+   *
+   * Por que não usa data-bs-toggle?
+   * Em caso de erro de rede, o modal não abre e o usuário recebe um toast.
+   * Evita que ele veja o modal "fantasma" com header preenchido e body vazio.
    *
    * Não usa forkJoin — apenas uma requisição, sem dados de suporte adicionais.
    */
@@ -1235,18 +1582,20 @@ export class Associados implements OnInit {
     this.modoFormEndereco.set(null);
     this.enderecoParaEditar.set(null);
     this.enderecosDoAssociado.set([]);
-    this.carregandoEnderecos.set(true);
+    this.carregandoVerificarEndereco.set(true);
 
     this.associadoService.listarEnderecosResidenciais(associado.idAssociado).subscribe({
       next: (enderecos) => {
         this.enderecosDoAssociado.set(enderecos);
+        this.carregandoVerificarEndereco.set(false);
+        bootstrap.Modal.getOrCreateInstance(this.modalEnderecoRef.nativeElement).show();
       },
       error: (err: HttpErrorResponse) => {
         console.error('Erro ao carregar endereços residenciais:', err);
-        this.erroModalEndereco.set('Erro ao carregar endereços. Feche o modal e tente novamente.');
-        this.carregandoEnderecos.set(false);
+        this.carregandoVerificarEndereco.set(false);
+        this.toastService.erro('Erro ao carregar endereços. Tente novamente.');
+        // Modal não é aberto — usuário recebe feedback via toast
       },
-      complete: () => this.carregandoEnderecos.set(false),
     });
   }
 
@@ -1371,9 +1720,9 @@ export class Associados implements OnInit {
         console.error('Erro ao salvar endereço residencial:', err);
         if (err.status === 400 && err.error?.errors) {
           this.errosValidacaoEndereco.set(this.normalizarErros(err.error.errors));
-          this.erroModalEndereco.set('Corrija os campos destacados.');
+          this.mostrarErroNaModal(this.erroModalEndereco, 'Corrija os campos destacados.');
         } else {
-          this.erroModalEndereco.set(this.extrairMensagemErro(err));
+          this.mostrarErroNaModal(this.erroModalEndereco, this.extrairMensagemErro(err));
         }
         this.carregandoModalEndereco.set(false);
       },
@@ -1424,7 +1773,7 @@ export class Associados implements OnInit {
       },
       error: (err: HttpErrorResponse) => {
         console.error('Erro ao confirmar cadastro:', err);
-        this.erroConfirmacao.set(this.extrairMensagemErro(err));
+        this.mostrarErroNaModal(this.erroConfirmacao, this.extrairMensagemErro(err));
         this.carregandoConfirmacao.set(false);
       },
       complete: () => {
@@ -1493,9 +1842,9 @@ export class Associados implements OnInit {
         console.error('Erro ao alterar status:', err);
         if (err.status === 400 && err.error?.errors) {
           this.errosValidacaoAlterarStatus.set(this.normalizarErros(err.error.errors));
-          this.erroModalAlterarStatus.set('Corrija os campos destacados.');
+          this.mostrarErroNaModal(this.erroModalAlterarStatus, 'Corrija os campos destacados.');
         } else {
-          this.erroModalAlterarStatus.set(this.extrairMensagemErro(err));
+          this.mostrarErroNaModal(this.erroModalAlterarStatus, this.extrairMensagemErro(err));
         }
         this.carregandoAlterarStatus.set(false);
       },
@@ -1554,14 +1903,218 @@ export class Associados implements OnInit {
       error: (err: HttpErrorResponse) => {
         if (err.status === 400 && err.error?.errors) {
           this.errosValidacaoRenovar.set(this.normalizarErros(err.error.errors));
-          this.erroModalRenovar.set('Corrija os campos destacados.');
+          this.mostrarErroNaModal(this.erroModalRenovar, 'Corrija os campos destacados.');
         } else {
-          this.erroModalRenovar.set(this.extrairMensagemErro(err));
+          this.mostrarErroNaModal(this.erroModalRenovar, this.extrairMensagemErro(err));
         }
         this.carregandoRenovar.set(false);
       },
       complete: () => this.carregandoRenovar.set(false),
     });
+  }
+
+  // =========================================================================
+  // MÉTODOS PÚBLICOS — MODAL DE EMPRESA (Bloco 6)
+  // =========================================================================
+
+  /**
+   * abrirModalEmpresa(associado)
+   *
+   * Chamado pelo (click) do botão "Empresa" na tabela.
+   * Carrega todas as empresas do associado via GET e abre o modal na Fase 1
+   * (lista), independentemente de haver empresas ou não.
+   *
+   * Por que não usa data-bs-toggle?
+   * Precisa fazer o GET antes de abrir para já ter os dados da lista prontos.
+   * O spinner fica no botão da tabela (carregandoVerificarEmpresa) durante a espera.
+   */
+  abrirModalEmpresa(associado: AssociadoResponseDto): void {
+    this.associadoParaEmpresa.set(associado);
+    this.empresasDoAssociado.set([]);
+    this.modoFormEmpresa.set(null);
+    this.erroModalEmpresa.set(null);
+    this.errosValidacaoEmpresa.set({});
+    this.carregandoVerificarEmpresa.set(true);
+
+    this.empresaService.buscarEmpresaPorAssociado(associado.idAssociado).subscribe({
+      next: ({ items }) => {
+        this.empresasDoAssociado.set(items);
+        this.carregandoVerificarEmpresa.set(false);
+        bootstrap.Modal.getOrCreateInstance(this.modalEmpresaRef.nativeElement).show();
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao carregar empresas do associado:', err);
+        this.carregandoVerificarEmpresa.set(false);
+        // Silencioso: o botão volta ao estado normal sem abrir o modal
+      },
+    });
+  }
+
+  /**
+   * ativarFormNovaEmpresa()
+   *
+   * Transição Fase 1 → Fase 2 (novo).
+   * Reseta o formulário e exibe os campos vazios para cadastro.
+   */
+  ativarFormNovaEmpresa(): void {
+    this.idEmpresaAtual.set(null);
+    this.idEnderecoComercialAtual.set(null);
+    this.formEmpresa.reset();
+    this.errosValidacaoEmpresa.set({});
+    this.modoFormEmpresa.set('novo');
+  }
+
+  /**
+   * ativarFormEditarEmpresa(empresa)
+   *
+   * Transição Fase 1 → Fase 2 (editar).
+   * Busca o endereço comercial da empresa (GET), pré-preenche o formulário
+   * via patchValue e exibe o spinner enquanto o dado carrega.
+   *
+   * O patchValue usa emitEvent:false para não marcar o form como dirty —
+   * o botão "Salvar" só habilita quando o usuário modificar algo.
+   */
+  ativarFormEditarEmpresa(empresa: EmpresaResponseDto): void {
+    this.idEmpresaAtual.set(empresa.idEmpresa);
+    this.errosValidacaoEmpresa.set({});
+    this.carregandoEdicaoEmpresa.set(true);
+    this.modoFormEmpresa.set('editar');
+
+    this.empresaService.buscarEnderecoPorEmpresa(empresa.idEmpresa).subscribe({
+      next: (end) => {
+        this.idEnderecoComercialAtual.set(end.idEnderecoComercial);
+        this.formEmpresa.patchValue({
+          razaoSocial:  empresa.razaoSocial,
+          cnpj:         empresa.cnpj,
+          nomeFantasia: empresa.nomeFantasia,
+          rua:          end.rua,
+          numero:       end.numero,
+          complemento:  end.complemento,
+          bairro:       end.bairro,
+          cidade:       end.cidade,
+          estado:       end.estado,
+          cep:          end.cep,
+        }, { emitEvent: false });
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao carregar endereço da empresa:', err);
+        this.mostrarErroNaModal(this.erroModalEmpresa, 'Erro ao carregar dados. Tente novamente.');
+        this.modoFormEmpresa.set(null);
+        this.carregandoEdicaoEmpresa.set(false);
+      },
+      complete: () => this.carregandoEdicaoEmpresa.set(false),
+    });
+  }
+
+  /**
+   * cancelarFormEmpresa()
+   *
+   * Transição Fase 2 → Fase 1 sem salvar.
+   * Reseta o formulário e volta para a lista de empresas.
+   */
+  cancelarFormEmpresa(): void {
+    this.modoFormEmpresa.set(null);
+    this.errosValidacaoEmpresa.set({});
+    this.formEmpresa.reset();
+  }
+
+  /**
+   * salvarEmpresa()
+   *
+   * Chamado pelo (click) do botão "Salvar" no modal de empresa.
+   * Delega para POST (novo) ou dois PUTs paralelos (editar) conforme modoFormEmpresa().
+   *
+   * NOVO    → POST /api/v1/empresas com EmpresaCadastroRequestDto
+   *           (backend persiste empresa + endereço atomicamente)
+   *
+   * EDITAR  → forkJoin:
+   *   PUT /api/v1/empresas/{idEmpresa}               com EmpresaRequestDto
+   *   PUT /api/v1/enderecos-comerciais/{idEndereco}  com EmpresaEnderecoComercialRequestDto
+   *
+   * Pós-sucesso: atualiza a lista local e volta para a Fase 1.
+   * O modal NÃO fecha — o usuário pode cadastrar ou editar várias empresas.
+   */
+  salvarEmpresa(): void {
+    const associado = this.associadoParaEmpresa();
+    if (!associado) return;
+
+    this.carregandoModalEmpresa.set(true);
+    this.erroModalEmpresa.set(null);
+    this.errosValidacaoEmpresa.set({});
+
+    const val = this.formEmpresa.getRawValue();
+
+    if (this.modoFormEmpresa() === 'novo') {
+      // ── NOVO: POST atômico com empresa + endereço ──────────────────────
+      const dto: EmpresaCadastroRequestDto = {
+        idAssociado:  associado.idAssociado,
+        razaoSocial:  val.razaoSocial?.trim(),
+        cnpj:         (val.cnpj as string).replace(/\D/g, ''),
+        nomeFantasia: val.nomeFantasia?.trim() || null,
+        rua:          val.rua?.trim(),
+        numero:       val.numero?.trim(),
+        complemento:  val.complemento?.trim() || null,
+        bairro:       val.bairro?.trim(),
+        cidade:       val.cidade?.trim(),
+        estado:       (val.estado as string).toUpperCase().trim(),
+        cep:          (val.cep as string).replace(/\D/g, ''),
+      };
+
+      this.empresaService.cadastrarEmpresaComEndereco(dto).subscribe({
+        next: (novaEmpresa) => {
+          // Adiciona à lista sem fechar o modal — volta para a Fase 1
+          this.empresasDoAssociado.update(lista => [...lista, novaEmpresa]);
+          this.modoFormEmpresa.set(null);
+          this.toastService.sucesso('Empresa cadastrada com sucesso!');
+        },
+        error: (err: HttpErrorResponse) => this.tratarErroModalEmpresa(err),
+        complete: () => this.carregandoModalEmpresa.set(false),
+      });
+
+    } else {
+      // ── EDITAR: dois PUTs paralelos via forkJoin ───────────────────────
+      const idEmpresa  = this.idEmpresaAtual();
+      const idEndereco = this.idEnderecoComercialAtual();
+      if (!idEmpresa || !idEndereco) {
+        this.mostrarErroNaModal(this.erroModalEmpresa, 'IDs não encontrados. Feche e reabra o modal.');
+        this.carregandoModalEmpresa.set(false);
+        return;
+      }
+
+      const dtoEmpresa: EmpresaRequestDto = {
+        idAssociado:  associado.idAssociado,
+        razaoSocial:  val.razaoSocial?.trim(),
+        cnpj:         (val.cnpj as string).replace(/\D/g, ''),
+        nomeFantasia: val.nomeFantasia?.trim() || null,
+      };
+
+      const dtoEndereco: EmpresaEnderecoComercialRequestDto = {
+        idEmpresa,
+        rua:          val.rua?.trim(),
+        numero:       val.numero?.trim(),
+        complemento:  val.complemento?.trim() || null,
+        bairro:       val.bairro?.trim(),
+        cidade:       val.cidade?.trim(),
+        estado:       (val.estado as string).toUpperCase().trim(),
+        cep:          (val.cep as string).replace(/\D/g, ''),
+      };
+
+      forkJoin({
+        empresa:  this.empresaService.editarEmpresa(idEmpresa, dtoEmpresa),
+        endereco: this.empresaService.editarEndereco(idEndereco, dtoEndereco),
+      }).subscribe({
+        next: ({ empresa: emp }) => {
+          // Atualiza o item na lista sem fechar o modal — volta para a Fase 1
+          this.empresasDoAssociado.update(lista =>
+            lista.map(e => e.idEmpresa === emp.idEmpresa ? emp : e)
+          );
+          this.modoFormEmpresa.set(null);
+          this.toastService.sucesso('Empresa atualizada com sucesso!');
+        },
+        error: (err: HttpErrorResponse) => this.tratarErroModalEmpresa(err),
+        complete: () => this.carregandoModalEmpresa.set(false),
+      });
+    }
   }
 
   // =========================================================================
@@ -1977,6 +2530,63 @@ export class Associados implements OnInit {
   }
 
   /**
+   * criarFormEmpresa()
+   *
+   * Factory do FormGroup do modal de empresa.
+   * Dois painéis lógicos num único FormGroup:
+   *   Painel A — dados da empresa: razaoSocial, cnpj, nomeFantasia
+   *   Painel B — endereço comercial: rua, numero, complemento, bairro, cidade, estado, cep
+   *
+   * Compartilhado entre cadastro (reset) e edição (patchValue com emitEvent:false).
+   * CNPJ: 14 dígitos sem pontuação — máscara removida no submit.
+   * CEP:  8 dígitos sem hífen — mesmo padrão dos outros formulários do projeto.
+   */
+  private criarFormEmpresa(): FormGroup {
+    return this.fb.group({
+      // ── Painel A — Empresa ───────────────────────────────────────────────
+      razaoSocial:  ['', Validators.required],
+      cnpj:         ['', [Validators.required, Validators.pattern(/^\d{14}$/)]],
+      nomeFantasia: [null], // opcional
+      // ── Painel B — Endereço Comercial ────────────────────────────────────
+      rua:          ['', Validators.required],
+      numero:       ['', Validators.required],
+      complemento:  [null], // opcional
+      bairro:       ['', Validators.required],
+      cidade:       ['', Validators.required],
+      estado:       ['', [Validators.required, Validators.maxLength(2)]],
+      cep:          ['', [Validators.required, Validators.pattern(/^\d{8}$/)]],
+    });
+  }
+
+  /**
+   * tratarErroModalEmpresa(err)
+   *
+   * Centraliza o tratamento de erros do modal de empresa.
+   * Cobre os três casos mais frequentes:
+   *   400 com errors → erros inline por campo
+   *   409 (CNPJ duplicado) → mensagem mapeada para o campo cnpj
+   *   outros → mensagem genérica no rodapé do modal
+   */
+  private tratarErroModalEmpresa(err: HttpErrorResponse): void {
+    console.error('Erro ao salvar empresa:', err);
+    if (err.status === 400 && err.error?.errors) {
+      this.errosValidacaoEmpresa.set(this.normalizarErros(err.error.errors));
+      this.mostrarErroNaModal(this.erroModalEmpresa, 'Corrija os campos destacados.');
+    } else if (err.status === 409) {
+      const msg = err.error?.message ?? 'CNPJ já cadastrado no sistema.';
+      if (/cnpj/i.test(msg)) {
+        this.errosValidacaoEmpresa.set({ cnpj: msg });
+        this.mostrarErroNaModal(this.erroModalEmpresa, 'Corrija os campos destacados.');
+      } else {
+        this.mostrarErroNaModal(this.erroModalEmpresa, msg);
+      }
+    } else {
+      this.mostrarErroNaModal(this.erroModalEmpresa, this.extrairMensagemErro(err));
+    }
+    this.carregandoModalEmpresa.set(false);
+  }
+
+  /**
    * criarFormCadastro()
    *
    * Factory do FormGroup do modal de cadastro. Chamado na inicialização
@@ -2026,6 +2636,22 @@ export class Associados implements OnInit {
   }
 
   /**
+   * criarFormEditarDados()
+   *
+   * Factory do FormGroup do submodal de edição de dados pessoais (Tarefa 7.3).
+   * Quatro campos editáveis: nomeCompleto, emailPrincipal, telefonePrincipal,
+   * dataNascimento. CPF não é editável por regra de negócio.
+   */
+  private criarFormEditarDados(): FormGroup {
+    return this.fb.group({
+      nomeCompleto:      ['', [Validators.required, Validators.maxLength(100)]],
+      emailPrincipal:    ['', [Validators.required, Validators.email, Validators.maxLength(100)]],
+      telefonePrincipal: ['', [Validators.required, Validators.pattern(/^\d{10,11}$/)]],
+      dataNascimento:    ['', [Validators.required, validarIdadeMinima16Anos]],
+    });
+  }
+
+  /**
    * normalizarErros(errors)
    *
    * O Spring Boot serializa erros de campos aninhados com o caminho completo:
@@ -2064,14 +2690,21 @@ export class Associados implements OnInit {
   }
 
   /**
-   * mostrarErroModal(mensagem)
+   * mostrarErroNaModal(sinal, mensagem)
    *
-   * Define o sinal erroModal e agenda auto-dismiss após 3 segundos.
-   * Centraliza o comportamento para evitar repetição em cada handler.
+   * Método genérico de erro em modal: define qualquer WritableSignal<string|null>
+   * e agenda auto-dismiss após 3 segundos.
+   * Usar este método em TODOS os modais — nunca chamar signal.set() diretamente
+   * para exibir mensagens de erro (apenas para limpar, i.e. .set(null)).
    */
+  private mostrarErroNaModal(sinal: WritableSignal<string | null>, mensagem: string): void {
+    sinal.set(mensagem);
+    setTimeout(() => sinal.set(null), 3000);
+  }
+
+  /** Atalho para o modal de cadastro (mantém chamadas existentes funcionando). */
   private mostrarErroModal(mensagem: string): void {
-    this.erroModal.set(mensagem);
-    setTimeout(() => this.erroModal.set(null), 3000);
+    this.mostrarErroNaModal(this.erroModal, mensagem);
   }
 
   /**

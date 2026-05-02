@@ -6,13 +6,19 @@
  * - Interfaces puras (sem lógica, sem métodos)
  * - RequestDto ≠ ResponseDto
  *
- * Fluxo:
- *   [1] POST /api/v1/empresas                      → cria empresa → retorna EmpresaResponseDto
- *   [2] POST /api/v1/enderecos-comerciais           → cria endereço usando idEmpresa do passo [1]
+ * Fluxo CADASTRO (modal Bloco 6 — modo cadastro):
+ *   POST /api/v1/empresas  com EmpresaCadastroRequestDto
+ *   └─ Backend persiste Empresa + EmpresaEnderecoComercial de forma atômica.
+ *      Uma única chamada — nenhum POST separado para endereços no cadastro.
+ *
+ * Fluxo EDIÇÃO (modal Bloco 6 — modo edição):
+ *   PUT /api/v1/empresas/{id}               com EmpresaRequestDto
+ *   PUT /api/v1/enderecos-comerciais/{id}   com EmpresaEnderecoComercialRequestDto
+ *   Dois PUTs independentes (paralelo via forkJoin).
  *
  * Endpoints cobertos:
- *   POST  /api/v1/empresas                          → EmpresaRequestDto
- *   PUT   /api/v1/empresas/{id}                     → EmpresaRequestDto
+ *   POST  /api/v1/empresas                          → EmpresaCadastroRequestDto (cadastro atômico)
+ *   PUT   /api/v1/empresas/{id}                     → EmpresaRequestDto         (edição só empresa)
  *   GET   /api/v1/empresas/{id}                     → EmpresaResponseDto
  *   GET   /api/v1/empresas/associado/{id}           → PaginacaoResponseDto<EmpresaResponseDto>
  *   POST  /api/v1/enderecos-comerciais              → EmpresaEnderecoComercialRequestDto
@@ -38,7 +44,7 @@ export interface EmpresaResponseDto {
 
 /**
  * EmpresaRequestDto
- * Payload para POST e PUT de empresa.
+ * Payload para PUT de empresa (edição — sem campos de endereço).
  * CNPJ: enviar apenas os 14 dígitos numéricos, sem pontuação.
  */
 export interface EmpresaRequestDto {
@@ -46,6 +52,28 @@ export interface EmpresaRequestDto {
   razaoSocial: string;
   cnpj: string;           // 14 dígitos, sem pontuação
   nomeFantasia: string | null;
+}
+
+/**
+ * EmpresaCadastroRequestDto
+ * Payload para POST /api/v1/empresas no fluxo de cadastro atômico.
+ * O backend persiste Empresa + EmpresaEnderecoComercial em uma única transação.
+ * Nunca usar no fluxo de edição — para editar, usar PUT separados via
+ * EmpresaRequestDto (empresa) e EmpresaEnderecoComercialRequestDto (endereço).
+ */
+export interface EmpresaCadastroRequestDto {
+  idAssociado: number;
+  razaoSocial: string;
+  cnpj: string;           // 14 dígitos, sem pontuação
+  nomeFantasia: string | null;
+  // Endereço comercial (persistido atomicamente)
+  rua: string;
+  numero: string;
+  complemento: string | null;
+  bairro: string;
+  cidade: string;
+  estado: string;         // 2 caracteres (UF)
+  cep: string;            // 8 dígitos, sem hífen
 }
 
 // ============================================================================

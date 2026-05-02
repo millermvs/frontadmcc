@@ -501,6 +501,18 @@ body {
   border-color: #fcd34d;
 }
 
+/* Laranja queimado — gerenciar empresa (Bloco 6) */
+.btn-empresa {
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+.btn-empresa:hover {
+  background: #ffedd5;
+  border-color: #fdba74;
+}
+
 /* ================================================
    BOTÃO COPIAR ENDEREÇO
    Usado no modal de equipes (local presencial) e

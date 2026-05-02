@@ -437,6 +437,37 @@ A validacao acontece em dois niveis complementares:
 - Ao falhar: exibir mensagem de erro **dentro** do modal (nao fechar).
 - **`patchValue()` nao marca o formulario como dirty — e isso e o comportamento desejado.** Em modais de edicao, NAO chamar `form.markAsDirty()` apos o `patchValue()`. O modal deve abrir com o botao "Salvar Alteracoes" desabilitado; ele so habilita quando o usuario modificar ao menos um campo. O Angular rastreia isso automaticamente via `form.dirty`. O botao segue o padrao: `[disabled]="!form.dirty || form.invalid || carregando()"`. Chamar `markAsDirty()` manualmente derruba essa protecao e deve ser evitado.
 
+**Padrao obrigatorio de erro em modais (HTML + TS):**
+
+Todo modal deve ter um `signal<string | null>` dedicado para erro (ex: `erroModalXxx = signal<string | null>(null)`).
+
+No **template**, o alerta de erro vai **sempre no `modal-footer`**, antes dos botoes, com `flex-fill` para ocupar o espaco disponivel:
+
+```html
+<div class="modal-footer">
+  @if (erroModalXxx()) {
+    <div class="alert alert-danger d-flex align-items-center gap-2 mb-0 flex-fill" role="alert">
+      <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+      <span>{{ erroModalXxx() }}</span>
+    </div>
+  }
+  <!-- botoes aqui -->
+</div>
+```
+
+No **componente**, NUNCA chamar `signal.set('mensagem')` diretamente para exibir erros. Usar sempre o metodo generico `mostrarErroNaModal()`, que define o sinal e agenda auto-dismiss apos 3 segundos:
+
+```typescript
+private mostrarErroNaModal(sinal: WritableSignal<string | null>, mensagem: string): void {
+  sinal.set(mensagem);
+  setTimeout(() => sinal.set(null), 3000);
+}
+```
+
+Uso: `this.mostrarErroNaModal(this.erroModalXxx, 'mensagem')`.
+
+**Excecao — erros de carregamento inicial:** quando o modal falha ao carregar seus dados (antes do formulario aparecer), o erro substitui o spinner no body do modal e **nao** usa auto-dismiss nem vai para o footer — o usuario precisa ver a mensagem ate fechar o modal manualmente.
+
 ### 8.4 Feedback ao Usuario
 
 | Acao | Feedback |

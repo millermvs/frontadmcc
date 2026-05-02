@@ -1,5 +1,10 @@
 import jsPDF from 'jspdf';
-import { AssociadoResponseDto, LABELS_STATUS_ASSOCIADO } from '../models/associado.model';
+import { AssociadoResponseDto, EnderecoResidencialResponseDto, LABELS_STATUS_ASSOCIADO } from '../models/associado.model';
+import { AssociadoCargoLiderancaResponseDto } from '../models/associado-cargo.model';
+import { EmpresaResponseDto } from '../models/empresa.model';
+import { AssociadoGrupamentoResponseDto } from '../models/associado-grupamento.model';
+import { AssociadoAnuidadeResponseDto, AssociadoRenovacaoResponseDto } from '../models/associado-anuidade.model';
+import { PerfilAssociadoResponseDto } from '../models/perfil-associado.model';
 
 // ============================================================================
 // CORES — espelham os tokens do styles.css
@@ -49,7 +54,16 @@ function iniciais(nome: string): string {
 //   Seções: cabeçalho colorido → nome/status → dados pessoais →
 //           dados administrativos → vínculos → rodapé
 // ============================================================================
-export function gerarPdfAssociado(assoc: AssociadoResponseDto): void {
+export function gerarPdfAssociado(
+  assoc: AssociadoResponseDto,
+  cargos: AssociadoCargoLiderancaResponseDto[] = [],
+  enderecos: EnderecoResidencialResponseDto[] = [],
+  empresas: EmpresaResponseDto[] = [],
+  grupamentos: AssociadoGrupamentoResponseDto[] = [],
+  anuidades: AssociadoAnuidadeResponseDto[] = [],
+  renovacoes: AssociadoRenovacaoResponseDto[] = [],
+  perfil: PerfilAssociadoResponseDto | null = null,
+): void {
   const doc  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const M    = 20;   // margem lateral
   const W    = 170;  // largura do conteúdo (210 - 2*20)
@@ -232,6 +246,106 @@ export function gerarPdfAssociado(assoc: AssociadoResponseDto): void {
   row2('Cluster',          assoc.nomeCluster,    'Atuação Específica', assoc.nomeAtuacaoEspecifica);
   row2('Padrinho',         assoc.nomePadrinho ?? 'Sem padrinho',
        'Tipo de Origem',   assoc.tipoOrigemEquipe === 'ORIGINAL' ? 'Original' : 'Colaborativa');
+
+  y += 3;
+
+  // ==========================================================================
+  // SEÇÃO 4 — ENDEREÇO RESIDENCIAL
+  // ==========================================================================
+  if (enderecos.length > 0) {
+    sectionHeader('Endereço Residencial');
+    for (const e of enderecos) {
+      const complemento = e.complemento ? ` — ${e.complemento}` : '';
+      row2('Logradouro', `${e.rua}, ${e.numero}${complemento}`, 'CEP', e.cep);
+      row2('Bairro', e.bairro, 'Cidade / Estado', `${e.cidade} / ${e.estado}`);
+    }
+    y += 3;
+  }
+
+  // ==========================================================================
+  // SEÇÃO 5 — CARGOS DE LIDERANÇA
+  // ==========================================================================
+  if (cargos.length > 0) {
+    sectionHeader('Cargos de Liderança');
+    for (const c of cargos) {
+      const situacao = c.ativo ? 'Ativo' : 'Encerrado';
+      const fim = c.dataFim ? formatarData(c.dataFim) : 'Em vigor';
+      row2(c.nomeCargo, `${formatarData(c.dataInicio)} → ${fim}`, 'Situação', situacao);
+    }
+    y += 3;
+  }
+
+  // ==========================================================================
+  // SEÇÃO 6 — EMPRESA(S)
+  // ==========================================================================
+  if (empresas.length > 0) {
+    sectionHeader('Empresa(s)');
+    for (const e of empresas) {
+      row2('Razão Social', e.razaoSocial, 'CNPJ', e.cnpj);
+      if (e.nomeFantasia) row2('Nome Fantasia', e.nomeFantasia);
+    }
+    y += 3;
+  }
+
+  // ==========================================================================
+  // SEÇÃO 7 — GRUPAMENTOS ESTRATÉGICOS
+  // ==========================================================================
+  if (grupamentos.length > 0) {
+    sectionHeader('Grupamentos Estratégicos');
+    const ativos   = grupamentos.filter(g => g.ativo).map(g => `${g.sigla} — ${g.nomeGrupamento}`);
+    const inativos = grupamentos.filter(g => !g.ativo).map(g => `${g.sigla} — ${g.nomeGrupamento} (encerrado)`);
+    const todos = [...ativos, ...inativos];
+    const linhas = doc.splitTextToSize(todos.join('  •  '), W);
+    doc.setTextColor(...TEXTO);
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'normal');
+    if (y + linhas.length * 6 > 277) { doc.addPage(); y = M; }
+    doc.text(linhas, M, y);
+    y += linhas.length * 6 + 6;
+  }
+
+  // ==========================================================================
+  // SEÇÃO 8 — ANUIDADES
+  // ==========================================================================
+  if (anuidades.length > 0) {
+    sectionHeader('Anuidades');
+    for (const a of anuidades) {
+      const pagamento = a.dataPagamento ? formatarData(a.dataPagamento) : '—';
+      const valor = a.valorPago != null ? `R$ ${a.valorPago.toFixed(2)}` : '—';
+      row2(`Ano ${a.anoReferencia}`, `${a.statusAnuidade} · Pgto: ${pagamento} · Valor: ${valor}`);
+    }
+    y += 3;
+  }
+
+  // ==========================================================================
+  // SEÇÃO 9 — RENOVAÇÕES DE ANUIDADE
+  // ==========================================================================
+  if (renovacoes.length > 0) {
+    sectionHeader('Renovações de Anuidade');
+    for (const r of renovacoes) {
+      row2(
+        `${formatarData(r.dataVencimentoAnterior)} → ${formatarData(r.dataVencimentoNova)}`,
+        `Pgto: ${formatarData(r.dataPagamento)} · Por: ${r.nomeRegistradoPor}`,
+      );
+    }
+    y += 3;
+  }
+
+  // ==========================================================================
+  // SEÇÃO 10 — PERFIL C+C
+  // ==========================================================================
+  if (perfil) {
+    sectionHeader('Perfil C+C');
+    row2('Nome Profissional', perfil.nomeProfissional, 'Empresa', perfil.nomeEmpresa);
+    row2('E-mail',            perfil.email,            'Telefone', perfil.telefonePrincipal);
+    if (perfil.site)     row2('Site',     perfil.site);
+    if (perfil.linkedIn) row2('LinkedIn', perfil.linkedIn);
+    row2('O que faço', perfil.oQueFaco);
+    row2('Público Ideal', perfil.publicoIdeal);
+    row2('Principal Problema que Resolvo', perfil.principalProblemaResolvo);
+    row2('Conexões Estratégicas', perfil.conexoesEstrategicas);
+    row2('Interesses Pessoais', perfil.interessesPessoais);
+  }
 
   // ==========================================================================
   // RODAPÉ — em todas as páginas

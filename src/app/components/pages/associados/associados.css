@@ -328,6 +328,21 @@
 }
 
 /* ================================================
+   MODAL — LABEL DE PAINEL INTERNO
+   Sub-label discreto dentro de um painel da modal
+   (ex: "Dados da Empresa", "Endereço Comercial"
+   dentro do modal de empresa). Mais sutil que
+   .section-titulo — usa cor secundária e não tem
+   linha decorativa.
+   ================================================ */
+.painel-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--cor-texto-secundario);
+}
+
+/* ================================================
    AUTOCOMPLETE DE PADRINHO
    Campo de texto + dropdown flutuante + avatar.
    O wrapper precisa ser position: relative para o
@@ -516,7 +531,279 @@
   white-space: nowrap;
 }
 
+/* Cabeçalho de seção com título à esquerda e botão Editar à direita */
+.info-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+/* Botão "Editar" pequeno, alinhado ao cabeçalho da seção */
+.btn-info-editar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  background: transparent;
+  border: 1px solid var(--cor-primaria);
+  color: var(--cor-primaria);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-info-editar:hover {
+  background: var(--cor-primaria);
+  color: #fff;
+}
+
+/* Texto em fonte monospace (CPF, CNPJ, IDs) */
+.info-mono {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* Card leve para itens em loop (endereços, empresas) */
+.info-endereco-card {
+  background: var(--cor-surface-alt);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+/* Wrapper para tabelas dentro do modal de informações */
+.info-table-wrap {
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+}
+
+/* Tabela compacta sem margens extras */
+.info-table {
+  margin-bottom: 0;
+  font-size: 13px;
+}
+
+.info-table th {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--cor-texto-secundario);
+  background: var(--cor-surface-alt);
+  white-space: nowrap;
+}
+
+.info-table td {
+  vertical-align: middle;
+  color: var(--cor-texto);
+}
+
+/* Chips de status inline nas tabelas do modal */
+.info-chip-ativo,
+.info-chip-encerrado,
+.info-chip-isento,
+.info-chip-normal,
+.info-chip-pendente {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.info-chip-ativo     { background: var(--cor-sucesso-bg); color: var(--cor-sucesso); }
+.info-chip-encerrado { background: #f1f5f9; color: #64748b; }
+.info-chip-isento    { background: var(--cor-info-bg); color: var(--cor-info); }
+.info-chip-normal    { background: var(--cor-surface-alt); color: var(--cor-texto-secundario); }
+.info-chip-pendente  { background: var(--cor-alerta-bg); color: var(--cor-alerta); }
+
+/* Container de pills de grupamentos */
+.info-grupamentos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.info-grupamento-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.info-grupamento-pill.ativo {
+  background: var(--cor-primaria);
+  color: #fff;
+}
+
+.info-grupamento-pill.inativo {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid var(--cor-borda);
+}
+
 /* .aviso-registro-db → movido para styles.css (global) pois é reutilizado em múltiplos componentes. */
+
+/* ================================================
+   UTILITÁRIOS — Substituem estilos inline repetidos
+   pelos modais de Alterar Status, Renovar, Confirmar.
+   ================================================ */
+
+/* Caixa de contexto do associado (modais Alterar Status, Renovar). */
+.contexto-card {
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: var(--cor-surface-alt);
+  border: 1px solid var(--cor-borda);
+}
+
+/* Avatar circular grande dentro do .contexto-card. */
+.contexto-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--cor-primaria);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Nome do associado dentro do .contexto-card. */
+.contexto-nome {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+
+/* Label pequeno uppercase dentro do .contexto-card (ex: "VENCIMENTO ATUAL"). */
+.contexto-meta-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--cor-texto-secundario);
+}
+
+/* Valor logo abaixo de .contexto-meta-label. */
+.contexto-meta-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+
+/* Texto auxiliar nas modais de confirmação ("→ será alterado para", etc.). */
+.contexto-hint {
+  font-size: 12px;
+  color: var(--cor-texto-secundario);
+}
+
+/* Texto principal em modais de confirmação (parágrafos descritivos). */
+.confirm-text-primary {
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.confirm-text-secondary {
+  font-size: 14px;
+  color: var(--cor-texto-secundario);
+  margin-bottom: 12px;
+}
+
+/* Card de item em listagens internas de modal (endereço, empresa). */
+.modal-item-card {
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: var(--cor-surface-alt);
+  border: 1px solid var(--cor-borda);
+}
+
+.modal-item-card-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--cor-texto);
+  line-height: 1.5;
+}
+
+/* Card de empresa — variação com título + subtítulo + identificador. */
+.modal-item-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-item-card-titulo {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+
+.modal-item-card-subtitulo {
+  margin: 0;
+  font-size: 13px;
+  color: var(--cor-texto-secundario);
+}
+
+.modal-item-card-identificador {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: var(--cor-texto-placeholder);
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* Label de seção interna do modal — pequeno, uppercase, com letter-spacing. */
+.modal-section-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--cor-texto-secundario);
+  margin-bottom: 12px;
+}
+
+/* Título centralizado da Fase 2 dos modais de duas fases (endereço, empresa). */
+.fase-form-titulo {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+
+/* Tipografia monospace para CPF / CNPJ / IDs. */
+.mono {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.mono-sm {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+}
+
+/* Inputs de UF — exibe sempre em maiúsculo (não altera o valor digitado). */
+.text-input-uppercase {
+  text-transform: uppercase;
+}
+
+/* Linha do skeleton da tabela. */
+.placeholder-row {
+  height: 18px;
+  border-radius: 4px;
+}
+
+/* Cor temática local (ícones de modais com identidade própria). */
+.icon-tema-endereco { color: #0f766e; }
+.icon-tema-renovar  { color: #a16207; }
+.icon-tema-empresa  { color: var(--cor-primaria); }
 
 /* ================================================
    RESPONSIVO — TABLET (768px)

@@ -8,26 +8,31 @@
  * - URLs centralizadas no environment (nunca hardcoded)
  * - Nenhuma lógica de UI: sem DOM, sem toast, sem navegação
  *
- * Fluxo de uso (modal de empresa na listagem de associados):
- *   [1] cadastrarEmpresa()      → retorna EmpresaResponseDto com idEmpresa
- *   [2] cadastrarEndereco()     → usa o idEmpresa do passo [1]
+ * Fluxo CADASTRO (modal Bloco 6 — modo cadastro):
+ *   cadastrarEmpresaComEndereco() → POST único com empresa + endereço juntos.
+ *   O backend persiste ambos atomicamente. Não há segunda chamada.
+ *
+ * Fluxo EDIÇÃO (modal Bloco 6 — modo edição):
+ *   editarEmpresa()   → PUT /api/v1/empresas/{id}
+ *   editarEndereco()  → PUT /api/v1/enderecos-comerciais/{id}
+ *   Os dois PUTs são disparados em paralelo via forkJoin no componente.
  *
  * Endpoints consumidos:
- *   POST /api/v1/empresas                          → cadastrarEmpresa()
+ *   POST /api/v1/empresas                          → cadastrarEmpresaComEndereco()
  *   PUT  /api/v1/empresas/{id}                     → editarEmpresa()
  *   GET  /api/v1/empresas/{id}                     → buscarEmpresaPorId()
  *   GET  /api/v1/empresas/associado/{id}           → buscarEmpresaPorAssociado()
- *   POST /api/v1/enderecos-comerciais              → cadastrarEndereco()
  *   PUT  /api/v1/enderecos-comerciais/{id}         → editarEndereco()
  *   GET  /api/v1/enderecos-comerciais/empresa/{id} → buscarEnderecoPorEmpresa()
  */
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   EmpresaResponseDto,
   EmpresaRequestDto,
+  EmpresaCadastroRequestDto,
   EmpresaEnderecoComercialResponseDto,
   EmpresaEnderecoComercialRequestDto,
 } from '../models/empresa.model';
@@ -64,22 +69,29 @@ export class EmpresaService {
 
   /**
    * buscarEmpresaPorAssociado(idAssociado)
-   * HTTP: GET /api/v1/empresas/associado/{id}
-   * Retorna lista paginada, mas como um associado tem apenas 1 empresa,
-   * o componente deve usar o primeiro item de items[].
+   * HTTP: GET /api/v1/empresas/associado/{id}?number=0&size=50
+   *
+   * Retorna lista paginada com todas as empresas do associado.
+   * Um associado pode ter múltiplas empresas — size=50 cobre casos reais
+   * sem paginação adicional na UI do modal.
    */
   buscarEmpresaPorAssociado(idAssociado: number): Observable<{ items: EmpresaResponseDto[] }> {
+    const params = new HttpParams().set('number', '0').set('size', '50');
     return this.http.get<{ items: EmpresaResponseDto[] }>(
-      this.apiEmpresas.porAssociado(idAssociado)
+      this.apiEmpresas.porAssociado(idAssociado),
+      { params }
     );
   }
 
   /**
-   * cadastrarEmpresa(dto)
+   * cadastrarEmpresaComEndereco(dto)
    * HTTP: POST /api/v1/empresas
-   * Retorna EmpresaResponseDto com idEmpresa — usar para o passo seguinte (endereço).
+   *
+   * Fluxo CADASTRO do modal Bloco 6: persiste Empresa e EmpresaEnderecoComercial
+   * em uma única transação no backend. O dto contém todos os campos — empresa
+   * e endereço juntos. Nunca chamar no fluxo de edição.
    */
-  cadastrarEmpresa(dto: EmpresaRequestDto): Observable<EmpresaResponseDto> {
+  cadastrarEmpresaComEndereco(dto: EmpresaCadastroRequestDto): Observable<EmpresaResponseDto> {
     return this.http.post<EmpresaResponseDto>(
       this.apiEmpresas.cadastrar,
       dto
@@ -89,6 +101,7 @@ export class EmpresaService {
   /**
    * editarEmpresa(id, dto)
    * HTTP: PUT /api/v1/empresas/{id}
+   * Fluxo EDIÇÃO: apenas os campos da empresa, sem endereço.
    */
   editarEmpresa(id: number, dto: EmpresaRequestDto): Observable<EmpresaResponseDto> {
     return this.http.put<EmpresaResponseDto>(
@@ -104,6 +117,8 @@ export class EmpresaService {
   /**
    * buscarEnderecoPorEmpresa(idEmpresa)
    * HTTP: GET /api/v1/enderecos-comerciais/empresa/{id}
+   * Retorna o endereço comercial único vinculado à empresa.
+   * O idEnderecoComercial do response é necessário para o PUT de edição.
    */
   buscarEnderecoPorEmpresa(idEmpresa: number): Observable<EmpresaEnderecoComercialResponseDto> {
     return this.http.get<EmpresaEnderecoComercialResponseDto>(
@@ -112,22 +127,10 @@ export class EmpresaService {
   }
 
   /**
-   * cadastrarEndereco(dto)
-   * HTTP: POST /api/v1/enderecos-comerciais
-   * Chamar após cadastrarEmpresa() — o idEmpresa vem no retorno daquele método.
-   */
-  cadastrarEndereco(
-    dto: EmpresaEnderecoComercialRequestDto
-  ): Observable<EmpresaEnderecoComercialResponseDto> {
-    return this.http.post<EmpresaEnderecoComercialResponseDto>(
-      this.apiEnderecos.cadastrar,
-      dto
-    );
-  }
-
-  /**
    * editarEndereco(id, dto)
    * HTTP: PUT /api/v1/enderecos-comerciais/{id}
+   * Fluxo EDIÇÃO: nunca usar POST aqui — criaria um segundo endereço e
+   * corromperia a unicidade do endereço comercial da empresa.
    */
   editarEndereco(
     id: number,
