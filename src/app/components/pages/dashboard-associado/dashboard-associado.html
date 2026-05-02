@@ -1,0 +1,308 @@
+<div class="da-page container-fluid">
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- HERO                                                    -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="da-hero">
+    <div class="da-hero-left">
+      <span class="da-hero-badge">
+        <i class="bi bi-person-badge-fill" aria-hidden="true"></i>
+        Meu Painel
+      </span>
+
+      @if (carregando()) {
+        <h2 class="da-hero-title">Carregando...</h2>
+        <p class="da-hero-subtitle">Buscando seus dados na rede C+C.</p>
+      } @else {
+        <h2 class="da-hero-title">Olá, {{ primeiroNome() }}!</h2>
+
+        @if (associado()) {
+          <p class="da-hero-subtitle">
+            {{ associado()!.nomeEquipe }}&ensp;&bull;&ensp;{{ associado()!.nomeCluster }}
+            &rsaquo; {{ associado()!.nomeAtuacaoEspecifica }}
+          </p>
+
+          <div class="da-hero-tags">
+            <span [class]="classeStatus()">{{ labelStatus() }}</span>
+
+            @if (nomeCargoAtual()) {
+              <span class="da-tag da-tag-cargo">
+                <i class="bi bi-briefcase-fill" aria-hidden="true"></i>
+                {{ nomeCargoAtual() }}
+              </span>
+            }
+
+            @if (nomeEmpresa() !== '—') {
+              <span class="da-tag da-tag-empresa">
+                <i class="bi bi-building" aria-hidden="true"></i>
+                {{ nomeEmpresa() }}
+              </span>
+            }
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Mini cards do herói -->
+    <div class="da-hero-right">
+      <div class="da-mini-card">
+        <small>Negócios Gerados</small>
+        <strong>{{ textoMoeda(nrGerado()) }}</strong>
+        <span class="da-mini-sub">Esta semana (mock)</span>
+      </div>
+
+      <div class="da-mini-card">
+        <small>Negócios Recebidos</small>
+        <strong>{{ textoMoeda(nrRecebido()) }}</strong>
+        <span class="da-mini-sub">Esta semana (mock)</span>
+      </div>
+
+      <div class="da-mini-card da-mini-pontos">
+        <small>Pontos da Semana</small>
+        <strong>{{ totalPontosSemana() }}</strong>
+        <span class="da-mini-sub">pts acumulados</span>
+      </div>
+    </div>
+  </div>
+
+  @if (!carregando()) {
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- KPI — INDICADORES DA SEMANA (4 cards)                 -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="row g-3 mt-3">
+      @for (ind of indicadoresSemana(); track ind.nome) {
+        <div class="col-6 col-md-3">
+          <a class="kpi-card da-kpi-link text-decoration-none" [routerLink]="ind.rota">
+            <div class="kpi-icon" [ngClass]="ind.classeIcone">
+              <i class="bi" [ngClass]="ind.icone" aria-hidden="true"></i>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-label">{{ ind.nome }}</span>
+              <strong class="kpi-value">{{ ind.valor }}</strong>
+              @if (ind.pontos > 0) {
+                <span class="kpi-sublabel">+{{ ind.pontos }} pts</span>
+              } @else {
+                <span class="kpi-sublabel kpi-sublabel-vazio">—</span>
+              }
+            </div>
+          </a>
+        </div>
+      }
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- GRID: Dados do Membro + Indicadores detalhados        -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="row g-3 mt-2">
+
+      <!-- DADOS DO MEMBRO -->
+      <div class="col-12 col-xl-4">
+        <div class="da-panel h-100">
+          <div class="da-panel-header">
+            <div>
+              <h5 class="da-panel-title">Meu cadastro</h5>
+              <small class="da-panel-subtitle">Dados do seu perfil na rede</small>
+            </div>
+            <a class="da-panel-link" routerLink="/pages/perfil-cc">Editar perfil</a>
+          </div>
+
+          <div class="da-panel-body">
+            @if (associado()) {
+              <div class="da-dado-item">
+                <div class="da-dado-icone soft-success">
+                  <i class="bi bi-people-fill" aria-hidden="true"></i>
+                </div>
+                <div>
+                  <small class="da-dado-label">Equipe</small>
+                  <strong class="da-dado-valor">{{ associado()!.nomeEquipe }}</strong>
+                </div>
+              </div>
+
+              <div class="da-dado-item">
+                <div class="da-dado-icone soft-primary">
+                  <i class="bi bi-diagram-3-fill" aria-hidden="true"></i>
+                </div>
+                <div>
+                  <small class="da-dado-label">Cluster</small>
+                  <strong class="da-dado-valor">{{ associado()!.nomeCluster }}</strong>
+                </div>
+              </div>
+
+              <div class="da-dado-item">
+                <div class="da-dado-icone soft-primary">
+                  <i class="bi bi-briefcase-fill" aria-hidden="true"></i>
+                </div>
+                <div>
+                  <small class="da-dado-label">Atuação</small>
+                  <strong class="da-dado-valor">{{ associado()!.nomeAtuacaoEspecifica }}</strong>
+                </div>
+              </div>
+
+              <div class="da-dado-item">
+                <div class="da-dado-icone soft-info">
+                  <i class="bi bi-calendar-fill" aria-hidden="true"></i>
+                </div>
+                <div>
+                  <small class="da-dado-label">Data de Ingresso</small>
+                  <strong class="da-dado-valor">{{ formatarData(associado()!.dataIngresso) }}</strong>
+                </div>
+              </div>
+
+              <div class="da-dado-item">
+                <div class="da-dado-icone soft-warning">
+                  <i class="bi bi-calendar-check-fill" aria-hidden="true"></i>
+                </div>
+                <div>
+                  <small class="da-dado-label">Vencimento</small>
+                  <strong class="da-dado-valor">
+                    {{ associado()!.dataVencimento ? formatarData(associado()!.dataVencimento) : 'Isento' }}
+                  </strong>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- INDICADORES DETALHADOS -->
+      <div class="col-12 col-xl-8">
+        <div class="da-panel h-100">
+          <div class="da-panel-header">
+            <div>
+              <h5 class="da-panel-title">Indicadores da semana</h5>
+              <small class="da-panel-subtitle">Sua performance no ciclo atual (mock)</small>
+            </div>
+            <a class="da-panel-link" routerLink="/pages/relatorios">Ver histórico</a>
+          </div>
+
+          <div class="da-panel-body">
+            <table class="da-tabela w-100">
+              <thead>
+                <tr>
+                  <th>Módulo</th>
+                  <th class="text-center">Qtd.</th>
+                  <th class="text-center">Pontos</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (ind of indicadoresSemana(); track ind.nome) {
+                  <tr>
+                    <td>
+                      <div class="da-ind-cell">
+                        <div class="da-ind-icone kpi-icon" [ngClass]="ind.classeIcone">
+                          <i class="bi" [ngClass]="ind.icone" aria-hidden="true"></i>
+                        </div>
+                        <span>{{ ind.nome }}</span>
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      <strong>{{ ind.valor }}</strong>
+                      <small class="text-muted-sm"> {{ ind.labelValor }}</small>
+                    </td>
+                    <td class="text-center">
+                      @if (ind.pontos > 0) {
+                        <span class="da-pts-badge">+{{ ind.pontos }} pts</span>
+                      } @else {
+                        <span class="text-muted-sm">—</span>
+                      }
+                    </td>
+                    <td>
+                      <a
+                        class="btn-acao btn-editar"
+                        [routerLink]="ind.rota"
+                        [attr.title]="'Ir para ' + ind.nome"
+                      >
+                        <i class="bi bi-arrow-right-short" aria-hidden="true"></i>
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr class="da-tabela-total">
+                  <td colspan="2"><strong>Total da semana</strong></td>
+                  <td class="text-center">
+                    <span class="da-pts-total">{{ totalPontosSemana() }} pts</span>
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- GRID: Conexões recebidas + Acesso rápido              -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="row g-3 mt-2 mb-2">
+
+      <!-- CONEXÕES RECEBIDAS -->
+      <div class="col-12 col-xl-7">
+        <div class="da-panel">
+          <div class="da-panel-header">
+            <div>
+              <h5 class="da-panel-title">Conexões recebidas</h5>
+              <small class="da-panel-subtitle">Indicações que chegaram para você (mock)</small>
+            </div>
+            <a class="da-panel-link" routerLink="/pages/conexoes">Ver todas</a>
+          </div>
+
+          <div class="da-panel-body">
+            @for (c of conexoesRecebidas(); track c.contato) {
+              <div class="da-conexao-row">
+                <div class="da-conexao-main">
+                  <div class="da-conexao-origem">
+                    <i class="bi bi-person-fill" aria-hidden="true"></i>
+                    <strong>{{ c.quemEnviou }}</strong>
+                    <span class="da-conexao-sep">indicou</span>
+                  </div>
+                  <div class="da-conexao-contato">
+                    {{ c.contato }}&ensp;&bull;&ensp;{{ c.empresa }}
+                  </div>
+                </div>
+
+                <div class="da-conexao-side">
+                  <span [class]="classeTipoConexao(c.tipo)">{{ c.tipo }}</span>
+                  <span [class]="classeStatusConexao(c.status)">{{ c.status }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- ACESSO RÁPIDO -->
+      <div class="col-12 col-xl-5">
+        <div class="da-panel">
+          <div class="da-panel-header">
+            <div>
+              <h5 class="da-panel-title">Acesso rápido</h5>
+              <small class="da-panel-subtitle">Módulos operacionais da semana</small>
+            </div>
+          </div>
+
+          <div class="da-panel-body da-panel-atalhos">
+            @for (a of atalhos; track a.rota) {
+              <a class="da-atalho" [routerLink]="a.rota">
+                <div class="da-atalho-icone" [ngClass]="a.classeIcone">
+                  <i class="bi" [ngClass]="a.icone" aria-hidden="true"></i>
+                </div>
+                <div class="da-atalho-info">
+                  <strong>{{ a.nome }}</strong>
+                  <small>{{ a.descricao }}</small>
+                </div>
+                <i class="bi bi-chevron-right da-atalho-seta" aria-hidden="true"></i>
+              </a>
+            }
+          </div>
+        </div>
+      </div>
+
+    </div>
+  }
+
+</div>

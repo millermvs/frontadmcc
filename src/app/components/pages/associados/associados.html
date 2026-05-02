@@ -329,14 +329,17 @@
                     }
 
                     <!-- Confirmar cadastro — aparece só para PREATIVO -->
+                    <!-- Abre o #modalRegistrarLogin (etapa 1: criar credenciais).
+                         Após o POST bem-sucedido o componente encadeia o
+                         #modalConfirmarAtivacao (etapa 2: ativar o associado). -->
                     @if (associado.statusAssociado === 'PREATIVO') {
                       <button
                         class="btn-acao btn-reativar"
                         title="Confirmar cadastro e ativar associado"
                         type="button"
                         data-bs-toggle="modal"
-                        data-bs-target="#modalConfirmarAtivacao"
-                        (click)="abrirConfirmacaoAtivacao(associado)"
+                        data-bs-target="#modalRegistrarLogin"
+                        (click)="abrirModalRegistrarLogin(associado)"
                         aria-label="Confirmar cadastro de {{ associado.nomeCompleto }}"
                       >
                         <i class="bi bi-person-check-fill" aria-hidden="true"></i>
@@ -475,7 +478,7 @@
                 title="Editar dados pessoais"
               >
                 <i class="bi bi-pencil-fill me-1" aria-hidden="true"></i>
-                Editar
+                Editar dados pessoais
               </button>
             }
           </div>
@@ -2328,7 +2331,226 @@
 </div>
 
 <!-- ============================================================================
-     MODAL — CONFIRMAR ATIVAÇÃO DE ASSOCIADO
+     MODAL — REGISTRAR LOGIN DO ASSOCIADO (etapa 1 do fluxo PREATIVO → ATIVO)
+     Aberto pelo botão "Confirmar cadastro" na tabela.
+     Campos nome, e-mail e CPF são readonly (pré-preenchidos pelo componente).
+     O ADM informa apenas a senha inicial do associado.
+     Após POST /auth/register com sucesso:
+       1. Este modal é fechado via #btnFecharModalRegistrarLogin (ViewChild)
+       2. O botão oculto #btnAbrirModalConfirmacao é clicado para abrir a etapa 2
+     ============================================================================ -->
+<div
+  class="modal fade"
+  id="modalRegistrarLogin"
+  tabindex="-1"
+  aria-labelledby="modalRegistrarLoginLabel"
+  aria-modal="true"
+  role="dialog"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalRegistrarLoginLabel">
+          <i class="bi bi-key-fill text-warning me-2" aria-hidden="true"></i>
+          Criar Login de Acesso
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+          [disabled]="carregandoRegistrarLogin()"
+        ></button>
+      </div>
+
+      <div class="modal-body">
+        @if (associadoParaRegistrarLogin()) {
+
+          <p class="confirm-text-secondary mb-4">
+            Defina a senha de acesso inicial para
+            <strong>{{ associadoParaRegistrarLogin()!.nomeCompleto }}</strong>.
+            O associado poderá alterá-la após o primeiro acesso.
+          </p>
+
+          <form [formGroup]="formRegistrarLogin" novalidate>
+
+            <!-- Nome completo (readonly) -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="rlNome">Nome Completo</label>
+              <input
+                id="rlNome"
+                type="text"
+                class="form-control"
+                formControlName="nomeCompleto"
+                readonly
+                aria-readonly="true"
+              />
+            </div>
+
+            <!-- E-mail (readonly) -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="rlEmail">E-mail</label>
+              <input
+                id="rlEmail"
+                type="email"
+                class="form-control"
+                formControlName="email"
+                readonly
+                aria-readonly="true"
+              />
+            </div>
+
+            <!-- CPF (readonly) -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="rlCpf">CPF</label>
+              <input
+                id="rlCpf"
+                type="text"
+                class="form-control"
+                formControlName="cpf"
+                readonly
+                aria-readonly="true"
+              />
+            </div>
+
+            <!-- Senha -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="rlSenha">
+                Senha Inicial <span class="text-danger">*</span>
+              </label>
+              <div class="input-group">
+                <input
+                  id="rlSenha"
+                  [type]="mostrarSenha() ? 'text' : 'password'"
+                  class="form-control"
+                  formControlName="senha"
+                  placeholder="Mínimo 8 caracteres"
+                  autocomplete="new-password"
+                  [class.is-invalid]="
+                    formRegistrarLogin.get('senha')?.invalid &&
+                    formRegistrarLogin.get('senha')?.touched
+                  "
+                />
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  (click)="mostrarSenha.set(!mostrarSenha())"
+                  [attr.aria-label]="mostrarSenha() ? 'Ocultar senha' : 'Mostrar senha'"
+                  tabindex="-1"
+                >
+                  <i [class]="mostrarSenha() ? 'bi bi-eye-slash' : 'bi bi-eye'" aria-hidden="true"></i>
+                </button>
+                @if (
+                  formRegistrarLogin.get('senha')?.invalid &&
+                  formRegistrarLogin.get('senha')?.touched
+                ) {
+                  <div class="invalid-feedback">
+                    @if (formRegistrarLogin.get('senha')?.errors?.['required']) {
+                      A senha é obrigatória.
+                    } @else if (formRegistrarLogin.get('senha')?.errors?.['minlength']) {
+                      A senha deve ter no mínimo 8 caracteres.
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Confirmar senha -->
+            <div class="mb-1">
+              <label class="form-label fw-semibold" for="rlConfirmarSenha">
+                Confirmar Senha <span class="text-danger">*</span>
+              </label>
+              <input
+                id="rlConfirmarSenha"
+                [type]="mostrarSenha() ? 'text' : 'password'"
+                class="form-control"
+                formControlName="confirmarSenha"
+                placeholder="Repita a senha"
+                autocomplete="new-password"
+                [class.is-invalid]="
+                  (formRegistrarLogin.get('confirmarSenha')?.touched &&
+                   formRegistrarLogin.errors?.['senhasDivergentes']) ||
+                  (formRegistrarLogin.get('confirmarSenha')?.touched &&
+                   formRegistrarLogin.get('confirmarSenha')?.errors?.['required'])
+                "
+              />
+              @if (
+                formRegistrarLogin.get('confirmarSenha')?.touched &&
+                formRegistrarLogin.get('confirmarSenha')?.errors?.['required']
+              ) {
+                <div class="invalid-feedback d-block">Confirme a senha.</div>
+              } @else if (
+                formRegistrarLogin.get('confirmarSenha')?.touched &&
+                formRegistrarLogin.errors?.['senhasDivergentes']
+              ) {
+                <div class="invalid-feedback d-block">As senhas não coincidem.</div>
+              }
+            </div>
+
+          </form>
+        }
+      </div>
+
+      <div class="modal-footer">
+        @if (erroModalRegistrarLogin()) {
+          <div class="alert alert-danger d-flex align-items-center gap-2 mb-0 flex-fill" role="alert">
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+            <span>{{ erroModalRegistrarLogin() }}</span>
+          </div>
+        }
+
+        <!-- Botão oculto: fecha este modal após o POST bem-sucedido -->
+        <button
+          #btnFecharModalRegistrarLogin
+          type="button"
+          data-bs-dismiss="modal"
+          class="d-none"
+          aria-hidden="true"
+        ></button>
+
+        <!-- Botão oculto: abre o #modalConfirmarAtivacao (etapa 2) programaticamente -->
+        <button
+          #btnAbrirModalConfirmacao
+          type="button"
+          data-bs-toggle="modal"
+          data-bs-target="#modalConfirmarAtivacao"
+          class="d-none"
+          aria-hidden="true"
+        ></button>
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal"
+          [disabled]="carregandoRegistrarLogin()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="btn-salvar-modal"
+          (click)="registrarLogin()"
+          [disabled]="formRegistrarLogin.invalid || carregandoRegistrarLogin()"
+        >
+          @if (carregandoRegistrarLogin()) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Registrando...
+          } @else {
+            <i class="bi bi-key-fill me-2" aria-hidden="true"></i>
+            Registrar Login
+          }
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================================
+     MODAL — CONFIRMAR ATIVAÇÃO DE ASSOCIADO (etapa 2 do fluxo PREATIVO → ATIVO)
      Modal pequeno e centralizado. Sem formulário — apenas confirmação.
      O botão oculto (#btnFecharModalConfirmacao) é acionado via ViewChild
      para fechar o modal programaticamente após o PATCH bem-sucedido.

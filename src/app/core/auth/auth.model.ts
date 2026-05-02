@@ -31,6 +31,22 @@ export interface LoginResponse {
 }
 
 /**
+ * Corpo do POST /auth/register
+ * Equivale ao RegisterRequest do backend.
+ * Usado pelo ADM para criar as credenciais de acesso de um associado.
+ *
+ * role: sempre 'ROLE_ASSOCIADO' nesse fluxo (fixo no componente).
+ * cpf: obrigatório apenas para ROLE_ASSOCIADO.
+ */
+export interface RegisterRequestDto {
+  nomeCompleto: string;
+  email: string;
+  senha: string;
+  role: 'ROLE_ASSOCIADO';
+  cpf: string;
+}
+
+/**
  * Dados do usuário logado — extraídos do LoginResponse
  * e armazenados no localStorage para uso durante a sessão.
  *

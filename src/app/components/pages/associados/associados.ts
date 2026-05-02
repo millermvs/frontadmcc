@@ -46,6 +46,7 @@ import {
 } from '../../../models/associado-cargo.model';
 import { EquipeResponseDto } from '../../../models/equipe.model';
 import { AuthService } from '../../../core/auth/auth.service';
+import { RegisterRequestDto } from '../../../core/auth/auth.model';
 import { AssociadoService } from '../../../services/associado.service';
 import { AssociadoCargoService } from '../../../services/associado-cargo.service';
 import { CargoLiderancaService } from '../../../services/cargo-lideranca.service';
@@ -174,6 +175,12 @@ export class Associados implements OnInit {
 
   @ViewChild('btnFecharModalEquipe')
   private btnFecharEquipe!: ElementRef<HTMLButtonElement>;
+
+  @ViewChild('btnFecharModalRegistrarLogin')
+  private btnFecharRegistrarLogin!: ElementRef<HTMLButtonElement>;
+
+  @ViewChild('btnAbrirModalConfirmacao')
+  private btnAbrirConfirmacao!: ElementRef<HTMLButtonElement>;
 
   @ViewChild('btnFecharModalConfirmacao')
   private btnFecharConfirmacao!: ElementRef<HTMLButtonElement>;
@@ -550,6 +557,29 @@ export class Associados implements OnInit {
   // O associado clicado é guardado em associadoParaConfirmar; o modal exibe
   // o nome e um aviso; ao confirmar, o PATCH é disparado e o alerta verde
   // aparece na tela por 3 segundos.
+  // =========================================================================
+
+  // =========================================================================
+  // SIGNALS — MODAL REGISTRAR LOGIN (etapa 1 do fluxo PREATIVO → ATIVO)
+  // =========================================================================
+
+  /** Associado cujo login está sendo criado. */
+  associadoParaRegistrarLogin = signal<AssociadoResponseDto | null>(null);
+
+  /** Controla o spinner do botão "Registrar Login" durante o POST. */
+  carregandoRegistrarLogin = signal(false);
+
+  /** Mensagem de erro exibida no footer do modal de registro de login. */
+  erroModalRegistrarLogin = signal<string | null>(null);
+
+  /** Alterna visibilidade do campo senha (olho aberto/fechado). */
+  mostrarSenha = signal(false);
+
+  /** FormGroup do modal de registro de login. */
+  formRegistrarLogin: FormGroup = this.criarFormRegistrarLogin();
+
+  // =========================================================================
+  // SIGNALS — MODAL CONFIRMAR ATIVAÇÃO (etapa 2 do fluxo PREATIVO → ATIVO)
   // =========================================================================
 
   /** Associado da linha clicada. Fonte de verdade do id no PATCH. */
@@ -1733,7 +1763,88 @@ export class Associados implements OnInit {
   }
 
   // =========================================================================
-  // MÉTODOS PÚBLICOS — CONFIRMAÇÃO DE CADASTRO (Bloco 5)
+  // MÉTODOS PÚBLICOS — REGISTRAR LOGIN (etapa 1 do fluxo PREATIVO → ATIVO)
+  // =========================================================================
+
+  /**
+   * abrirModalRegistrarLogin(associado)
+   *
+   * Chamado pelo (click) do botão "Confirmar cadastro" na tabela.
+   * Pré-preenche o formulário com os dados já conhecidos do associado
+   * (nome, email, cpf — campos readonly) e reseta o campo senha.
+   *
+   * O Bootstrap abre o #modalRegistrarLogin via data-bs-toggle/target no botão.
+   */
+  abrirModalRegistrarLogin(associado: AssociadoResponseDto): void {
+    this.associadoParaRegistrarLogin.set(associado);
+    this.erroModalRegistrarLogin.set(null);
+    this.mostrarSenha.set(false);
+
+    this.formRegistrarLogin.reset();
+    this.formRegistrarLogin.patchValue({
+      nomeCompleto: associado.nomeCompleto,
+      email:        associado.emailPrincipal,
+      cpf:          associado.cpf,
+    });
+  }
+
+  /**
+   * registrarLogin()
+   *
+   * Etapa 1: POST /auth/register com os dados do associado + senha digitada.
+   *
+   * Após sucesso:
+   *   - Fecha o #modalRegistrarLogin via ViewChild
+   *   - Abre o #modalConfirmarAtivacao via botão oculto (ViewChild)
+   *   - Pré-popula o associadoParaConfirmar para a etapa 2
+   *   - Exibe toast informativo
+   *
+   * Em caso de erro (ex: e-mail já cadastrado):
+   *   - Exibe a mensagem no footer do modal com auto-dismiss de 3s
+   */
+  registrarLogin(): void {
+    if (this.formRegistrarLogin.invalid) return;
+
+    const associado = this.associadoParaRegistrarLogin();
+    if (!associado) return;
+
+    const payload: RegisterRequestDto = {
+      nomeCompleto: associado.nomeCompleto,
+      email:        associado.emailPrincipal,
+      senha:        this.formRegistrarLogin.get('senha')!.value,
+      role:         'ROLE_ASSOCIADO',
+      cpf:          associado.cpf,
+    };
+
+    this.carregandoRegistrarLogin.set(true);
+    this.erroModalRegistrarLogin.set(null);
+
+    this.authService.registrar(payload).subscribe({
+      next: () => {
+        this.btnFecharRegistrarLogin.nativeElement.click();
+
+        // Prepara a etapa 2 (modal de confirmação de ativação)
+        this.associadoParaConfirmar.set(associado);
+        this.erroConfirmacao.set(null);
+
+        // Abre o #modalConfirmarAtivacao programaticamente
+        setTimeout(() => this.btnAbrirConfirmacao.nativeElement.click(), 300);
+
+        this.toastService.aviso(`Login criado para ${associado.nomeCompleto}. Confirme a ativação abaixo.`);
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Erro ao registrar login:', err);
+        this.mostrarErroNaModal(this.erroModalRegistrarLogin, this.extrairMensagemErro(err));
+        this.carregandoRegistrarLogin.set(false);
+      },
+      complete: () => {
+        this.carregandoRegistrarLogin.set(false);
+      },
+    });
+  }
+
+  // =========================================================================
+  // MÉTODOS PÚBLICOS — CONFIRMAÇÃO DE CADASTRO (etapa 2 do fluxo PREATIVO → ATIVO)
   // =========================================================================
 
   /**
@@ -2439,6 +2550,43 @@ export class Associados implements OnInit {
       estado:      ['', [Validators.required, Validators.maxLength(2)]],
       cep:         ['', [Validators.required, Validators.pattern(/^\d{8}$/)]],
     });
+  }
+
+  /**
+   * criarFormRegistrarLogin()
+   *
+   * Factory do FormGroup do modal de registro de login (etapa 1 do fluxo
+   * PREATIVO → ATIVO). Campos pré-preenchidos (nome, email, cpf) são
+   * desabilitados no template — apenas o campo senha é editável pelo ADM.
+   *
+   * O validador senhasIguais() garante que "senha" e "confirmarSenha"
+   * coincidam antes de habilitar o botão de envio.
+   */
+  private criarFormRegistrarLogin(): FormGroup {
+    return this.fb.group(
+      {
+        nomeCompleto:    [{ value: '', disabled: true }],
+        email:           [{ value: '', disabled: true }],
+        cpf:             [{ value: '', disabled: true }],
+        senha:           ['', [Validators.required, Validators.minLength(8)]],
+        confirmarSenha:  ['', Validators.required],
+      },
+      { validators: this.senhasIguais }
+    );
+  }
+
+  /**
+   * senhasIguais(group)
+   *
+   * Validador no nível do FormGroup: retorna { senhasDivergentes: true }
+   * se "senha" e "confirmarSenha" não forem iguais.
+   * O template usa esse erro para exibir a mensagem inline.
+   */
+  private senhasIguais(group: AbstractControl): ValidationErrors | null {
+    const senha         = group.get('senha')?.value;
+    const confirmarSenha = group.get('confirmarSenha')?.value;
+    if (!senha || !confirmarSenha) return null;
+    return senha === confirmarSenha ? null : { senhasDivergentes: true };
   }
 
   /**

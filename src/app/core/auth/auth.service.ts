@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { LoginRequest, LoginResponse, UsuarioLogado } from './auth.model';
+import { LoginRequest, LoginResponse, RegisterRequestDto, UsuarioLogado } from './auth.model';
 
 /**
  * AuthService
@@ -67,6 +67,18 @@ export class AuthService {
           this._usuario.set(usuario);
         })
       );
+  }
+
+  /**
+   * POST /auth/register.
+   * Cria as credenciais de acesso de um associado.
+   * Chamado pelo ADM antes de confirmar a ativação (PREATIVO → ATIVO).
+   *
+   * Nao altera o estado de autenticacao do ADM logado —
+   * apenas envia os dados e retorna void.
+   */
+  registrar(dados: RegisterRequestDto): Observable<void> {
+    return this.http.post<void>(environment.api.auth.register, dados);
   }
 
   /**

@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/auth/auth.guard';
+import { authGuard, dashboardGuard, roleGuard } from './core/auth/auth.guard';
 
 // ============================================================
 // Rotas da Aplicação
@@ -60,8 +60,15 @@ export const routes: Routes = [
     children: [
       {
         path: 'dashboard',
+        canActivate: [dashboardGuard],   // ASSOCIADO é redirecionado para dashboard-associado
         loadComponent: () =>
           import('./components/pages/dashboard/dashboard').then((m) => m.Dashboard),
+      },
+      {
+        path: 'dashboard-associado',
+        canActivate: [roleGuard('ASSOCIADO')],  // apenas ASSOCIADO acessa (ADM → volta ao dashboard normal)
+        loadComponent: () =>
+          import('./components/pages/dashboard-associado/dashboard-associado').then((m) => m.DashboardAssociado),
       },
       {
         path: 'equipes',

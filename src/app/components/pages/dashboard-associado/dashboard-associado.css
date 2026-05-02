@@ -1,0 +1,537 @@
+/* ================================================
+   PÁGINA — LAYOUT BASE
+   ================================================ */
+.da-page {
+  padding: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(47, 133, 90, 0.10), transparent 28%),
+    var(--cor-background);
+}
+
+/* ================================================
+   HERO PANEL
+   ================================================ */
+.da-hero {
+  background: linear-gradient(135deg, #2f855a 0%, #276749 100%);
+  color: #ffffff;
+  border-radius: 24px;
+  padding: 26px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  flex-wrap: wrap;
+  box-shadow: 0 18px 45px rgba(39, 103, 73, 0.22);
+}
+
+.da-hero-left {
+  flex: 1 1 380px;
+}
+
+.da-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ecfdf3;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.da-hero-title {
+  font-size: 30px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  line-height: 1.1;
+}
+
+.da-hero-subtitle {
+  margin: 0 0 14px 0;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 15px;
+}
+
+/* Tags de status/cargo/empresa no herói */
+.da-hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Sobrescreve o status-chip para fundo semi-transparente no herói */
+.da-hero-tags .status-chip {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.da-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.da-tag-cargo {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.da-tag-empresa {
+  background: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* Mini cards do herói */
+.da-hero-right {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.da-mini-card {
+  min-width: 160px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+}
+
+.da-mini-card small {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.da-mini-card strong {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.da-mini-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.60);
+  margin-top: 3px;
+}
+
+.da-mini-pontos {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.da-mini-pontos strong {
+  font-size: 28px;
+}
+
+/* ================================================
+   KPI CARDS — extensão para o dashboard do associado
+   (as classes kpi-card, kpi-icon-*, kpi-label, kpi-value
+    já existem em styles.css — aqui apenas acrescentamos
+    comportamento de link e o sublabel de pontos)
+   ================================================ */
+.da-kpi-link {
+  display: flex;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.da-kpi-link:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.10);
+}
+
+/* Sublabel abaixo do kpi-value para mostrar pontos */
+.kpi-sublabel {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cor-primaria);
+  margin-top: 2px;
+}
+
+.kpi-sublabel-vazio {
+  color: var(--cor-texto-placeholder);
+  font-weight: 400;
+}
+
+/* ================================================
+   PAINÉIS (panel card genérico)
+   ================================================ */
+.da-panel {
+  background: var(--cor-surface);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--sombra-card);
+  overflow: hidden;
+}
+
+.da-panel-header {
+  padding: 18px 20px 14px 20px;
+  border-bottom: 1px solid var(--cor-borda);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.da-panel-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--cor-texto);
+}
+
+.da-panel-subtitle {
+  color: var(--cor-texto-secundario);
+  font-size: 13px;
+}
+
+.da-panel-link {
+  color: var(--cor-primaria);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.da-panel-link:hover {
+  color: var(--cor-primaria-escura);
+  text-decoration: underline;
+}
+
+.da-panel-body {
+  padding: 18px 20px 20px 20px;
+}
+
+/* ================================================
+   DADOS DO MEMBRO
+   ================================================ */
+.da-dado-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.da-dado-item + .da-dado-item {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.da-dado-icone {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
+.da-dado-label {
+  display: block;
+  font-size: 12px;
+  color: var(--cor-texto-secundario);
+  margin-bottom: 2px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.da-dado-valor {
+  display: block;
+  font-size: 14px;
+  color: var(--cor-texto);
+  font-weight: 600;
+}
+
+/* ================================================
+   TABELA DE INDICADORES
+   ================================================ */
+.da-tabela {
+  border-collapse: collapse;
+}
+
+.da-tabela th {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--cor-texto-secundario);
+  padding: 0 10px 12px 10px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.da-tabela td {
+  padding: 14px 10px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--cor-borda);
+  vertical-align: middle;
+}
+
+.da-tabela tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Ícone + nome do indicador */
+.da-ind-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.da-ind-icone {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px;
+  border-radius: 10px;
+  font-size: 16px !important;
+  flex-shrink: 0;
+}
+
+/* Badge de pontos inline */
+.da-pts-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--cor-sucesso-bg);
+  color: var(--cor-sucesso);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Rodapé da tabela com o total */
+.da-tabela-total td {
+  padding-top: 16px;
+  border-top: 2px solid var(--cor-borda);
+  border-bottom: none !important;
+}
+
+.da-pts-total {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: var(--cor-primaria);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ================================================
+   CONEXÕES RECEBIDAS
+   ================================================ */
+.da-conexao-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.da-conexao-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.da-conexao-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.da-conexao-origem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--cor-texto);
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.da-conexao-origem i {
+  color: var(--cor-primaria);
+}
+
+.da-conexao-sep {
+  font-size: 13px;
+  color: var(--cor-texto-secundario);
+  font-weight: 400;
+}
+
+.da-conexao-contato {
+  font-size: 13px;
+  color: var(--cor-texto-secundario);
+}
+
+.da-conexao-side {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+/* ================================================
+   ACESSO RÁPIDO
+   ================================================ */
+.da-panel-atalhos {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.da-atalho {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  text-decoration: none;
+  border-bottom: 1px solid var(--cor-borda);
+  transition: background 0.15s ease;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.da-atalho:last-child {
+  border-bottom: none;
+}
+
+.da-atalho:hover .da-atalho-info strong {
+  color: var(--cor-primaria);
+}
+
+.da-atalho-icone {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* Variantes de cor dos ícones dos atalhos */
+.atalho-verde  { background: #dcfce7; color: #166534; }
+.atalho-amarelo { background: #fef9c3; color: #854d0e; }
+.atalho-azul   { background: #dbeafe; color: #1e40af; }
+.atalho-roxo   { background: #ede9fe; color: #5b21b6; }
+.atalho-cinza  { background: #f1f5f9; color: #475569; }
+
+.da-atalho-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.da-atalho-info strong {
+  display: block;
+  font-size: 14px;
+  color: var(--cor-texto);
+  transition: color 0.15s ease;
+}
+
+.da-atalho-info small {
+  display: block;
+  font-size: 12px;
+  color: var(--cor-texto-secundario);
+  margin-top: 2px;
+}
+
+.da-atalho-seta {
+  color: var(--cor-texto-placeholder);
+  font-size: 18px;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.da-atalho:hover .da-atalho-seta {
+  transform: translateX(3px);
+  color: var(--cor-primaria);
+}
+
+/* ================================================
+   RESPONSIVO — TABLET (768px)
+   ================================================ */
+@media (max-width: 768px) {
+  .da-hero {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .da-hero-title {
+    font-size: 24px;
+  }
+
+  .da-mini-card {
+    min-width: calc(50% - 6px);
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .da-panel-header,
+  .da-panel-body {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* ================================================
+   RESPONSIVO — MOBILE (575px)
+   ================================================ */
+@media (max-width: 575px) {
+  .da-page {
+    padding: 12px;
+  }
+
+  .da-hero-title {
+    font-size: 22px;
+  }
+
+  .da-mini-card {
+    min-width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .da-panel-header,
+  .da-panel-body {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .da-conexao-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .da-conexao-side {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .da-tabela th,
+  .da-tabela td {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+}

@@ -53,6 +53,9 @@ export class Navbar {
   /** true quando o usuário logado é ADM_CC — controla itens exclusivos no menu */
   isAdm = computed(() => this.authService.temPermissao('ADM_CC'));
 
+  /** true quando o usuário é ADM_CC ou DIRETOR — controla itens de gestão no menu */
+  isAdmOuDiretor = computed(() => this.authService.temPermissao('ADM_CC', 'DIRETOR'));
+
   /** Perfil formatado para exibição (ex: 'ADM C+C') */
   roleUsuario = computed(() => {
     const usuario = this.authService.usuario();

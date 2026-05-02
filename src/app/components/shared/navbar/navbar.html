@@ -34,15 +34,19 @@
       
     </a>
 
-    <a class="menu-item" routerLink="/pages/equipes" routerLinkActive="active-link" title="Equipes">
-      <span class="menu-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
-      <span class="menu-label">Equipes</span>
-    </a>
+    @if (isAdmOuDiretor()) {
+      <a class="menu-item" routerLink="/pages/equipes" routerLinkActive="active-link" title="Equipes">
+        <span class="menu-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
+        <span class="menu-label">Equipes</span>
+      </a>
+    }
 
-    <a class="menu-item" routerLink="/pages/clusters" routerLinkActive="active-link" title="Clusters / Atuações">
-      <span class="menu-icon"><i class="bi bi-diagram-3-fill" aria-hidden="true"></i></span>
-      <span class="menu-label">Clusters / Atuações</span>
-    </a>
+    @if (isAdmOuDiretor()) {
+      <a class="menu-item" routerLink="/pages/clusters" routerLinkActive="active-link" title="Clusters / Atuações">
+        <span class="menu-icon"><i class="bi bi-diagram-3-fill" aria-hidden="true"></i></span>
+        <span class="menu-label">Clusters / Atuações</span>
+      </a>
+    }
 
     @if (isAdm()) {
       <a class="menu-item" routerLink="/pages/cargos-lideranca" routerLinkActive="active-link" title="Cargos">
@@ -51,10 +55,12 @@
       </a>
     }
 
-    <a class="menu-item" routerLink="/pages/associados" routerLinkActive="active-link" title="Associados">
-      <span class="menu-icon"><i class="bi bi-person-fill" aria-hidden="true"></i></span>
-      <span class="menu-label">Associados</span>
-    </a>
+    @if (isAdmOuDiretor()) {
+      <a class="menu-item" routerLink="/pages/associados" routerLinkActive="active-link" title="Associados">
+        <span class="menu-icon"><i class="bi bi-person-fill" aria-hidden="true"></i></span>
+        <span class="menu-label">Associados</span>
+      </a>
+    }
 
     <a class="menu-item" routerLink="/pages/reunioes" routerLinkActive="active-link" title="Reuniões">
       <span class="menu-icon"><i class="bi bi-calendar-event-fill" aria-hidden="true"></i></span>

@@ -1,7 +1,7 @@
 /*
  * toast.css — estilos do componente Toast compartilhado.
  *
- * Posicionado fixo no canto superior direito, acima de modais
+ * Posicionado fixo no canto superior esquerdo, acima de modais
  * Bootstrap (z-index 1055) e do autocomplete (1060).
  *
  * Três variantes de cor via classes modificadoras:
@@ -9,7 +9,7 @@
  *   .toast-erro    → vermelho (var --cor-erro*)
  *   .toast-aviso   → amarelo  (var --cor-alerta*)
  *
- * A animação slideInRight é local deste componente — não polui
+ * A animação slideInLeft é local deste componente — não polui
  * o styles.css global.
  */
 
@@ -19,7 +19,7 @@
 .toast-flutuante {
   position: fixed;
   top: 20px;
-  right: 20px;
+  left: 20px;
   z-index: 1080;
   display: flex;
   align-items: center;
@@ -30,7 +30,7 @@
   font-weight: 600;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
   max-width: 420px;
-  animation: slideInRight 0.28s ease;
+  animation: slideInLeft 0.28s ease;
 }
 
 /* ================================================
@@ -57,10 +57,10 @@
 /* ================================================
    ANIMAÇÃO DE ENTRADA
    ================================================ */
-@keyframes slideInRight {
+@keyframes slideInLeft {
   from {
     opacity: 0;
-    transform: translateX(16px);
+    transform: translateX(-16px);
   }
   to {
     opacity: 1;
@@ -75,8 +75,8 @@
 @media (max-width: 575px) {
   .toast-flutuante {
     top: 12px;
-    right: 12px;
     left: 12px;
+    right: 12px;
     max-width: none;
   }
 }

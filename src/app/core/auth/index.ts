@@ -14,6 +14,6 @@
 
 export { AuthService } from './auth.service';
 export { authInterceptor } from './auth.interceptor';
-export { authGuard, roleGuard } from './auth.guard';
+export { authGuard, roleGuard, dashboardGuard } from './auth.guard';
 export { Login } from './login/login';
 export * from './auth.model';

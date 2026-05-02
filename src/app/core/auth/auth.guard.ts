@@ -50,6 +50,26 @@ export const authGuard: CanActivateFn = () => {
 };
 
 /**
+ * dashboardGuard — Redireciona o associado para o seu próprio painel.
+ *
+ * Aplicado à rota /pages/dashboard.
+ * ADM_CC e DIRETOR → acessam o dashboard normal (retorna true).
+ * ASSOCIADO        → redirecionado para /pages/dashboard-associado.
+ *
+ * Isso evita que o associado veja dados administrativos da rede toda.
+ */
+export const dashboardGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (authService.temPermissao('ASSOCIADO')) {
+    return router.createUrlTree(['/pages/dashboard-associado']);
+  }
+
+  return true;
+};
+
+/**
  * roleGuard — Verifica se o usuário tem a role necessária.
  *
  * Equivale ao .hasRole('ADM') do @PreAuthorize no backend.
