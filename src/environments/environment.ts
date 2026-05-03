@@ -211,6 +211,15 @@ export const environment = {
       porAssociado: (id: number) => `${baseUrl}/perfis/associado/${id}`,
     },
 
+    // ========== CONEXÕES ==========
+    conexoes: {
+      registrar: `${baseUrl}/conexoes`,
+      geradas: `${baseUrl}/conexoes/geradas`,
+      recebidas: `${baseUrl}/conexoes/recebidas`,
+      atualizarStatus: (id: number) => `${baseUrl}/conexoes/${id}/status`,
+      excluir: (id: number) => `${baseUrl}/conexoes/${id}`,
+    },
+
     // ========== PRODUTOS (Stripe) ==========
     produtos: {
       listar: `${baseUrl}/../produtos`,

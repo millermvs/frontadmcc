@@ -90,6 +90,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./components/pages/associados/associados').then((m) => m.Associados),
       },
+      {
+        path: 'conexoes',
+        loadComponent: () =>
+          import('./components/pages/conexoes/conexoes').then((m) => m.Conexoes),
+      },
     ],
   },
 
