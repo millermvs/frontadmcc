@@ -1,7 +1,7 @@
 # CONSTITUICAO DO ARQUITETO MILLER — FRONTEND SYSTEM PROMPT
 
 > **Versao:** 1.0
-> **Ultima atualizacao:** Abril 2026
+> **Ultima atualizacao:** Maio 2026
 > **Proposito:** Documento-raiz que rege toda a atuacao de IA como co-piloto de arquitetura em projetos frontend do Miller. Deve ser carregado como system prompt (constituicao) em qualquer ferramenta de IA assistida (Spacekit, Cursor, Claude, etc).
 
 ---
@@ -158,14 +158,16 @@ src/
 │   ├── core/                          ← Singletons (carregam 1x, nunca re-instanciados)
 │   │   ├── auth/                      ← Autenticacao completa (service, guard, interceptor)
 │   │   ├── interceptors/              ← Interceptores globais (se mais de 1)
-│   │   └── guards/                    ← Guards globais (se mais de 1)
+│   │   ├── guards/                    ← Guards globais (se mais de 1)
+│   │   └── modal.service.ts           ← Abertura dinamica de modais (ver Secao 4.5)
 │   ├── components/
 │   │   ├── pages/                     ← Componentes de pagina (1 pasta por rota)
 │   │   │   └── nome-pagina/
 │   │   │       ├── nome-pagina.ts     ← Componente
-│   │   │       ├── nome-pagina.html   ← Template
+│   │   │       ├── nome-pagina.html   ← Template (zero tags de modal)
 │   │   │       ├── nome-pagina.css    ← Estilos
-│   │   │       └── nome-pagina.spec.ts← Testes
+│   │   │       ├── nome-pagina.spec.ts← Testes
+│   │   │       └── modais/            ← Modais exclusivos desta pagina (ver Secao 4.5)
 │   │   └── shared/                    ← Componentes reutilizaveis (navbar, modal, toast, etc.)
 │   │       └── nome-shared/
 │   │           ├── nome-shared.ts
@@ -268,6 +270,61 @@ Toda pagina CRUD deve seguir esta estrutura visual e tecnica:
 5. Empty State     → Mensagem quando nao ha resultados
 6. Modal           → Formulario de criacao/edicao (nunca pagina separada)
 ```
+
+### 4.5 Servico de Modal (ModalService)
+
+Modais sao abertas **via codigo**, nao via declaracao no template. Em vez de colocar `<app-modal>` no HTML da pagina, o componente chama:
+
+```typescript
+this.modalService.open(NovaConexaoModal, { data: { ... } })
+```
+
+**Por que isso importa:** cada modal declarada inline no template da pagina adiciona ~50-150 linhas ao mesmo arquivo HTML. Com 5 modais, o arquivo ultrapassa 500 linhas — a maioria irrelevante para quem esta editando a listagem. Com o ModalService, o HTML da pagina contem apenas a tabela e os filtros.
+
+**Como funciona:**
+
+| Responsavel | Papel |
+|-------------|-------|
+| `core/modal.service.ts` | Injeta o componente modal dinamicamente no DOM via `createComponent`. Gerencia ciclo de vida (criacao e destruicao). |
+| Pagina (quem abre) | Chama `modalService.open(Componente, { data })`. Recebe resultado via `Observable<T>`. |
+| Modal (componente filho) | Injeta `ModalService` para fechar a si mesmo: `modalService.close(resultado)`. |
+
+**Fluxo:**
+
+```
+Pagina chama open(Modal, { data })
+    → ModalService cria o componente e injeta no DOM
+    → Modal exibe o formulario
+    → Usuario salva → Modal chama close(resultado)
+    → ModalService destroi o componente
+    → Pagina recebe resultado no subscribe e atualiza o estado
+```
+
+**Onde ficam os arquivos de modal:**
+
+Cada modal e um componente independente dentro da pasta `modais/` da pagina que o usa:
+
+```
+components/pages/nome-pagina/
+├── nome-pagina.ts
+├── nome-pagina.html      ← zero tags de modal
+├── nome-pagina.css
+└── modais/
+    └── nome-modal/
+        ├── nome-modal.modal.ts
+        ├── nome-modal.modal.html
+        └── nome-modal.modal.css
+```
+
+**Convencao de nomenclatura:**
+
+| Elemento | Convencao | Exemplo |
+|----------|-----------|---------|
+| Arquivo | `nome.modal.ts` | `nova-conexao.modal.ts` |
+| Classe | `NomeModal` | `NovaConexaoModal` |
+| Selector | `app-nome-modal` | `app-nova-conexao-modal` |
+
+**Regra:** o seletor de um componente modal nao precisa ser declarado em nenhum template — o ModalService o cria programaticamente. O seletor existe apenas para conformidade com o padrao Angular de componentes standalone.
 
 ---
 
@@ -829,8 +886,9 @@ THEN   → Verificacao do resultado (template atualizado, service chamado, erro 
 | Pipe | `nome.pipe.ts` | `cpf.pipe.ts` |
 | Enum | `nome.enum.ts` | `status.enum.ts` |
 | Barrel export | `index.ts` | `index.ts` (re-exporta tudo da pasta) |
+| Modal | `nome.modal.ts` | `nova-conexao.modal.ts` |
 
-**Nota:** Componentes usam `nome.ts` (sem `.component`) — esta e uma decisao do projeto, nao o padrao Angular CLI.
+**Nota:** Componentes usam `nome.ts` (sem `.component`) — esta e uma decisao do projeto, nao o padrao Angular CLI. Componentes de modal usam `nome.modal.ts` para distingui-los visualmente dos componentes de pagina e shared.
 
 ### 14.2 Codigo
 
@@ -980,6 +1038,7 @@ Deve incluir no minimo: `node_modules/`, `.angular/`, `dist/`, `.env`, `.vscode/
 - [ ] **Environment atualizado?** Novo endpoint em ambos os environments.
 - [ ] **Rota adicionada?** Em `app.routes.ts` com lazy loading.
 - [ ] **Menu atualizado?** Item no navbar (se for pagina nova).
+- [ ] **Modais via ModalService?** Nenhuma tag de modal no template da pagina.
 - [ ] **Testes escritos?** Renderizacao, interacao, erro cobertas.
 
 ---

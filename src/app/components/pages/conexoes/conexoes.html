@@ -1,3 +1,545 @@
-<!-- Parte 1 — Fundação: componente placeholder -->
-<!-- Conteúdo real adicionado na Parte 2 (aba Geradas) e Parte 3 (aba Recebidas) -->
-<p>Conexões — em construção</p>
+<div class="conexoes-page container-fluid">
+
+  <!-- ===================================================================
+       CABEÇALHO DA PÁGINA
+       =================================================================== -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <nav class="breadcrumb-nav" aria-label="Breadcrumb">
+        <span class="bc-item"><i class="bi bi-house-fill" aria-hidden="true"></i> Dashboard</span>
+        <i class="bi bi-chevron-right bc-sep" aria-hidden="true"></i>
+        <span class="bc-item bc-active">Conexões</span>
+      </nav>
+      <h2 class="page-title">Conexões</h2>
+      <p class="page-subtitle">Registre indicações de negócio e acompanhe o andamento com os destinatários.</p>
+    </div>
+
+    <div class="page-header-right">
+      <!-- Ação real será ligada na Parte 4 (Modal Nova Conexão) -->
+      <button class="btn-acao-pagina" type="button" disabled title="Em breve">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        Nova Conexão
+      </button>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       NAVEGAÇÃO DE ABAS
+       Por que signal e não Bootstrap JS tabs?
+       A troca de aba reativa pelo Angular evita dependência do evento
+       'shown.bs.tab' do Bootstrap, mantendo os dados em sync com os
+       signals sem precisar de detectChanges manual.
+       =================================================================== -->
+  <div class="conexoes-tabs" role="tablist" aria-label="Painéis de conexões">
+
+    <button
+      class="conexoes-tab"
+      [class.conexoes-tab--ativa]="abaAtiva() === 'geradas'"
+      role="tab"
+      [attr.aria-selected]="abaAtiva() === 'geradas'"
+      aria-controls="painel-geradas"
+      id="tab-geradas"
+      type="button"
+      (click)="mudarAba('geradas')"
+    >
+      <i class="bi bi-send-fill" aria-hidden="true"></i>
+      Negócios Gerados
+      @if (totalItemsGeradas() > 0) {
+        <span class="tab-badge">{{ totalItemsGeradas() }}</span>
+      }
+    </button>
+
+    <button
+      class="conexoes-tab"
+      [class.conexoes-tab--ativa]="abaAtiva() === 'recebidas'"
+      role="tab"
+      [attr.aria-selected]="abaAtiva() === 'recebidas'"
+      aria-controls="painel-recebidas"
+      id="tab-recebidas"
+      type="button"
+      (click)="mudarAba('recebidas')"
+    >
+      <i class="bi bi-inbox-fill" aria-hidden="true"></i>
+      Negócios Recebidos
+      @if (totalItemsRecebidas() > 0) {
+        <span class="tab-badge">{{ totalItemsRecebidas() }}</span>
+      }
+    </button>
+
+  </div>
+
+  <!-- ===================================================================
+       ABA: NEGÓCIOS GERADOS
+       =================================================================== -->
+  @if (abaAtiva() === 'geradas') {
+    <div id="painel-geradas" role="tabpanel" aria-labelledby="tab-geradas">
+
+      <!-- BARRA DE FILTROS -->
+      <div class="filter-bar">
+
+        <!-- Busca por candidato ou destinatário -->
+        <div class="filter-search-wrap">
+          <i class="bi bi-search filter-search-icon" aria-hidden="true"></i>
+          <input
+            class="filter-search-input"
+            type="text"
+            placeholder="Buscar por candidato ou destinatário…"
+            [value]="termoBuscaGeradas()"
+            (input)="atualizarBuscaGeradas($any($event.target).value)"
+            aria-label="Buscar conexão gerada"
+          />
+        </div>
+
+        <div class="filter-selects">
+
+          <!-- Filtro por status -->
+          <div class="filter-select-wrap">
+            <i class="bi bi-circle-half filter-select-icon" aria-hidden="true"></i>
+            <select
+              class="filter-select"
+              [value]="filtroStatusGeradas()"
+              (change)="atualizarFiltroStatusGeradas($any($event.target).value)"
+              aria-label="Filtrar por status"
+            >
+              <option value="Todos">Todos os status</option>
+              <option value="NOVA">Nova</option>
+              <option value="EM_ANDAMENTO">Em Andamento</option>
+              <option value="FECHADA">Fechada</option>
+              <option value="NAO_FECHADA">Não Fechado</option>
+            </select>
+          </div>
+
+          <!-- Filtro por tipo (temperatura) -->
+          <div class="filter-select-wrap">
+            <i class="bi bi-thermometer-half filter-select-icon" aria-hidden="true"></i>
+            <select
+              class="filter-select"
+              [value]="filtroTipoGeradas()"
+              (change)="atualizarFiltroTipoGeradas($any($event.target).value)"
+              aria-label="Filtrar por tipo"
+            >
+              <option value="Todos">Todos os tipos</option>
+              <option value="QUENTE">Quente</option>
+              <option value="MORNA">Morna</option>
+              <option value="FRIA">Fria</option>
+            </select>
+          </div>
+
+        </div>
+
+        <span class="filter-count" aria-live="polite">
+          {{ conexoesGeradasFiltradas().length }}
+          {{ conexoesGeradasFiltradas().length === 1 ? 'conexão' : 'conexões' }}
+        </span>
+
+      </div>
+
+      <!-- TABELA DE NEGÓCIOS GERADOS -->
+      <div class="table-card">
+        <div class="table-wrapper">
+          <table class="conexoes-table" aria-label="Lista de negócios gerados">
+            <thead>
+              <tr>
+                <th scope="col">Destinatário</th>
+                <th scope="col">Candidato</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Status</th>
+                <th scope="col">Data</th>
+              </tr>
+            </thead>
+
+            <tbody>
+
+              <!-- ── ESTADO: CARREGANDO ──────────────────────────────── -->
+              @if (carregandoGeradas()) {
+                @for (_ of [1,2,3,4,5]; track $index) {
+                  <tr class="skeleton-row" aria-hidden="true">
+                    <td><div class="skeleton skeleton-nome"></div></td>
+                    <td><div class="skeleton skeleton-nome"></div></td>
+                    <td><div class="skeleton skeleton-chip"></div></td>
+                    <td><div class="skeleton skeleton-chip"></div></td>
+                    <td><div class="skeleton skeleton-data"></div></td>
+                  </tr>
+                }
+              }
+
+              <!-- ── ESTADO: DADOS ───────────────────────────────────── -->
+              @if (!carregandoGeradas()) {
+                @for (conexao of conexoesGeradasFiltradas(); track conexao.idConexao) {
+                  <tr class="conexao-row">
+
+                    <!-- Destinatário — avatar com iniciais + nome -->
+                    <td class="cell-pessoa">
+                      <div class="pessoa-avatar">
+                        <span class="avatar-initials">{{ iniciaisNome(conexao.nomeDestinatario) }}</span>
+                      </div>
+                      <span class="pessoa-nome">{{ conexao.nomeDestinatario }}</span>
+                    </td>
+
+                    <!-- Candidato — nome + telefone em linha secundária -->
+                    <td class="cell-candidato">
+                      <span class="candidato-nome">{{ conexao.nomeCandidato }}</span>
+                      <small class="candidato-tel">
+                        <i class="bi bi-telephone-fill" aria-hidden="true"></i>
+                        {{ conexao.telefoneCandidato }}
+                      </small>
+                    </td>
+
+                    <!-- Tipo (temperatura) — badge colorido -->
+                    <td>
+                      <span [class]="classeChipTipo(conexao.tipo)">
+                        {{ LABELS_TIPO[conexao.tipo] }}
+                      </span>
+                    </td>
+
+                    <!-- Status — chip colorido + badge prazo estourado -->
+                    <td class="cell-status">
+                      <div class="status-wrap">
+                        <span [class]="classeChipStatus(conexao.status)">
+                          {{ LABELS_STATUS[conexao.status] }}
+                        </span>
+                        @if (conexao.prazoEstourado) {
+                          <span
+                            class="badge-prazo"
+                            title="Conexão aberta há mais de 90 dias"
+                            aria-label="Prazo de 90 dias estourado"
+                          >
+                            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                            90 dias
+                          </span>
+                        }
+                      </div>
+                    </td>
+
+                    <!-- Data de criação -->
+                    <td class="cell-data">
+                      {{ formatarData(conexao.criadoEm) }}
+                    </td>
+
+                  </tr>
+                }
+
+                <!-- ── ESTADO: VAZIO ───────────────────────────────── -->
+                @if (conexoesGeradasFiltradas().length === 0) {
+                  <tr>
+                    <td colspan="5" class="empty-state">
+                      <div class="empty-icon">
+                        <i class="bi bi-send" aria-hidden="true"></i>
+                      </div>
+                      @if (termoBuscaGeradas() || filtroStatusGeradas() !== 'Todos' || filtroTipoGeradas() !== 'Todos') {
+                        <p class="empty-title">Nenhuma conexão encontrada</p>
+                        <p class="empty-subtitle">Tente ajustar os filtros para ver mais resultados.</p>
+                      } @else {
+                        <p class="empty-title">Você ainda não gerou nenhuma conexão</p>
+                        <p class="empty-subtitle">Clique em "Nova Conexão" para indicar um candidato a outro associado.</p>
+                      }
+                    </td>
+                  </tr>
+                }
+              }
+
+            </tbody>
+          </table>
+        </div>
+
+        <!-- PAGINAÇÃO -->
+        @if (!carregandoGeradas() && totalPaginasGeradas() > 1) {
+          <div class="paginacao">
+            <button
+              class="btn-paginacao"
+              type="button"
+              [disabled]="!temAnteriorGeradas()"
+              (click)="paginaAnteriorGeradas()"
+              aria-label="Página anterior"
+            >
+              <i class="bi bi-chevron-left" aria-hidden="true"></i>
+              Anterior
+            </button>
+
+            <span class="paginacao-info">
+              Página {{ paginaGeradas() + 1 }} de {{ totalPaginasGeradas() }}
+              <span class="paginacao-total">({{ totalItemsGeradas() }} registros)</span>
+            </span>
+
+            <button
+              class="btn-paginacao"
+              type="button"
+              [disabled]="!temProximaGeradas()"
+              (click)="proximaPaginaGeradas()"
+              aria-label="Próxima página"
+            >
+              Próxima
+              <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        }
+
+      </div>
+      <!-- /table-card -->
+
+    </div>
+    <!-- /painel-geradas -->
+  }
+
+  <!-- ===================================================================
+       ABA: NEGÓCIOS RECEBIDOS
+       =================================================================== -->
+  @if (abaAtiva() === 'recebidas') {
+    <div id="painel-recebidas" role="tabpanel" aria-labelledby="tab-recebidas">
+
+      <!-- BARRA DE FILTROS -->
+      <div class="filter-bar">
+
+        <!-- Busca por candidato ou remetente -->
+        <div class="filter-search-wrap">
+          <i class="bi bi-search filter-search-icon" aria-hidden="true"></i>
+          <input
+            class="filter-search-input"
+            type="text"
+            placeholder="Buscar por candidato ou remetente…"
+            [value]="termoBuscaRecebidas()"
+            (input)="atualizarBuscaRecebidas($any($event.target).value)"
+            aria-label="Buscar conexão recebida"
+          />
+        </div>
+
+        <div class="filter-selects">
+
+          <!-- Filtro por status -->
+          <div class="filter-select-wrap">
+            <i class="bi bi-circle-half filter-select-icon" aria-hidden="true"></i>
+            <select
+              class="filter-select"
+              [value]="filtroStatusRecebidas()"
+              (change)="atualizarFiltroStatusRecebidas($any($event.target).value)"
+              aria-label="Filtrar por status"
+            >
+              <option value="Todos">Todos os status</option>
+              <option value="NOVA">Nova</option>
+              <option value="EM_ANDAMENTO">Em Andamento</option>
+              <option value="FECHADA">Fechada</option>
+              <option value="NAO_FECHADA">Não Fechado</option>
+            </select>
+          </div>
+
+          <!-- Filtro por tipo (temperatura) -->
+          <div class="filter-select-wrap">
+            <i class="bi bi-thermometer-half filter-select-icon" aria-hidden="true"></i>
+            <select
+              class="filter-select"
+              [value]="filtroTipoRecebidas()"
+              (change)="atualizarFiltroTipoRecebidas($any($event.target).value)"
+              aria-label="Filtrar por tipo"
+            >
+              <option value="Todos">Todos os tipos</option>
+              <option value="QUENTE">Quente</option>
+              <option value="MORNA">Morna</option>
+              <option value="FRIA">Fria</option>
+            </select>
+          </div>
+
+        </div>
+
+        <span class="filter-count" aria-live="polite">
+          {{ conexoesRecebidasFiltradas().length }}
+          {{ conexoesRecebidasFiltradas().length === 1 ? 'conexão' : 'conexões' }}
+        </span>
+
+      </div>
+
+      <!-- TABELA DE NEGÓCIOS RECEBIDOS -->
+      <div class="table-card">
+        <div class="table-wrapper">
+          <table class="conexoes-table" aria-label="Lista de negócios recebidos">
+            <thead>
+              <tr>
+                <th scope="col">Remetente</th>
+                <th scope="col">Candidato</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Status</th>
+                <th scope="col">Data</th>
+                <th scope="col">Ações</th>
+              </tr>
+            </thead>
+
+            <tbody>
+
+              <!-- ── ESTADO: CARREGANDO ──────────────────────────────── -->
+              @if (carregandoRecebidas()) {
+                @for (_ of [1,2,3,4,5]; track $index) {
+                  <tr class="skeleton-row" aria-hidden="true">
+                    <td><div class="skeleton skeleton-nome"></div></td>
+                    <td><div class="skeleton skeleton-nome"></div></td>
+                    <td><div class="skeleton skeleton-chip"></div></td>
+                    <td><div class="skeleton skeleton-chip"></div></td>
+                    <td><div class="skeleton skeleton-data"></div></td>
+                    <td><div class="skeleton skeleton-chip"></div></td>
+                  </tr>
+                }
+              }
+
+              <!-- ── ESTADO: DADOS ───────────────────────────────────── -->
+              @if (!carregandoRecebidas()) {
+                @for (conexao of conexoesRecebidasFiltradas(); track conexao.idConexao) {
+                  <tr class="conexao-row">
+
+                    <!-- Remetente — avatar com iniciais + nome -->
+                    <td class="cell-pessoa">
+                      <div class="pessoa-avatar">
+                        <span class="avatar-initials">{{ iniciaisNome(conexao.nomeRemetente) }}</span>
+                      </div>
+                      <span class="pessoa-nome">{{ conexao.nomeRemetente }}</span>
+                    </td>
+
+                    <!-- Candidato — nome + telefone em linha secundária -->
+                    <td class="cell-candidato">
+                      <span class="candidato-nome">{{ conexao.nomeCandidato }}</span>
+                      <small class="candidato-tel">
+                        <i class="bi bi-telephone-fill" aria-hidden="true"></i>
+                        {{ conexao.telefoneCandidato }}
+                      </small>
+                    </td>
+
+                    <!-- Tipo (temperatura) — badge colorido -->
+                    <td>
+                      <span [class]="classeChipTipo(conexao.tipo)">
+                        {{ LABELS_TIPO[conexao.tipo] }}
+                      </span>
+                    </td>
+
+                    <!-- Status — chip colorido + badge prazo estourado -->
+                    <td class="cell-status">
+                      <div class="status-wrap">
+                        <span [class]="classeChipStatus(conexao.status)">
+                          {{ LABELS_STATUS[conexao.status] }}
+                        </span>
+                        @if (conexao.prazoEstourado) {
+                          <span
+                            class="badge-prazo"
+                            title="Conexão aberta há mais de 90 dias"
+                            aria-label="Prazo de 90 dias estourado"
+                          >
+                            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                            90 dias
+                          </span>
+                        }
+                      </div>
+                    </td>
+
+                    <!-- Data de criação -->
+                    <td class="cell-data">
+                      {{ formatarData(conexao.criadoEm) }}
+                    </td>
+
+                    <!-- Ações condicionais por status
+                         NOVA         → Avançar + Fechar + Não Fechado
+                         EM_ANDAMENTO → Fechar + Não Fechado
+                         FECHADA      → somente leitura (sem botões)
+                         NAO_FECHADA  → somente leitura (sem botões)
+                    -->
+                    <td>
+                      <div class="acoes-group">
+
+                        @if (conexao.status === 'NOVA') {
+                          <button
+                            class="btn-acao btn-avancar"
+                            type="button"
+                            title="Mover para Em Andamento"
+                            aria-label="Mover para Em Andamento"
+                            (click)="abrirModalAtualizarStatus(conexao, 'EM_ANDAMENTO')"
+                          >
+                            <i class="bi bi-arrow-right-circle-fill" aria-hidden="true"></i>
+                          </button>
+                        }
+
+                        @if (conexao.status === 'NOVA' || conexao.status === 'EM_ANDAMENTO') {
+                          <button
+                            class="btn-acao btn-fechar-negocio"
+                            type="button"
+                            title="Fechar negócio"
+                            aria-label="Fechar negócio"
+                            (click)="abrirModalAtualizarStatus(conexao, 'FECHADA')"
+                          >
+                            <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                          </button>
+
+                          <button
+                            class="btn-acao btn-nao-fechado"
+                            type="button"
+                            title="Negócio não fechado"
+                            aria-label="Negócio não fechado"
+                            (click)="abrirModalAtualizarStatus(conexao, 'NAO_FECHADA')"
+                          >
+                            <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
+                          </button>
+                        }
+
+                      </div>
+                    </td>
+
+                  </tr>
+                }
+
+                <!-- ── ESTADO: VAZIO ───────────────────────────────── -->
+                @if (conexoesRecebidasFiltradas().length === 0) {
+                  <tr>
+                    <td colspan="6" class="empty-state">
+                      <div class="empty-icon">
+                        <i class="bi bi-inbox" aria-hidden="true"></i>
+                      </div>
+                      @if (termoBuscaRecebidas() || filtroStatusRecebidas() !== 'Todos' || filtroTipoRecebidas() !== 'Todos') {
+                        <p class="empty-title">Nenhuma conexão encontrada</p>
+                        <p class="empty-subtitle">Tente ajustar os filtros para ver mais resultados.</p>
+                      } @else {
+                        <p class="empty-title">Você ainda não recebeu nenhuma conexão</p>
+                        <p class="empty-subtitle">Quando outro associado te indicar um candidato, ele aparecerá aqui.</p>
+                      }
+                    </td>
+                  </tr>
+                }
+              }
+
+            </tbody>
+          </table>
+        </div>
+
+        <!-- PAGINAÇÃO -->
+        @if (!carregandoRecebidas() && totalPaginasRecebidas() > 1) {
+          <div class="paginacao">
+            <button
+              class="btn-paginacao"
+              type="button"
+              [disabled]="!temAnteriorRecebidas()"
+              (click)="paginaAnteriorRecebidas()"
+              aria-label="Página anterior"
+            >
+              <i class="bi bi-chevron-left" aria-hidden="true"></i>
+              Anterior
+            </button>
+
+            <span class="paginacao-info">
+              Página {{ paginaRecebidas() + 1 }} de {{ totalPaginasRecebidas() }}
+              <span class="paginacao-total">({{ totalItemsRecebidas() }} registros)</span>
+            </span>
+
+            <button
+              class="btn-paginacao"
+              type="button"
+              [disabled]="!temProximaRecebidas()"
+              (click)="proximaPaginaRecebidas()"
+              aria-label="Próxima página"
+            >
+              Próxima
+              <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        }
+
+      </div>
+      <!-- /table-card -->
+
+    </div>
+    <!-- /painel-recebidas -->
+  }
+
+</div>

@@ -1,1 +1,388 @@
-/* Parte 1 — Fundação: arquivo vazio, pronto para receber estilos nas próximas partes */
+/* ================================================================
+   CONEXOES PAGE — estilos exclusivos desta página
+   Segue CLAUDE.md §11.4 (Sistema de CSS — duas camadas):
+     - Classes globais (page-header, filter-bar, table-card, etc.)
+       são usadas diretamente no template — não redeclaradas aqui.
+     - Este arquivo contém APENAS o que é exclusivo desta página.
+   ================================================================ */
+
+/* ================================================================
+   NAVEGAÇÃO DE ABAS
+   Barra de seleção entre "Negócios Gerados" e "Negócios Recebidos".
+   Usa signal Angular em vez de Bootstrap JS tabs para manter
+   a troca de aba 100% reativa sem eventos DOM externos.
+   ================================================================ */
+.conexoes-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--cor-borda);
+  padding-bottom: 0;
+}
+
+.conexoes-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;          /* encosta na borda do container */
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cor-texto-secundario);
+  cursor: pointer;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.conexoes-tab:hover {
+  color: var(--cor-texto);
+  background: var(--cor-surface-alt);
+}
+
+.conexoes-tab--ativa {
+  color: var(--cor-primaria);
+  border-bottom-color: var(--cor-primaria);
+  font-weight: 600;
+}
+
+.conexoes-tab--ativa:hover {
+  background: transparent;
+}
+
+/* Badge com o total de registros na aba */
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: var(--cor-primaria);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: var(--radius-pill);
+  line-height: 1;
+}
+
+/* ================================================================
+   TABELA — ajustes internos específicos da página Conexões
+   ================================================================ */
+.conexoes-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.conexoes-table th {
+  padding: 13px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--cor-texto-secundario);
+  background: var(--cor-surface-alt);
+  border-bottom: 1px solid var(--cor-borda);
+  white-space: nowrap;
+}
+
+.conexoes-table td {
+  padding: 14px 16px;
+  font-size: 14px;
+  color: var(--cor-texto);
+  border-bottom: 1px solid var(--cor-borda);
+  vertical-align: middle;
+}
+
+.conexoes-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.conexao-row:hover td {
+  background: var(--cor-surface-alt);
+}
+
+/* ================================================================
+   CÉLULA: PESSOA (destinatário / remetente)
+   Avatar com iniciais + nome em linha
+   ================================================================ */
+.cell-pessoa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 160px;
+}
+
+.pessoa-avatar {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: var(--radius-md);
+  background: var(--cor-primaria);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar-initials {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.pessoa-nome {
+  font-weight: 500;
+  color: var(--cor-texto);
+  white-space: nowrap;
+}
+
+/* ================================================================
+   CÉLULA: CANDIDATO
+   Nome em destaque + telefone como detalhe abaixo
+   ================================================================ */
+.cell-candidato {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 160px;
+}
+
+.candidato-nome {
+  font-weight: 500;
+  color: var(--cor-texto);
+}
+
+.candidato-tel {
+  font-size: 12px;
+  color: var(--cor-texto-secundario);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ================================================================
+   CÉLULA: STATUS + BADGE PRAZO ESTOURADO
+   ================================================================ */
+.cell-status {
+  /* Forçado via td já tem padding; só ajusta o conteúdo interno */
+}
+
+.status-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+/**
+ * Badge "90 dias" — aparece abaixo do chip de status quando
+ * prazoEstourado = true. Laranja para chamar atenção sem alarme.
+ *
+ * Por que não sobrescrever o chip de status?
+ * O chip reflete a verdade do status (NOVA, EM_ANDAMENTO…). O prazo
+ * é uma informação ADICIONAL — não substitui, complementa.
+ */
+.badge-prazo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--cor-alerta-bg);
+  color: var(--cor-alerta);
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ================================================================
+   CÉLULA: DATA
+   ================================================================ */
+.cell-data {
+  white-space: nowrap;
+  color: var(--cor-texto-secundario);
+  font-size: 13px;
+  min-width: 100px;
+}
+
+/* ================================================================
+   SKELETON (loading state)
+   Placeholders animados enquanto os dados carregam.
+   ================================================================ */
+.skeleton-row td {
+  padding: 16px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f1f5f9 25%,
+    #e2e8f0 50%,
+    #f1f5f9 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+}
+
+.skeleton-nome  { height: 14px; width: 140px; }
+.skeleton-chip  { height: 22px; width: 80px; border-radius: var(--radius-pill); }
+.skeleton-data  { height: 14px; width: 80px; }
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ================================================================
+   COLUNA DE AÇÕES (Negócios Recebidos)
+   Botões icon-only agrupados horizontalmente.
+   .acoes-group é local desta página (não está em styles.css).
+   .btn-acao e a base tamanho/forma vem de styles.css.
+   ================================================================ */
+.acoes-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+/**
+ * btn-avancar — azul — "Mover para Em Andamento"
+ * Só aparece quando status === NOVA.
+ */
+.btn-avancar {
+  color: var(--cor-info);
+  background: var(--cor-info-bg);
+  border-color: var(--cor-info-bg);
+}
+
+.btn-avancar:hover {
+  background: #bae6fd;
+  border-color: #7dd3fc;
+  color: #0c4a6e;
+}
+
+/**
+ * btn-fechar-negocio — verde — "Fechar negócio"
+ * Aparece quando status === NOVA ou EM_ANDAMENTO.
+ */
+.btn-fechar-negocio {
+  color: var(--cor-sucesso);
+  background: var(--cor-sucesso-bg);
+  border-color: var(--cor-sucesso-bg);
+}
+
+.btn-fechar-negocio:hover {
+  background: #bbf7d0;
+  border-color: #86efac;
+  color: #14532d;
+}
+
+/**
+ * btn-nao-fechado — vermelho — "Negócio não fechado"
+ * Aparece quando status === NOVA ou EM_ANDAMENTO.
+ */
+.btn-nao-fechado {
+  color: var(--cor-erro);
+  background: var(--cor-erro-bg);
+  border-color: var(--cor-erro-bg);
+}
+
+.btn-nao-fechado:hover {
+  background: #fecaca;
+  border-color: #fca5a5;
+  color: #7f1d1d;
+}
+
+/* ================================================================
+   PAGINAÇÃO
+   Controles de navegação entre páginas do backend.
+   ================================================================ */
+.paginacao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid var(--cor-borda);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-paginacao {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--cor-surface-alt);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cor-texto);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-paginacao:hover:not(:disabled) {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.btn-paginacao:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.paginacao-info {
+  font-size: 13px;
+  color: var(--cor-texto-secundario);
+  text-align: center;
+  flex: 1;
+  white-space: nowrap;
+}
+
+.paginacao-total {
+  color: var(--cor-texto-placeholder);
+  margin-left: 4px;
+}
+
+/* ================================================================
+   RESPONSIVO — mobile (< 768px)
+   ================================================================ */
+@media (max-width: 768px) {
+  .conexoes-tabs {
+    gap: 0;
+  }
+
+  .conexoes-tab {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 10px 12px;
+    font-size: 13px;
+  }
+
+  .cell-pessoa {
+    min-width: 120px;
+  }
+
+  .cell-candidato {
+    min-width: 120px;
+  }
+
+  .paginacao {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .paginacao-info {
+    order: -1;
+  }
+}
