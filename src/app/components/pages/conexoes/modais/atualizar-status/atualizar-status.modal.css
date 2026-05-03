@@ -1,0 +1,118 @@
+/* ================================================================
+   ATUALIZAR-STATUS.MODAL.CSS
+   Estilos exclusivos do modal "Atualizar Status".
+
+   Prefixo: asm- (Atualizar Status Modal)
+   Segue CLAUDE.md §11.4 (duas camadas de CSS):
+     - Classes Bootstrap (.modal, .modal-dialog, etc.) usadas diretamente
+       no template — não redeclaradas aqui.
+     - Este arquivo contém APENAS o que é exclusivo deste modal.
+   ================================================================ */
+
+/* ================================================================
+   BACKDROP
+   Idêntico ao do nova-conexao.modal: position:fixed, z-index 1040
+   (abaixo do .modal Bootstrap em z-index: 1055).
+   ================================================================ */
+.asm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  background: rgba(15, 23, 42, 0.5);
+  cursor: pointer;
+}
+
+/* ================================================================
+   HEADER — ícone dinâmico com variantes por status
+   ================================================================ */
+.asm-header-icon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: var(--radius-md);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+/* Azul — Em Andamento */
+.asm-header-icon--andamento {
+  background: var(--cor-info);
+}
+
+/* Verde — Fechado */
+.asm-header-icon--fechada {
+  background: var(--cor-sucesso);
+}
+
+/* Vermelho — Não Fechado */
+.asm-header-icon--nao-fechada {
+  background: var(--cor-erro);
+}
+
+/* ================================================================
+   CARD DE CONTEXTO
+   Exibe remetente, candidato e status atual da conexão antes do
+   formulário — o usuário confirma que está editando a certa.
+   ================================================================ */
+.asm-context-card {
+  background: var(--cor-surface-alt);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.asm-context-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.asm-context-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cor-texto-secundario);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  min-width: 90px;
+  flex-shrink: 0;
+}
+
+.asm-context-value {
+  font-size: 14px;
+  color: var(--cor-texto);
+}
+
+/* Status atual: ligeiramente destacado */
+.asm-context-status {
+  font-weight: 600;
+  color: var(--cor-texto-secundario);
+}
+
+/* ================================================================
+   TEXTO DE CONFIRMAÇÃO
+   Exibido acima do campo de formulário (ou sozinho para EM_ANDAMENTO).
+   ================================================================ */
+.asm-confirm-text {
+  font-size: 14px;
+  color: var(--cor-texto-secundario);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+/* Variante verde para FECHADA */
+.asm-confirm-text--sucesso {
+  color: var(--cor-sucesso);
+}
+
+/* Variante vermelha para NAO_FECHADA */
+.asm-confirm-text--erro {
+  color: var(--cor-erro);
+}

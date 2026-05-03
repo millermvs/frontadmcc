@@ -1,0 +1,117 @@
+/* ================================================================
+   CONFIRMAR-EXCLUSAO.MODAL.CSS
+   Estilos exclusivos do modal "Confirmar Exclusão".
+
+   Prefixo: cem- (Confirmar Exclusão Modal)
+
+   Nota: .asm-context-card e .asm-context-row são reutilizados do
+   modal Atualizar Status. Esse compartilhamento é intencional —
+   o card de contexto é idêntico visualmente. Em Angular com
+   ViewEncapsulation.Emulated, cada componente gera seu próprio
+   atributo _ngcontent, então as classes não se conflitam mesmo
+   com o mesmo nome. Ambos os componentes precisam declarar as
+   classes no próprio .css.
+   ================================================================ */
+
+/* ================================================================
+   BACKDROP
+   ================================================================ */
+.cem-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  background: rgba(15, 23, 42, 0.5);
+  cursor: pointer;
+}
+
+/* ================================================================
+   HEADER — ícone vermelho (ação destrutiva)
+   ================================================================ */
+.cem-header-icon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: var(--radius-md);
+  background: var(--cor-erro);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+/* ================================================================
+   AVISO — texto de ação irreversível
+   ================================================================ */
+.cem-aviso {
+  font-size: 13px;
+  color: var(--cor-erro);
+  font-weight: 500;
+  margin-bottom: 14px;
+}
+
+/* ================================================================
+   CARD DE CONTEXTO (mesmo visual do atualizar-status.modal.css)
+   ================================================================ */
+.asm-context-card {
+  background: var(--cor-surface-alt);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.asm-context-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.asm-context-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cor-texto-secundario);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  min-width: 90px;
+  flex-shrink: 0;
+}
+
+.asm-context-value {
+  font-size: 14px;
+  color: var(--cor-texto);
+}
+
+/* ================================================================
+   BOTÃO EXCLUIR — vermelho sólido, destrutivo
+   Não usa .btn-salvar-modal (verde) — ação destrutiva tem cor própria.
+   ================================================================ */
+.cem-btn-excluir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--cor-erro);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+}
+
+.cem-btn-excluir:hover:not(:disabled) {
+  background: #b91c1c;
+  box-shadow: 0 4px 14px rgba(153, 27, 27, 0.30);
+}
+
+.cem-btn-excluir:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}

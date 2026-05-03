@@ -301,6 +301,23 @@
   color: #7f1d1d;
 }
 
+/**
+ * btn-excluir — vermelho — "Excluir conexão"
+ * Só aparece na aba Geradas quando status === NOVA.
+ * Usa a mesma paleta de erro do btn-nao-fechado para consistência.
+ */
+.btn-excluir {
+  color: var(--cor-erro);
+  background: var(--cor-erro-bg);
+  border-color: var(--cor-erro-bg);
+}
+
+.btn-excluir:hover {
+  background: #fecaca;
+  border-color: #fca5a5;
+  color: #7f1d1d;
+}
+
 /* ================================================================
    PAGINAÇÃO
    Controles de navegação entre páginas do backend.

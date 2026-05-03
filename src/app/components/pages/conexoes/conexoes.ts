@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ModalService } from '../../../core/modal.service';
 import {
   ConexaoGeradaResponseDto,
   ConexaoRecebidaResponseDto,
@@ -9,6 +10,9 @@ import {
 } from '../../../models/conexao.model';
 import { ConexaoService } from '../../../services/conexao.service';
 import { ToastService } from '../../../services/toast.service';
+import { AtualizarStatusModal } from './modais/atualizar-status/atualizar-status.modal';
+import { ConfirmarExclusaoModal } from './modais/confirmar-exclusao/confirmar-exclusao.modal';
+import { NovaConexaoModal } from './modais/nova-conexao/nova-conexao.modal';
 
 // Tipo interno — controla qual aba está visível.
 // Sem export: é uma estrutura privada deste componente.
@@ -24,17 +28,17 @@ type AbaAtiva = 'geradas' | 'recebidas';
  * - Captura filtros, paginação e troca de aba
  * - Delega toda lógica HTTP ao Service
  *
- * Estado atual (Parte 3 — Aba Recebidas):
- *   ✅ Header, botão "Nova Conexão" (sem ação — Parte 4)
+ * Estado atual (Parte 5 — Modal Atualizar Status):
+ *   ✅ Header, botão "Nova Conexão"
  *   ✅ Navegação de abas com signal reativo
  *   ✅ Tabela de Negócios Gerados (destinatário, candidato, tipo, status, data)
  *   ✅ Badge laranja para prazoEstourado
  *   ✅ Filter bar com busca + filtros por status e tipo (client-side na página carregada)
  *   ✅ Loading state, empty state, paginação (Geradas e Recebidas)
  *   ✅ Tabela de Negócios Recebidos com botões de ação condicionais por status
- *   🔜 Modal Nova Conexão (Parte 4)
- *   🔜 Modal Atualizar Status (Parte 5)
- *   🔜 Modal Confirmar Exclusão (Parte 6)
+ *   ✅ Modal Nova Conexão (Parte 4)
+ *   ✅ Modal Atualizar Status — EM_ANDAMENTO / FECHADA / NAO_FECHADA (Parte 5)
+ *   ✅ Modal Confirmar Exclusão — botão visível só para status NOVA (Parte 6)
  */
 @Component({
   selector: 'app-conexoes',
@@ -51,6 +55,7 @@ export class Conexoes implements OnInit {
 
   private conexaoService = inject(ConexaoService);
   private toastService   = inject(ToastService);
+  private modalService   = inject(ModalService);
 
   // =========================================================================
   // SIGNAL — ABA ATIVA
@@ -186,6 +191,7 @@ export class Conexoes implements OnInit {
 
   ngOnInit(): void {
     this.carregarGeradas();
+    this.carregarRecebidas()
   }
 
   // =========================================================================
@@ -204,6 +210,52 @@ export class Conexoes implements OnInit {
   }
 
   // =========================================================================
+  // MODAIS
+  // =========================================================================
+
+  /**
+   * abrirModalNovaConexao()
+   *
+   * Abre o modal via ModalService — nenhuma tag de modal no template.
+   * Ao fechar com resultado (novaConexao), recarrega a aba Geradas do
+   * início (página 0) e muda para ela se o usuário estava em Recebidas.
+   */
+  abrirModalNovaConexao(): void {
+    this.modalService
+      .open<ConexaoGeradaResponseDto>(NovaConexaoModal)
+      .subscribe(resultado => {
+        if (resultado) {
+          this.toastService.sucesso('Conexão registrada com sucesso!');
+          this.abaAtiva.set('geradas');
+          this.carregarGeradas(0);
+        }
+      });
+  }
+
+  /**
+   * abrirModalConfirmarExclusao(conexao)
+   *
+   * Abre o ConfirmarExclusaoModal para uma conexão com status NOVA.
+   * Ao confirmar, o modal retorna o idConexao excluído.
+   * O signal é atualizado localmente — sem recarregar a lista.
+   */
+  abrirModalConfirmarExclusao(conexao: ConexaoGeradaResponseDto): void {
+    this.modalService
+      .open<number, { conexao: ConexaoGeradaResponseDto }>(ConfirmarExclusaoModal, {
+        data: { conexao },
+      })
+      .subscribe(idExcluido => {
+        if (idExcluido !== undefined) {
+          this.toastService.sucesso('Conexão excluída com sucesso!');
+          this.conexoesGeradas.update(lista =>
+            lista.filter(c => c.idConexao !== idExcluido)
+          );
+          this.totalItemsGeradas.update(n => Math.max(0, n - 1));
+        }
+      });
+  }
+
+  // =========================================================================
   // GERADAS — carregamento
   // =========================================================================
 
@@ -213,7 +265,7 @@ export class Conexoes implements OnInit {
     this.conexaoService
       .listarGeradas(pagina, this.tamanhoPaginaGeradas())
       .subscribe({
-        next: (resposta) => {
+        next: (resposta) => {          
           this.conexoesGeradas.set(resposta.items);
           this.paginaGeradas.set(resposta.page);
           this.totalItemsGeradas.set(resposta.totalItems);
@@ -223,6 +275,7 @@ export class Conexoes implements OnInit {
           this.carregandoGeradas.set(false);
         },
         error: (err: HttpErrorResponse) => {
+          console.error('Erro ao carregar conexões geradas:', err); // Log do erro
           this.carregandoGeradas.set(false);
           this.toastService.erro('Erro ao carregar negócios gerados. Tente novamente.');
         },
@@ -320,20 +373,32 @@ export class Conexoes implements OnInit {
   }
 
   // =========================================================================
-  // RECEBIDAS — ações de status (placeholder — Parte 5 implementa os modais)
-  //
-  // Por que placeholder e não modal já? Os botões precisam existir no template
-  // para validar a UX, mas a lógica de modal (formulário de valor, motivo) só
-  // é construída na Parte 5. O console.warn avisa durante desenvolvimento
-  // que a ação ainda não está conectada.
+  // RECEBIDAS — atualizar status
   // =========================================================================
 
+  /**
+   * abrirModalAtualizarStatus(conexao, novoStatus)
+   *
+   * Abre o AtualizarStatusModal passando a conexão e o novoStatus desejado.
+   * Ao fechar com resultado (conexão atualizada), substitui o item no signal
+   * local sem recarregar a lista inteira — o PATCH já retorna o DTO completo.
+   *
+   * signal.update() itera sobre o array atual e troca apenas o item cujo
+   * idConexao bate com o retornado — O(n) mas n ≤ 20 (tamanho da página).
+   */
   abrirModalAtualizarStatus(conexao: ConexaoRecebidaResponseDto, novoStatus: StatusConexao): void {
-    console.warn('[Parte 5] Modal atualizar status — pendente de implementação', {
-      idConexao: conexao.idConexao,
-      statusAtual: conexao.status,
-      novoStatus,
-    });
+    this.modalService
+      .open<ConexaoRecebidaResponseDto, { conexao: ConexaoRecebidaResponseDto; novoStatus: StatusConexao }>(AtualizarStatusModal, {
+        data: { conexao, novoStatus },
+      })
+      .subscribe(atualizada => {
+        if (atualizada) {
+          this.toastService.sucesso('Status atualizado com sucesso!');
+          this.conexoesRecebidas.update(lista =>
+            lista.map(c => c.idConexao === atualizada.idConexao ? atualizada : c)
+          );
+        }
+      });
   }
 
   // =========================================================================

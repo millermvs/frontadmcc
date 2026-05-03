@@ -1,0 +1,122 @@
+<!-- ================================================================
+     MODAL CONFIRMAR EXCLUSÃO
+
+     Estrutura padrão do projeto:
+       - .cem-backdrop (position:fixed, z-index:1040)
+       - .modal.d-block Bootstrap (position:fixed, z-index:1055)
+     ================================================================ -->
+
+<!-- Backdrop — clique fecha o modal -->
+<div
+  class="cem-backdrop"
+  (click)="fechar()"
+  aria-hidden="true"
+></div>
+
+<!-- Dialog Bootstrap -->
+<div
+  class="modal d-block"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="modal-confirmar-exclusao-titulo"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+
+      <!-- ============================================================
+           HEADER
+           ============================================================ -->
+      <div class="modal-header">
+        <div class="cem-header-icon" aria-hidden="true">
+          <i class="bi bi-trash3-fill"></i>
+        </div>
+        <h5 class="modal-title" id="modal-confirmar-exclusao-titulo">
+          Excluir Conexão
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          (click)="fechar()"
+          [disabled]="carregando()"
+          aria-label="Fechar modal"
+        ></button>
+      </div>
+
+      <!-- ============================================================
+           BODY
+           ============================================================ -->
+      <div class="modal-body">
+
+        <!-- Aviso — ação irreversível -->
+        <p class="cem-aviso">
+          <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>
+          Esta ação não pode ser desfeita.
+        </p>
+
+        <!-- Card de contexto — o usuário confirma qual conexão será excluída -->
+        <div class="asm-context-card">
+
+          <div class="asm-context-row">
+            <span class="asm-context-label">Destinatário</span>
+            <span class="asm-context-value">{{ conexao.nomeDestinatario }}</span>
+          </div>
+
+          <div class="asm-context-row">
+            <span class="asm-context-label">Candidato</span>
+            <span class="asm-context-value">{{ conexao.nomeCandidato }}</span>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ============================================================
+           FOOTER — erro + botões
+           Padrão CLAUDE.md §8.3: erro sempre no footer, auto-dismiss 3s.
+           ============================================================ -->
+      <div class="modal-footer">
+
+        @if (erroModal()) {
+          <div
+            class="alert alert-danger d-flex align-items-center gap-2 mb-0 flex-fill"
+            role="alert"
+          >
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+            <span>{{ erroModal() }}</span>
+          </div>
+        }
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="fechar()"
+          [disabled]="carregando()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="cem-btn-excluir"
+          (click)="excluir()"
+          [disabled]="carregando()"
+        >
+          @if (carregando()) {
+            <span
+              class="spinner-border spinner-border-sm me-2"
+              role="status"
+              aria-hidden="true"
+            ></span>
+            Excluindo…
+          } @else {
+            <i class="bi bi-trash3-fill me-2" aria-hidden="true"></i>
+            Excluir
+          }
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+</div>

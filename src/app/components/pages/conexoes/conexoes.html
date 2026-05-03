@@ -15,8 +15,11 @@
     </div>
 
     <div class="page-header-right">
-      <!-- Ação real será ligada na Parte 4 (Modal Nova Conexão) -->
-      <button class="btn-acao-pagina" type="button" disabled title="Em breve">
+      <button
+        class="btn-acao-pagina"
+        type="button"
+        (click)="abrirModalNovaConexao()"
+      >
         <i class="bi bi-plus-lg" aria-hidden="true"></i>
         Nova Conexão
       </button>
@@ -145,6 +148,7 @@
                 <th scope="col">Tipo</th>
                 <th scope="col">Status</th>
                 <th scope="col">Data</th>
+                <th scope="col"></th>
               </tr>
             </thead>
 
@@ -159,6 +163,7 @@
                     <td><div class="skeleton skeleton-chip"></div></td>
                     <td><div class="skeleton skeleton-chip"></div></td>
                     <td><div class="skeleton skeleton-data"></div></td>
+                    <td><div class="skeleton skeleton-chip"></div></td>
                   </tr>
                 }
               }
@@ -169,11 +174,13 @@
                   <tr class="conexao-row">
 
                     <!-- Destinatário — avatar com iniciais + nome -->
-                    <td class="cell-pessoa">
-                      <div class="pessoa-avatar">
-                        <span class="avatar-initials">{{ iniciaisNome(conexao.nomeDestinatario) }}</span>
+                    <td>
+                      <div class="cell-pessoa">
+                        <div class="pessoa-avatar">
+                          <span class="avatar-initials">{{ iniciaisNome(conexao.nomeDestinatario) }}</span>
+                        </div>
+                        <span class="pessoa-nome">{{ conexao.nomeDestinatario }}</span>
                       </div>
-                      <span class="pessoa-nome">{{ conexao.nomeDestinatario }}</span>
                     </td>
 
                     <!-- Candidato — nome + telefone em linha secundária -->
@@ -216,13 +223,30 @@
                       {{ formatarData(conexao.criadoEm) }}
                     </td>
 
+                    <!-- Ações — botão excluir visível apenas quando status = NOVA -->
+                    <td>
+                      <div class="acoes-group">
+                        @if (conexao.status === 'NOVA') {
+                          <button
+                            class="btn-acao btn-excluir"
+                            type="button"
+                            title="Excluir conexão"
+                            aria-label="Excluir conexão"
+                            (click)="abrirModalConfirmarExclusao(conexao)"
+                          >
+                            <i class="bi bi-trash3-fill" aria-hidden="true"></i>
+                          </button>
+                        }
+                      </div>
+                    </td>
+
                   </tr>
                 }
 
                 <!-- ── ESTADO: VAZIO ───────────────────────────────── -->
                 @if (conexoesGeradasFiltradas().length === 0) {
                   <tr>
-                    <td colspan="5" class="empty-state">
+                    <td colspan="6" class="empty-state">
                       <div class="empty-icon">
                         <i class="bi bi-send" aria-hidden="true"></i>
                       </div>
@@ -384,11 +408,13 @@
                   <tr class="conexao-row">
 
                     <!-- Remetente — avatar com iniciais + nome -->
-                    <td class="cell-pessoa">
-                      <div class="pessoa-avatar">
-                        <span class="avatar-initials">{{ iniciaisNome(conexao.nomeRemetente) }}</span>
+                    <td>
+                      <div class="cell-pessoa">
+                        <div class="pessoa-avatar">
+                          <span class="avatar-initials">{{ iniciaisNome(conexao.nomeRemetente) }}</span>
+                        </div>
+                        <span class="pessoa-nome">{{ conexao.nomeRemetente }}</span>
                       </div>
-                      <span class="pessoa-nome">{{ conexao.nomeRemetente }}</span>
                     </td>
 
                     <!-- Candidato — nome + telefone em linha secundária -->

@@ -1,0 +1,272 @@
+<!-- ================================================================
+     MODAL NOVA CONEXÃO
+
+     O elemento :host é montado no document.body pelo ModalService.
+     O backdrop (.ncc-backdrop) fica position:fixed abaixo do dialog.
+     O dialog usa classes Bootstrap (.modal.d-block) que já têm
+     position:fixed z-index:1055 — flutua acima do backdrop.
+     ================================================================ -->
+
+<!-- Backdrop — clique fecha o modal -->
+<div
+  class="ncc-backdrop"
+  (click)="fechar()"
+  aria-hidden="true"
+></div>
+
+<!-- Dialog Bootstrap -->
+<div
+  class="modal d-block"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="modal-nova-conexao-titulo"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <!-- ============================================================
+           HEADER
+           ============================================================ -->
+      <div class="modal-header">
+        <div class="ncc-header-icon" aria-hidden="true">
+          <i class="bi bi-send-fill"></i>
+        </div>
+        <h5 class="modal-title" id="modal-nova-conexao-titulo">Nova Conexão</h5>
+        <button
+          type="button"
+          class="btn-close"
+          (click)="fechar()"
+          [disabled]="carregando()"
+          aria-label="Fechar modal"
+        ></button>
+      </div>
+
+      <!-- ============================================================
+           BODY — FORMULÁRIO
+           ============================================================ -->
+      <div class="modal-body">
+        <form
+          [formGroup]="form"
+          id="form-nova-conexao"
+          (ngSubmit)="salvar()"
+          novalidate
+        >
+
+          <!-- ── DESTINATÁRIO (autocomplete) ────────────────────────── -->
+          <div class="mb-3">
+            <label class="form-label" for="busca-destinatario">
+              Destinatário <span class="text-danger">*</span>
+            </label>
+
+            <div class="ncc-autocomplete-wrap">
+              <i class="bi bi-search ncc-autocomplete-icon" aria-hidden="true"></i>
+
+              @if (destinatarioSelecionado()) {
+                <!-- Estado: associado selecionado — exibe nome com botão de limpar -->
+                <div class="ncc-selecionado">
+                  <span class="ncc-selecionado-nome">
+                    {{ destinatarioSelecionado()!.nomeCompleto }}
+                  </span>
+                  <button
+                    type="button"
+                    class="ncc-btn-limpar"
+                    (click)="limparDestinatario()"
+                    title="Remover seleção"
+                    aria-label="Remover destinatário selecionado"
+                  >
+                    <i class="bi bi-x" aria-hidden="true"></i>
+                  </button>
+                </div>
+              } @else {
+                <!-- Estado: campo de busca -->
+                <input
+                  id="busca-destinatario"
+                  type="text"
+                  class="form-control ncc-autocomplete-input"
+                  placeholder="Buscar associado pelo nome…"
+                  [value]="termoBuscaDestinatario()"
+                  (input)="onBuscaDestinatario($any($event.target).value)"
+                  (blur)="ocultarSugestoes()"
+                  autocomplete="off"
+                  [attr.aria-expanded]="mostrarSugestoes()"
+                  aria-haspopup="listbox"
+                  aria-autocomplete="list"
+                  aria-controls="sugestoes-destinatario"
+                />
+              }
+
+              @if (buscandoDestinatario()) {
+                <span class="ncc-spinner" aria-label="Buscando associados"></span>
+              }
+
+              <!-- Dropdown de sugestões — dentro do wrap (position:relative) para
+                   que position:absolute/top:100% seja relativo ao input, não ao modal -->
+              @if (mostrarSugestoes() && sugestoes().length > 0) {
+                <ul
+                  id="sugestoes-destinatario"
+                  class="ncc-sugestoes"
+                  role="listbox"
+                  aria-label="Sugestões de destinatário"
+                >
+                  @for (associado of sugestoes(); track associado.idAssociado) {
+                    <li
+                      class="ncc-sugestao-item"
+                      role="option"
+                      (mousedown)="selecionarDestinatario(associado)"
+                    >
+                      <div class="ncc-sugestao-avatar" aria-hidden="true">
+                        {{ associado.nomeCompleto.charAt(0).toUpperCase() }}
+                      </div>
+                      <div class="ncc-sugestao-info">
+                        <span class="ncc-sugestao-nome">{{ associado.nomeCompleto }}</span>
+                        <small class="ncc-sugestao-meta">
+                          {{ mascararCpf(associado.cpf) }} · {{ associado.nomeEquipe }}
+                        </small>
+                      </div>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+
+            @if (form.get('idDestinatario')?.invalid && form.get('idDestinatario')?.touched) {
+              <div class="invalid-feedback d-block">
+                Selecione um destinatário da lista.
+              </div>
+            }
+          </div>
+
+          <!-- ── TIPO DA CONEXÃO ─────────────────────────────────────── -->
+          <div class="mb-3">
+            <label class="form-label" for="tipo-conexao">
+              Tipo <span class="text-danger">*</span>
+            </label>
+            <select
+              id="tipo-conexao"
+              class="form-select"
+              formControlName="tipo"
+              [class.is-invalid]="form.get('tipo')?.invalid && form.get('tipo')?.touched"
+            >
+              <option value="" disabled>Selecione o tipo…</option>
+              <option value="QUENTE">🔥 Quente — Vou levar ao contato pessoalmente</option>
+              <option value="MORNA">🌡️ Morna — Compartilhei ambos os números</option>
+              <option value="FRIA">❄️ Fria — Compartilhei apenas o contato</option>
+            </select>
+            @if (form.get('tipo')?.invalid && form.get('tipo')?.touched) {
+              <div class="invalid-feedback">Selecione o tipo da conexão.</div>
+            }
+          </div>
+
+          <!-- ── NOME DO CANDIDATO ───────────────────────────────────── -->
+          <div class="mb-3">
+            <label class="form-label" for="nome-candidato">
+              Nome do Candidato <span class="text-danger">*</span>
+            </label>
+            <input
+              id="nome-candidato"
+              type="text"
+              class="form-control"
+              formControlName="nomeCandidato"
+              placeholder="Nome completo do prospect"
+              [class.is-invalid]="form.get('nomeCandidato')?.invalid && form.get('nomeCandidato')?.touched"
+            />
+            @if (form.get('nomeCandidato')?.invalid && form.get('nomeCandidato')?.touched) {
+              <div class="invalid-feedback">Nome do candidato é obrigatório.</div>
+            }
+          </div>
+
+          <!-- ── TELEFONE DO CANDIDATO ──────────────────────────────── -->
+          <div class="mb-3">
+            <label class="form-label" for="telefone-candidato">
+              Telefone / WhatsApp do Candidato <span class="text-danger">*</span>
+            </label>
+            <input
+              id="telefone-candidato"
+              type="tel"
+              class="form-control"
+              formControlName="telefoneCandidato"
+              placeholder="(11) 99999-9999"
+              [class.is-invalid]="form.get('telefoneCandidato')?.invalid && form.get('telefoneCandidato')?.touched"
+            />
+            @if (form.get('telefoneCandidato')?.invalid && form.get('telefoneCandidato')?.touched) {
+              <div class="invalid-feedback">Telefone do candidato é obrigatório.</div>
+            }
+          </div>
+
+          <!-- ── COMPLEMENTO (opcional) ─────────────────────────────── -->
+          <div class="mb-1">
+            <label class="form-label" for="complemento">
+              Complemento
+              <span class="text-muted-sm">(opcional)</span>
+            </label>
+            <textarea
+              id="complemento"
+              class="form-control"
+              formControlName="complemento"
+              rows="3"
+              placeholder="Informações adicionais sobre o candidato ou a oportunidade…"
+              [class.is-invalid]="form.get('complemento')?.invalid && form.get('complemento')?.touched"
+            ></textarea>
+            <div class="ncc-contador-chars">
+              <span [class.text-danger]="complementoRestante < 0">
+                {{ complementoRestante }} caracteres restantes
+              </span>
+            </div>
+            @if (form.get('complemento')?.invalid && form.get('complemento')?.touched) {
+              <div class="invalid-feedback">Máximo de 130 caracteres.</div>
+            }
+          </div>
+
+        </form>
+      </div>
+
+      <!-- ============================================================
+           FOOTER — erro + botões
+           Padrão CLAUDE.md §8.3: erro sempre no footer, auto-dismiss 3s.
+           ============================================================ -->
+      <div class="modal-footer">
+
+        @if (erroModal()) {
+          <div
+            class="alert alert-danger d-flex align-items-center gap-2 mb-0 flex-fill"
+            role="alert"
+          >
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+            <span>{{ erroModal() }}</span>
+          </div>
+        }
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="fechar()"
+          [disabled]="carregando()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          form="form-nova-conexao"
+          class="btn-salvar-modal"
+          [disabled]="form.invalid || carregando()"
+        >
+          @if (carregando()) {
+            <span
+              class="spinner-border spinner-border-sm me-2"
+              role="status"
+              aria-hidden="true"
+            ></span>
+            Registrando…
+          } @else {
+            <i class="bi bi-send-fill me-2" aria-hidden="true"></i>
+            Registrar Conexão
+          }
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+</div>

@@ -1,0 +1,213 @@
+<!-- ================================================================
+     MODAL ATUALIZAR STATUS
+
+     Estrutura idêntica à nova-conexao.modal.html:
+       - .asm-backdrop (position:fixed, z-index:1040) para fechar ao clicar fora
+       - .modal.d-block Bootstrap (position:fixed, z-index:1055) para o dialog
+     ================================================================ -->
+
+<!-- Backdrop — clique fecha o modal -->
+<div
+  class="asm-backdrop"
+  (click)="fechar()"
+  aria-hidden="true"
+></div>
+
+<!-- Dialog Bootstrap -->
+<div
+  class="modal d-block"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="modal-atualizar-status-titulo"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <!-- ============================================================
+           HEADER — ícone dinâmico por status + título
+           ============================================================ -->
+      <div class="modal-header">
+        <div [class]="classeIconeHeader()" aria-hidden="true">
+          <i [class]="'bi ' + iconeHeader()"></i>
+        </div>
+        <h5 class="modal-title" id="modal-atualizar-status-titulo">
+          Mover para {{ LABEL_NOVO_STATUS[novoStatus] }}
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          (click)="fechar()"
+          [disabled]="carregando()"
+          aria-label="Fechar modal"
+        ></button>
+      </div>
+
+      <!-- ============================================================
+           BODY
+           ============================================================ -->
+      <div class="modal-body">
+
+        <!-- ── CARD DE CONTEXTO ──────────────────────────────────── -->
+        <!-- Exibe os dados da conexão para o usuário confirmar que está
+             atualizando a conexão correta, sem abrir o detalhe. -->
+        <div class="asm-context-card">
+
+          <div class="asm-context-row">
+            <span class="asm-context-label">Remetente</span>
+            <span class="asm-context-value">{{ conexao.nomeRemetente }}</span>
+          </div>
+
+          <div class="asm-context-row">
+            <span class="asm-context-label">Candidato</span>
+            <span class="asm-context-value">{{ conexao.nomeCandidato }}</span>
+          </div>
+
+          <div class="asm-context-row">
+            <span class="asm-context-label">Status atual</span>
+            <span class="asm-context-value asm-context-status">
+              {{ LABEL_STATUS_ATUAL[conexao.status] }}
+            </span>
+          </div>
+
+        </div>
+
+        <!-- ── FORMULÁRIO CONDICIONAL ────────────────────────────── -->
+        <form
+          [formGroup]="form"
+          id="form-atualizar-status"
+          (ngSubmit)="confirmar()"
+          novalidate
+        >
+
+          <!-- ══ CASO: EM_ANDAMENTO ════════════════════════════════
+               Sem campos. Apenas texto de confirmação.
+               form.valid = true (sem validadores) → botão habilitado.
+          ══════════════════════════════════════════════════════════ -->
+          @if (novoStatus === 'EM_ANDAMENTO') {
+            <p class="asm-confirm-text">
+              <i class="bi bi-info-circle me-2" aria-hidden="true"></i>
+              Confirma que o processo comercial com
+              <strong>{{ conexao.nomeCandidato }}</strong>
+              está em andamento?
+            </p>
+          }
+
+          <!-- ══ CASO: FECHADA ═════════════════════════════════════
+               Campo obrigatório: valor do negócio (número positivo).
+               O backend registra o valor no indicador NR do ciclo.
+          ══════════════════════════════════════════════════════════ -->
+          @if (novoStatus === 'FECHADA') {
+            <p class="asm-confirm-text asm-confirm-text--sucesso">
+              <i class="bi bi-check-circle me-2" aria-hidden="true"></i>
+              Parabéns! Informe o valor do negócio fechado.
+            </p>
+
+            <div class="mb-3">
+              <label class="form-label" for="valor-negocio">
+                Valor do Negócio <span class="text-danger">*</span>
+              </label>
+              <div class="input-group">
+                <span class="input-group-text">R$</span>
+                <input
+                  id="valor-negocio"
+                  type="number"
+                  class="form-control"
+                  formControlName="valorNegocio"
+                  placeholder="0,00"
+                  min="0.01"
+                  step="0.01"
+                  [class.is-invalid]="form.get('valorNegocio')?.invalid && form.get('valorNegocio')?.touched"
+                />
+              </div>
+              @if (form.get('valorNegocio')?.invalid && form.get('valorNegocio')?.touched) {
+                <div class="invalid-feedback d-block">
+                  Informe o valor do negócio para continuar.
+                </div>
+              }
+            </div>
+          }
+
+          <!-- ══ CASO: NAO_FECHADA ═════════════════════════════════
+               Select obrigatório: motivo pelo qual o negócio não foi fechado.
+               3 opções fixas (enum MotivoNaoFechado).
+          ══════════════════════════════════════════════════════════ -->
+          @if (novoStatus === 'NAO_FECHADA') {
+            <p class="asm-confirm-text asm-confirm-text--erro">
+              <i class="bi bi-x-circle me-2" aria-hidden="true"></i>
+              Informe o motivo pelo qual este negócio não foi fechado.
+            </p>
+
+            <div class="mb-3">
+              <label class="form-label" for="motivo-nao-fechado">
+                Motivo <span class="text-danger">*</span>
+              </label>
+              <select
+                id="motivo-nao-fechado"
+                class="form-select"
+                formControlName="motivoNaoFechado"
+                [class.is-invalid]="form.get('motivoNaoFechado')?.invalid && form.get('motivoNaoFechado')?.touched"
+              >
+                <option value="" disabled>Selecione o motivo…</option>
+                @for (motivo of MOTIVOS; track motivo.valor) {
+                  <option [value]="motivo.valor">{{ motivo.label }}</option>
+                }
+              </select>
+              @if (form.get('motivoNaoFechado')?.invalid && form.get('motivoNaoFechado')?.touched) {
+                <div class="invalid-feedback">Selecione o motivo para continuar.</div>
+              }
+            </div>
+          }
+
+        </form>
+      </div>
+
+      <!-- ============================================================
+           FOOTER — erro + botões
+           Padrão CLAUDE.md §8.3: erro sempre no footer, auto-dismiss 3s.
+           ============================================================ -->
+      <div class="modal-footer">
+
+        @if (erroModal()) {
+          <div
+            class="alert alert-danger d-flex align-items-center gap-2 mb-0 flex-fill"
+            role="alert"
+          >
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+            <span>{{ erroModal() }}</span>
+          </div>
+        }
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="fechar()"
+          [disabled]="carregando()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          form="form-atualizar-status"
+          class="btn-salvar-modal"
+          [disabled]="form.invalid || carregando()"
+        >
+          @if (carregando()) {
+            <span
+              class="spinner-border spinner-border-sm me-2"
+              role="status"
+              aria-hidden="true"
+            ></span>
+            Salvando…
+          } @else {
+            <i [class]="'bi ' + iconeHeader() + ' me-2'" aria-hidden="true"></i>
+            Confirmar
+          }
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+</div>
