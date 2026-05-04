@@ -417,12 +417,30 @@
                       </div>
                     </td>
 
-                    <!-- Candidato — nome + telefone em linha secundária -->
+                    <!-- Candidato — nome + telefone em linha secundária.
+                         Telefone mascarado enquanto status = NOVA:
+                         a ADMCC requer que o destinatário registre
+                         o andamento no sistema antes de ter acesso
+                         ao contato do candidato. -->
                     <td class="cell-candidato">
                       <span class="candidato-nome">{{ conexao.nomeCandidato }}</span>
                       <small class="candidato-tel">
-                        <i class="bi bi-telephone-fill" aria-hidden="true"></i>
-                        {{ conexao.telefoneCandidato }}
+                        @if (telefoneRecebidaVisivel(conexao.status)) {
+                          <i class="bi bi-telephone-fill" aria-hidden="true"></i>
+                          {{ conexao.telefoneCandidato }}
+                        } @else {
+                          <i
+                            class="bi bi-lock-fill tel-bloqueado-icone"
+                            aria-hidden="true"
+                            title="Avance para Em Andamento para desbloquear o telefone"
+                          ></i>
+                          <span
+                            class="tel-bloqueado"
+                            title="Avance para Em Andamento para desbloquear o telefone"
+                          >
+                            {{ telefoneRecebida(conexao) }}
+                          </span>
+                        }
                       </small>
                     </td>
 

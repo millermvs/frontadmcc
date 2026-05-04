@@ -471,4 +471,20 @@ export class Conexoes implements OnInit {
     if (valor === null || valor === undefined) return '—';
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
+
+  /**
+   * telefoneRecebida(conexao)
+   *
+   * Retorna o telefone do candidato mascarado enquanto o status for NOVA.
+   * A ADMCC exige que o destinatário avance o status para EM_ANDAMENTO
+   * antes de ter acesso ao contato, evitando negociações fora do sistema.
+   */
+  telefoneRecebida(conexao: ConexaoRecebidaResponseDto): string {
+    return conexao.status === 'NOVA' ? '(••) •••••-••••' : conexao.telefoneCandidato;
+  }
+
+  /** Indica se o telefone está desbloqueado (status != NOVA) */
+  telefoneRecebidaVisivel(status: StatusConexao): boolean {
+    return status !== 'NOVA';
+  }
 }
