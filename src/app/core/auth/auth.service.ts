@@ -44,6 +44,9 @@ export class AuthService {
   /** Perfil de negocio — fonte de verdade para decisoes de UI. */
   perfil = computed(() => this._usuario()?.perfil ?? null);
 
+  /** ID da equipe do associado logado. Null para ADM sem equipe. */
+  idEquipe = computed(() => this._usuario()?.idEquipe ?? null);
+
   /**
    * POST /auth/login. Ao receber a resposta, persiste token + usuario
    * e atualiza o signal — a UI reage automaticamente.
@@ -61,6 +64,7 @@ export class AuthService {
             role: response.role,
             perfil: response.perfil,
             idAssociado: response.idAssociado,
+            idEquipe: response.idEquipe,
           };
           localStorage.setItem(this.STORAGE_KEY_USUARIO, JSON.stringify(usuario));
 

@@ -102,6 +102,24 @@ export interface ConexaoRecebidaResponseDto {
   prazoEstourado: boolean;
 }
 
+/**
+ * ConexaoResumoResponseDto
+ *
+ * Agregação retornada pelos endpoints GET /conexoes/geradas/resumo
+ * e GET /conexoes/recebidas/resumo.
+ *
+ * valorTotalNegocio é sempre um number (COALESCE no backend garante
+ * que nunca chega null, mesmo quando nenhum negócio foi fechado).
+ */
+export interface ConexaoResumoResponseDto {
+  totalConexoes: number;
+  totalNovas: number;
+  totalEmAndamento: number;
+  totalFechadas: number;
+  totalNaoFechadas: number;
+  valorTotalNegocio: number;
+}
+
 // ============================================================
 // REQUEST DTOs — dados enviados para a API
 // ============================================================

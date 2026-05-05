@@ -217,8 +217,15 @@ export const environment = {
       registrar: `${baseUrl}/conexoes`,
       geradas: `${baseUrl}/conexoes/geradas`,
       recebidas: `${baseUrl}/conexoes/recebidas`,
+      resumoGeradas: `${baseUrl}/conexoes/geradas/resumo`,
+      resumoRecebidas: `${baseUrl}/conexoes/recebidas/resumo`,
       atualizarStatus: (id: number) => `${baseUrl}/conexoes/${id}/status`,
       excluir: (id: number) => `${baseUrl}/conexoes/${id}`,
+    },
+
+    // ========== CICLOS SEMANAIS ==========
+    ciclosSemanais: {
+      porEquipe: (idEquipe: number) => `${baseUrl}/ciclos-semanais/equipe/${idEquipe}`,
     },
 
     // ========== PRODUTOS (Stripe) ==========

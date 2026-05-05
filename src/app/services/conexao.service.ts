@@ -7,6 +7,7 @@ import {
   ConexaoRecebidaResponseDto,
   ConexaoRequestDto,
   AtualizarStatusRequestDto,
+  ConexaoResumoResponseDto,
 } from '../models/conexao.model';
 import { PaginacaoResponseDto } from '../models/paginacao.model';
 
@@ -105,6 +106,36 @@ export class ConexaoService {
       this.api.recebidas,
       { params }
     );
+  }
+
+  /**
+   * buscarResumoGeradas(idCiclo?)
+   *
+   * Agrega contadores e valor total das conexões enviadas pelo associado.
+   * HTTP: GET /api/v1/conexoes/geradas/resumo[?idCiclo=X]
+   *
+   * idCiclo é opcional: sem ele, o backend agrega o histórico completo.
+   */
+  buscarResumoGeradas(idCiclo?: number): Observable<ConexaoResumoResponseDto> {
+    let params = new HttpParams();
+    if (idCiclo !== undefined) {
+      params = params.set('idCiclo', idCiclo.toString());
+    }
+    return this.http.get<ConexaoResumoResponseDto>(this.api.resumoGeradas, { params });
+  }
+
+  /**
+   * buscarResumoRecebidas(idCiclo?)
+   *
+   * Agrega contadores e valor total das conexões recebidas pelo associado.
+   * HTTP: GET /api/v1/conexoes/recebidas/resumo[?idCiclo=X]
+   */
+  buscarResumoRecebidas(idCiclo?: number): Observable<ConexaoResumoResponseDto> {
+    let params = new HttpParams();
+    if (idCiclo !== undefined) {
+      params = params.set('idCiclo', idCiclo.toString());
+    }
+    return this.http.get<ConexaoResumoResponseDto>(this.api.resumoRecebidas, { params });
   }
 
   /**

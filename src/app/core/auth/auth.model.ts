@@ -28,6 +28,7 @@ export interface LoginResponse {
   role: string;         // 'ROLE_ADM' | 'ROLE_ASSOCIADO' — usado pelo Spring Security
   perfil: string;       // 'ADM_CC' | 'DIRETOR' | 'ASSOCIADO' — use este para decisões de UI
   idAssociado: number | null;  // null para ADM sem associado vinculado
+  idEquipe: number | null;     // null para ADM sem equipe vinculada
 }
 
 /**
@@ -61,4 +62,5 @@ export interface UsuarioLogado {
   role: string;         // mantido para não quebrar código legado
   perfil: string;       // fonte de verdade para controle de UI
   idAssociado: number | null;
+  idEquipe: number | null;
 }

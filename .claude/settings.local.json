@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\mille\\\\OneDrive\\\\Área de Trabalho\\\\Projects\\\\FRONT - Gestão Associados\\\\src\\\\app\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)",
+      "Bash(Sort-Object FullName)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\mille\\\\OneDrive\\\\Área de Trabalho\\\\Projects\\\\FRONT - Gestão Associados\\\\src\\\\app\" -Recurse | Where-Object { $_.PSIsContainer } | Select-Object FullName)",
+      "PowerShell(head *)",
+      "Bash(Find C:\\\\Users\\\\mille\\\\OneDrive\\\\Área de Trabalho\\\\Projects\\\\FRONT - Gestão Associados\\\\src *)"
     ]
   }
 }

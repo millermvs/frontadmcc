@@ -1,14 +1,18 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { AuthService } from '../../../core/auth/auth.service';
 import { ModalService } from '../../../core/modal.service';
 import {
   ConexaoGeradaResponseDto,
   ConexaoRecebidaResponseDto,
+  ConexaoResumoResponseDto,
   StatusConexao,
   TipoConexao,
 } from '../../../models/conexao.model';
+import { CicloSemanalResponseDto } from '../../../models/ciclo-semanal.model';
 import { ConexaoService } from '../../../services/conexao.service';
+import { CicloSemanalService } from '../../../services/ciclo-semanal.service';
 import { ToastService } from '../../../services/toast.service';
 import { AtualizarStatusModal } from './modais/atualizar-status/atualizar-status.modal';
 import { ConfirmarExclusaoModal } from './modais/confirmar-exclusao/confirmar-exclusao.modal';
@@ -16,7 +20,7 @@ import { NovaConexaoModal } from './modais/nova-conexao/nova-conexao.modal';
 
 // Tipo interno — controla qual aba está visível.
 // Sem export: é uma estrutura privada deste componente.
-type AbaAtiva = 'geradas' | 'recebidas';
+type AbaAtiva = 'geradas' | 'recebidas' | 'ciclos';
 
 /**
  * CONEXOES PAGE COMPONENT — Parte 3
@@ -53,9 +57,11 @@ export class Conexoes implements OnInit {
   // INJEÇÕES
   // =========================================================================
 
-  private conexaoService = inject(ConexaoService);
-  private toastService   = inject(ToastService);
-  private modalService   = inject(ModalService);
+  private conexaoService     = inject(ConexaoService);
+  private cicloSemanalService = inject(CicloSemanalService);
+  private authService        = inject(AuthService);
+  private toastService       = inject(ToastService);
+  private modalService       = inject(ModalService);
 
   // =========================================================================
   // SIGNAL — ABA ATIVA
@@ -165,6 +171,28 @@ export class Conexoes implements OnInit {
   });
 
   // =========================================================================
+  // SIGNALS — CICLOS SEMANAIS: dados e paginação
+  // =========================================================================
+
+  ciclos              = signal<CicloSemanalResponseDto[]>([]);
+  carregandoCiclos    = signal(false);
+  paginaCiclos        = signal(0);
+  tamanhoPaginaCiclos = signal(20);
+  totalItemsCiclos    = signal(0);
+  totalPaginasCiclos  = signal(0);
+  temProximaCiclos    = signal(false);
+  temAnteriorCiclos   = signal(false);
+
+  // =========================================================================
+  // SIGNALS — RESUMO (KPIs do backend)
+  // Alimentados por GET /geradas/resumo e /recebidas/resumo.
+  // Substitui os antigos computed que operavam apenas sobre a página atual.
+  // =========================================================================
+
+  resumoGeradas   = signal<ConexaoResumoResponseDto | null>(null);
+  resumoRecebidas = signal<ConexaoResumoResponseDto | null>(null);
+
+  // =========================================================================
   // LABELS MAPEADOS
   //
   // Separados em objeto readonly para não duplicar lógica no template.
@@ -191,7 +219,9 @@ export class Conexoes implements OnInit {
 
   ngOnInit(): void {
     this.carregarGeradas();
-    this.carregarRecebidas()
+    this.carregarResumoGeradas();
+    this.carregarRecebidas();
+    this.carregarResumoRecebidas();
   }
 
   // =========================================================================
@@ -202,10 +232,19 @@ export class Conexoes implements OnInit {
     if (this.abaAtiva() === aba) return;
     this.abaAtiva.set(aba);
 
-    // Lazy load: carrega recebidas apenas no primeiro acesso (lista vazia).
-    // Evita request desnecessário se o usuário nunca visitar a aba.
-    if (aba === 'recebidas' && this.conexoesRecebidas().length === 0) {
-      this.carregarRecebidas();
+    if (aba === 'recebidas') {
+      if (this.conexoesRecebidas().length === 0) {
+        this.carregarRecebidas();
+      }
+      if (this.resumoRecebidas() === null) {
+        this.carregarResumoRecebidas();
+      }
+    }
+
+    if (aba === 'ciclos') {
+      if (this.ciclos().length === 0) {
+        this.carregarCiclos();
+      }
     }
   }
 
@@ -228,6 +267,7 @@ export class Conexoes implements OnInit {
           this.toastService.sucesso('Conexão registrada com sucesso!');
           this.abaAtiva.set('geradas');
           this.carregarGeradas(0);
+          this.carregarResumoGeradas();
         }
       });
   }
@@ -251,6 +291,7 @@ export class Conexoes implements OnInit {
             lista.filter(c => c.idConexao !== idExcluido)
           );
           this.totalItemsGeradas.update(n => Math.max(0, n - 1));
+          this.carregarResumoGeradas();
         }
       });
   }
@@ -341,6 +382,24 @@ export class Conexoes implements OnInit {
   }
 
   // =========================================================================
+  // RESUMO — carregamento (KPIs do backend)
+  // =========================================================================
+
+  carregarResumoGeradas(): void {
+    this.conexaoService.buscarResumoGeradas().subscribe({
+      next: (resumo) => this.resumoGeradas.set(resumo),
+      error: (err) => console.error('Erro ao carregar resumo geradas:', err),
+    });
+  }
+
+  carregarResumoRecebidas(): void {
+    this.conexaoService.buscarResumoRecebidas().subscribe({
+      next: (resumo) => this.resumoRecebidas.set(resumo),
+      error: (err) => console.error('Erro ao carregar resumo recebidas:', err),
+    });
+  }
+
+  // =========================================================================
   // RECEBIDAS — paginação
   // =========================================================================
 
@@ -397,8 +456,53 @@ export class Conexoes implements OnInit {
           this.conexoesRecebidas.update(lista =>
             lista.map(c => c.idConexao === atualizada.idConexao ? atualizada : c)
           );
+          this.carregarResumoRecebidas();
         }
       });
+  }
+
+  // =========================================================================
+  // CICLOS SEMANAIS — carregamento e paginação
+  // =========================================================================
+
+  carregarCiclos(pagina: number = 0): void {
+    const idEquipe = this.authService.idEquipe();
+    if (!idEquipe) {
+      this.toastService.erro('Equipe não identificada para este usuário.');
+      return;
+    }
+
+    this.carregandoCiclos.set(true);
+
+    this.cicloSemanalService
+      .listar(idEquipe, pagina, this.tamanhoPaginaCiclos())
+      .subscribe({
+        next: (resposta) => {
+          this.ciclos.set(resposta.items);
+          this.paginaCiclos.set(resposta.page);
+          this.totalItemsCiclos.set(resposta.totalItems);
+          this.totalPaginasCiclos.set(resposta.totalPages);
+          this.temProximaCiclos.set(resposta.hasNext);
+          this.temAnteriorCiclos.set(resposta.hasPrevious);
+          this.carregandoCiclos.set(false);
+        },
+        error: (_err: HttpErrorResponse) => {
+          this.carregandoCiclos.set(false);
+          this.toastService.erro('Erro ao carregar ciclos semanais. Tente novamente.');
+        },
+      });
+  }
+
+  proximaPaginaCiclos(): void {
+    if (this.temProximaCiclos()) {
+      this.carregarCiclos(this.paginaCiclos() + 1);
+    }
+  }
+
+  paginaAnteriorCiclos(): void {
+    if (this.temAnteriorCiclos()) {
+      this.carregarCiclos(this.paginaCiclos() - 1);
+    }
   }
 
   // =========================================================================
@@ -458,6 +562,24 @@ export class Conexoes implements OnInit {
     const partes = nome.trim().split(' ').filter(Boolean);
     if (partes.length === 1) return partes[0].charAt(0).toUpperCase();
     return (partes[0].charAt(0) + partes[partes.length - 1].charAt(0)).toUpperCase();
+  }
+
+  /**
+   * formatarMesCompetencia(iso)
+   *
+   * Converte a data ISO yyyy-MM-dd do mesCompetencia para exibição
+   * abreviada brasileira. Ex: "2026-05-05" → "Mai/2026".
+   */
+  formatarMesCompetencia(iso: string): string {
+    if (!iso) return '—';
+    const [ano, mes] = iso.split('-');
+    const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    return `${meses[parseInt(mes, 10) - 1]}/${ano}`;
+  }
+
+  /** Classe do chip de status do ciclo (ativo / encerrado). */
+  classeChipCiclo(ativo: boolean): string {
+    return ativo ? 'status-chip status-ativa' : 'status-chip status-inativa';
   }
 
   /**

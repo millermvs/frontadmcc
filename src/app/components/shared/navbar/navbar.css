@@ -6,7 +6,7 @@
   background-color: #2f855a;
   border-right: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 4px 0 18px rgba(0, 0, 0, 0.08);
-  width: 56px;
+  width: 48px;
   transition: width 0.25s ease;
   display: flex;
   flex-direction: column;

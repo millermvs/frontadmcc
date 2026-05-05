@@ -69,6 +69,23 @@
       }
     </button>
 
+    <button
+      class="conexoes-tab"
+      [class.conexoes-tab--ativa]="abaAtiva() === 'ciclos'"
+      role="tab"
+      [attr.aria-selected]="abaAtiva() === 'ciclos'"
+      aria-controls="painel-ciclos"
+      id="tab-ciclos"
+      type="button"
+      (click)="mudarAba('ciclos')"
+    >
+      <i class="bi bi-calendar-week-fill" aria-hidden="true"></i>
+      Ciclo Semanal
+      @if (totalItemsCiclos() > 0) {
+        <span class="tab-badge">{{ totalItemsCiclos() }}</span>
+      }
+    </button>
+
   </div>
 
   <!-- ===================================================================
@@ -76,6 +93,59 @@
        =================================================================== -->
   @if (abaAtiva() === 'geradas') {
     <div id="painel-geradas" role="tabpanel" aria-labelledby="tab-geradas">
+
+      <!-- KPI CARDS — NEGÓCIOS GERADOS -->
+      <div class="row g-3 mb-4">
+
+        <div class="col-6 col-md-3">
+          <div class="kpi-card">
+            <div class="kpi-icon kpi-icon-total">
+              <i class="bi bi-send-fill" aria-hidden="true"></i>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-label">Total Enviados</span>
+              <span class="kpi-value">{{ resumoGeradas()?.totalConexoes ?? 0 }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+          <div class="kpi-card">
+            <div class="kpi-icon kpi-icon-pendente">
+              <i class="bi bi-arrow-right-circle-fill" aria-hidden="true"></i>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-label">Em Andamento</span>
+              <span class="kpi-value">{{ resumoGeradas()?.totalEmAndamento ?? 0 }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+          <div class="kpi-card">
+            <div class="kpi-icon kpi-icon-ativo">
+              <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-label">Fechadas</span>
+              <span class="kpi-value">{{ resumoGeradas()?.totalFechadas ?? 0 }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+          <div class="kpi-card">
+            <div class="kpi-icon kpi-icon-valor">
+              <i class="bi bi-cash-coin" aria-hidden="true"></i>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-label">Valor Gerado</span>
+              <span class="kpi-value kpi-valor-moeda">{{ formatarMoeda(resumoGeradas()?.valorTotalNegocio ?? null) }}</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
 
       <!-- BARRA DE FILTROS -->
       <div class="filter-bar">
@@ -147,6 +217,7 @@
                 <th scope="col">Candidato</th>
                 <th scope="col">Tipo</th>
                 <th scope="col">Status</th>
+                <th scope="col">Valor</th>
                 <th scope="col">Data</th>
                 <th scope="col"></th>
               </tr>
@@ -218,6 +289,11 @@
                       </div>
                     </td>
 
+                    <!-- Valor do negócio — preenchido quando FECHADA -->
+                    <td [class]="conexao.status === 'FECHADA' ? 'cell-valor cell-valor--fechada' : 'cell-valor'">
+                      {{ formatarMoeda(conexao.valorNegocio) }}
+                    </td>
+
                     <!-- Data de criação -->
                     <td class="cell-data">
                       {{ formatarData(conexao.criadoEm) }}
@@ -246,7 +322,7 @@
                 <!-- ── ESTADO: VAZIO ───────────────────────────────── -->
                 @if (conexoesGeradasFiltradas().length === 0) {
                   <tr>
-                    <td colspan="6" class="empty-state">
+                    <td colspan="7" class="empty-state">
                       <div class="empty-icon">
                         <i class="bi bi-send" aria-hidden="true"></i>
                       </div>
@@ -310,6 +386,59 @@
        =================================================================== -->
   @if (abaAtiva() === 'recebidas') {
     <div id="painel-recebidas" role="tabpanel" aria-labelledby="tab-recebidas">
+
+      <!-- KPI CARDS — NEGÓCIOS RECEBIDOS -->
+      <div class="row g-3 mb-4">
+
+        <div class="col-6 col-md-3">
+          <div class="kpi-card">
+            <div class="kpi-icon kpi-icon-total">
+              <i class="bi bi-inbox-fill" aria-hidden="true"></i>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-label">Total Recebidos</span>
+              <span class="kpi-value">{{ resumoRecebidas()?.totalConexoes ?? 0 }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+          <div class="kpi-card">
+            <div class="kpi-icon kpi-icon-pendente">
+              <i class="bi bi-arrow-right-circle-fill" aria-hidden="true"></i>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-label">Em Andamento</span>
+              <span class="kpi-value">{{ resumoRecebidas()?.totalEmAndamento ?? 0 }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+          <div class="kpi-card">
+            <div class="kpi-icon kpi-icon-ativo">
+              <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-label">Fechadas</span>
+              <span class="kpi-value">{{ resumoRecebidas()?.totalFechadas ?? 0 }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+          <div class="kpi-card">
+            <div class="kpi-icon kpi-icon-valor">
+              <i class="bi bi-cash-coin" aria-hidden="true"></i>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-label">Valor em Negócios</span>
+              <span class="kpi-value kpi-valor-moeda">{{ formatarMoeda(resumoRecebidas()?.valorTotalNegocio ?? null) }}</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
 
       <!-- BARRA DE FILTROS -->
       <div class="filter-bar">
@@ -381,6 +510,7 @@
                 <th scope="col">Candidato</th>
                 <th scope="col">Tipo</th>
                 <th scope="col">Status</th>
+                <th scope="col">Valor</th>
                 <th scope="col">Data</th>
                 <th scope="col">Ações</th>
               </tr>
@@ -467,7 +597,15 @@
                             90 dias
                           </span>
                         }
+                        @if (conexao.motivoNaoFechadoDescricao) {
+                          <span class="motivo-label">{{ conexao.motivoNaoFechadoDescricao }}</span>
+                        }
                       </div>
+                    </td>
+
+                    <!-- Valor do negócio — preenchido quando FECHADA -->
+                    <td [class]="conexao.status === 'FECHADA' ? 'cell-valor cell-valor--fechada' : 'cell-valor'">
+                      {{ formatarMoeda(conexao.valorNegocio) }}
                     </td>
 
                     <!-- Data de criação -->
@@ -527,7 +665,7 @@
                 <!-- ── ESTADO: VAZIO ───────────────────────────────── -->
                 @if (conexoesRecebidasFiltradas().length === 0) {
                   <tr>
-                    <td colspan="6" class="empty-state">
+                    <td colspan="7" class="empty-state">
                       <div class="empty-icon">
                         <i class="bi bi-inbox" aria-hidden="true"></i>
                       </div>
@@ -584,6 +722,147 @@
 
     </div>
     <!-- /painel-recebidas -->
+  }
+
+  <!-- ===================================================================
+       ABA: CICLO SEMANAL
+       =================================================================== -->
+  @if (abaAtiva() === 'ciclos') {
+    <div id="painel-ciclos" role="tabpanel" aria-labelledby="tab-ciclos">
+
+      <div class="table-card">
+        <div class="table-wrapper">
+          <table class="conexoes-table" aria-label="Lista de ciclos semanais">
+            <thead>
+              <tr>
+                <th scope="col">Equipe</th>
+                <th scope="col">Início</th>
+                <th scope="col">Encerramento</th>
+                <th scope="col">Mês Competência</th>
+                <th scope="col">Status</th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+
+            <tbody>
+
+              <!-- ── ESTADO: CARREGANDO ──────────────────────────────── -->
+              @if (carregandoCiclos()) {
+                @for (_ of [1,2,3,4,5]; track $index) {
+                  <tr class="skeleton-row" aria-hidden="true">
+                    <td><div class="skeleton skeleton-nome"></div></td>
+                    <td><div class="skeleton skeleton-data"></div></td>
+                    <td><div class="skeleton skeleton-data"></div></td>
+                    <td><div class="skeleton skeleton-data"></div></td>
+                    <td><div class="skeleton skeleton-chip"></div></td>
+                    <td><div class="skeleton skeleton-nome"></div></td>
+                  </tr>
+                }
+              }
+
+              <!-- ── ESTADO: DADOS ───────────────────────────────────── -->
+              @if (!carregandoCiclos()) {
+                @for (ciclo of ciclos(); track ciclo.idCiclo) {
+                  <tr class="conexao-row">
+
+                    <!-- Equipe -->
+                    <td>
+                      <div class="cell-pessoa">
+                        <div class="pessoa-avatar">
+                          <i class="bi bi-people-fill avatar-icon" aria-hidden="true"></i>
+                        </div>
+                        <span class="pessoa-nome">{{ ciclo.nomeEquipe }}</span>
+                      </div>
+                    </td>
+
+                    <!-- Início -->
+                    <td class="cell-data">{{ formatarData(ciclo.dataInicio) }}</td>
+
+                    <!-- Encerramento -->
+                    <td class="cell-data">{{ formatarData(ciclo.dataEncerramento) }}</td>
+
+                    <!-- Mês competência -->
+                    <td class="cell-data">{{ formatarMesCompetencia(ciclo.mesCompetencia) }}</td>
+
+                    <!-- Status — ativo / encerrado -->
+                    <td>
+                      <span [class]="classeChipCiclo(ciclo.ativo)">
+                        {{ ciclo.ativo ? 'Ativo' : 'Encerrado' }}
+                      </span>
+                    </td>
+
+                    <!-- Ação — desabilitada até implementação futura -->
+                    <td>
+                      <button
+                        class="btn-buscar-ciclo"
+                        type="button"
+                        disabled
+                        title="Em breve: listar conexões geradas neste ciclo"
+                        aria-label="Buscar conexões deste ciclo (em breve)"
+                      >
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                        Buscar conexões deste ciclo
+                      </button>
+                    </td>
+
+                  </tr>
+                }
+
+                <!-- ── ESTADO: VAZIO ───────────────────────────────── -->
+                @if (ciclos().length === 0) {
+                  <tr>
+                    <td colspan="6" class="empty-state">
+                      <div class="empty-icon">
+                        <i class="bi bi-calendar-week" aria-hidden="true"></i>
+                      </div>
+                      <p class="empty-title">Nenhum ciclo semanal encontrado</p>
+                      <p class="empty-subtitle">Os ciclos da sua equipe aparecerão aqui quando forem criados.</p>
+                    </td>
+                  </tr>
+                }
+              }
+
+            </tbody>
+          </table>
+        </div>
+
+        <!-- PAGINAÇÃO -->
+        @if (!carregandoCiclos() && totalPaginasCiclos() > 1) {
+          <div class="paginacao">
+            <button
+              class="btn-paginacao"
+              type="button"
+              [disabled]="!temAnteriorCiclos()"
+              (click)="paginaAnteriorCiclos()"
+              aria-label="Página anterior"
+            >
+              <i class="bi bi-chevron-left" aria-hidden="true"></i>
+              Anterior
+            </button>
+
+            <span class="paginacao-info">
+              Página {{ paginaCiclos() + 1 }} de {{ totalPaginasCiclos() }}
+              <span class="paginacao-total">({{ totalItemsCiclos() }} registros)</span>
+            </span>
+
+            <button
+              class="btn-paginacao"
+              type="button"
+              [disabled]="!temProximaCiclos()"
+              (click)="proximaPaginaCiclos()"
+              aria-label="Próxima página"
+            >
+              Próxima
+              <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        }
+
+      </div>
+      <!-- /table-card -->
+
+    </div>
+    <!-- /painel-ciclos -->
   }
 
 </div>
