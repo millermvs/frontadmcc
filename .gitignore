@@ -46,6 +46,7 @@ __screenshots__/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+outputs
 
 # Variaveis de ambiente e segredos (nunca subir para o Git)
 .env
