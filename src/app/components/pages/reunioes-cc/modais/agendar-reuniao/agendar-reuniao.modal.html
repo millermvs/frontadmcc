@@ -1,0 +1,221 @@
+<!-- Backdrop -->
+<div class="arc-backdrop" (click)="fechar()" aria-hidden="true"></div>
+
+<!-- Dialog -->
+<div
+  class="modal d-block"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="modal-agendar-reuniao-titulo"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <!-- HEADER -->
+      <div class="modal-header">
+        <div class="arc-header-icon" aria-hidden="true">
+          <i class="bi bi-calendar-plus-fill"></i>
+        </div>
+        <h5 class="modal-title" id="modal-agendar-reuniao-titulo">Nova Reunião C+C</h5>
+        <button
+          type="button"
+          class="btn-close"
+          (click)="fechar()"
+          [disabled]="salvando()"
+          aria-label="Fechar modal"
+        ></button>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body">
+        <form
+          [formGroup]="form"
+          id="form-agendar-reuniao"
+          (ngSubmit)="salvar()"
+          novalidate
+        >
+
+          <!-- CONVIDADO (autocomplete) -->
+          <div class="mb-3">
+            <label class="form-label" for="busca-convidado">
+              Convidado <span class="text-danger">*</span>
+            </label>
+
+            <div class="arc-autocomplete-wrap">
+              <i class="bi bi-search arc-autocomplete-icon" aria-hidden="true"></i>
+
+              @if (convidadoSelecionado()) {
+                <div class="arc-selecionado">
+                  <span class="arc-selecionado-nome">
+                    {{ convidadoSelecionado()!.nomeCompleto }}
+                  </span>
+                  <button
+                    type="button"
+                    class="arc-btn-limpar"
+                    (click)="limparConvidado()"
+                    aria-label="Remover convidado selecionado"
+                  >
+                    <i class="bi bi-x" aria-hidden="true"></i>
+                  </button>
+                </div>
+              } @else {
+                <input
+                  id="busca-convidado"
+                  type="text"
+                  class="form-control arc-autocomplete-input"
+                  placeholder="Buscar associado pelo nome…"
+                  [value]="termoBuscaConvidado()"
+                  (input)="onBuscaConvidado($any($event.target).value)"
+                  (blur)="ocultarSugestoes()"
+                  autocomplete="off"
+                  [attr.aria-expanded]="mostrarSugestoes()"
+                  aria-haspopup="listbox"
+                  aria-autocomplete="list"
+                  aria-controls="sugestoes-convidado"
+                />
+              }
+
+              @if (buscandoConvidado()) {
+                <span class="arc-spinner" aria-label="Buscando associados"></span>
+              }
+
+              @if (mostrarSugestoes() && sugestoes().length > 0) {
+                <ul
+                  id="sugestoes-convidado"
+                  class="arc-sugestoes"
+                  role="listbox"
+                  aria-label="Sugestões de convidado"
+                >
+                  @for (associado of sugestoes(); track associado.idAssociado) {
+                    <li
+                      class="arc-sugestao-item"
+                      role="option"
+                      (mousedown)="selecionarConvidado(associado)"
+                    >
+                      <div class="arc-sugestao-avatar" aria-hidden="true">
+                        {{ associado.nomeCompleto.charAt(0).toUpperCase() }}
+                      </div>
+                      <div class="arc-sugestao-info">
+                        <span class="arc-sugestao-nome">{{ associado.nomeCompleto }}</span>
+                        <small class="arc-sugestao-meta">
+                          {{ mascararCpf(associado.cpf) }} · {{ associado.nomeEquipe }}
+                        </small>
+                      </div>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+
+            @if (form.get('idAssociado2')?.invalid && form.get('idAssociado2')?.touched) {
+              <div class="invalid-feedback d-block">Selecione o associado convidado.</div>
+            }
+          </div>
+
+          <!-- DATA E HORA -->
+          <div class="mb-3">
+            <label class="form-label" for="data-hora">
+              Data e hora <span class="text-danger">*</span>
+            </label>
+            <input
+              id="data-hora"
+              type="datetime-local"
+              class="form-control"
+              formControlName="dataHora"
+              [min]="minDataHora"
+              [class.is-invalid]="form.get('dataHora')?.invalid && form.get('dataHora')?.touched"
+            />
+            @if (form.get('dataHora')?.errors?.['required'] && form.get('dataHora')?.touched) {
+              <div class="invalid-feedback">A data e hora são obrigatórias.</div>
+            }
+            @if (form.get('dataHora')?.errors?.['dataPassada'] && form.get('dataHora')?.touched) {
+              <div class="invalid-feedback">A data e hora devem ser no futuro.</div>
+            }
+          </div>
+
+          <!-- TIPO -->
+          <div class="mb-3">
+            <label class="form-label" for="tipo-reuniao">
+              Tipo <span class="text-danger">*</span>
+            </label>
+            <select
+              id="tipo-reuniao"
+              class="form-select"
+              formControlName="tipo"
+              [class.is-invalid]="form.get('tipo')?.invalid && form.get('tipo')?.touched"
+            >
+              <option value="" disabled>Selecione o tipo…</option>
+              <option value="PRESENCIAL">Presencial</option>
+              <option value="ONLINE">Online</option>
+            </select>
+            @if (form.get('tipo')?.invalid && form.get('tipo')?.touched) {
+              <div class="invalid-feedback">Selecione o tipo da reunião.</div>
+            }
+          </div>
+
+          <!-- LOCAL (condicional — apenas PRESENCIAL) -->
+          @if (tipoSelecionado() === 'PRESENCIAL') {
+            <div class="mb-3">
+              <label class="form-label" for="local-reuniao">
+                Local <span class="text-danger">*</span>
+              </label>
+              <input
+                id="local-reuniao"
+                type="text"
+                class="form-control"
+                formControlName="local"
+                placeholder="Ex: Av. Paulista, 1000 — sala 201, São Paulo/SP"
+                [class.is-invalid]="form.get('local')?.invalid && form.get('local')?.touched"
+              />
+              @if (form.get('local')?.invalid && form.get('local')?.touched) {
+                <div class="invalid-feedback">Informe o local para reuniões presenciais.</div>
+              }
+            </div>
+          }
+
+        </form>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="modal-footer">
+
+        @if (erroModal()) {
+          <div
+            class="alert alert-danger d-flex align-items-center gap-2 mb-0 flex-fill"
+            role="alert"
+          >
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+            <span>{{ erroModal() }}</span>
+          </div>
+        }
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="fechar()"
+          [disabled]="salvando()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          form="form-agendar-reuniao"
+          class="btn-salvar-modal"
+          [disabled]="form.invalid || salvando()"
+        >
+          @if (salvando()) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Agendando…
+          } @else {
+            <i class="bi bi-calendar-check-fill me-2" aria-hidden="true"></i>
+            Agendar Reunião
+          }
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+</div>
