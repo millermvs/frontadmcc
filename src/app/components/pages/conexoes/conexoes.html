@@ -69,22 +69,24 @@
       }
     </button>
 
-    <button
-      class="conexoes-tab"
-      [class.conexoes-tab--ativa]="abaAtiva() === 'ciclos'"
-      role="tab"
-      [attr.aria-selected]="abaAtiva() === 'ciclos'"
-      aria-controls="painel-ciclos"
-      id="tab-ciclos"
-      type="button"
-      (click)="mudarAba('ciclos')"
-    >
-      <i class="bi bi-calendar-week-fill" aria-hidden="true"></i>
-      Ciclo Semanal
-      @if (totalItemsCiclos() > 0) {
-        <span class="tab-badge">{{ totalItemsCiclos() }}</span>
-      }
-    </button>
+    @if (isAdm()) {
+      <button
+        class="conexoes-tab"
+        [class.conexoes-tab--ativa]="abaAtiva() === 'ciclos'"
+        role="tab"
+        [attr.aria-selected]="abaAtiva() === 'ciclos'"
+        aria-controls="painel-ciclos"
+        id="tab-ciclos"
+        type="button"
+        (click)="mudarAba('ciclos')"
+      >
+        <i class="bi bi-calendar-week-fill" aria-hidden="true"></i>
+        Ciclo Semanal
+        @if (totalItemsCiclos() > 0) {
+          <span class="tab-badge">{{ totalItemsCiclos() }}</span>
+        }
+      </button>
+    }
 
   </div>
 
