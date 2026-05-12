@@ -229,6 +229,15 @@ export const environment = {
       porEquipe: (idEquipe: number) => `${baseUrl}/ciclos-semanais/equipe/${idEquipe}`,
     },
 
+    // ========== REUNIÕES CC ==========
+    reunioesCC: {
+      agendar: `${baseUrl}/reunioes-cc`,
+      listarMinhas: `${baseUrl}/reunioes-cc/minhas`,
+      buscarPorId: (id: number) => `${baseUrl}/reunioes-cc/${id}`,
+      reagendarOuCancelar: (id: number) => `${baseUrl}/reunioes-cc/${id}/reagendar-cancelar`,
+      validar: (id: number) => `${baseUrl}/reunioes-cc/${id}/validar`,
+    },
+
     // ========== Whatsapp (MsgTemplate) ==========
     mensagemInicialTemplate: `${baseUrlConversas}/criar`,
 
