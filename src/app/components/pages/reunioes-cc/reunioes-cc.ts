@@ -6,6 +6,7 @@ import { ToastService } from '../../../services/toast.service';
 import { ReuniaosCCService } from '../../../services/reuniao-cc.service';
 import { ReuniaoCCResponseDto, StatusReuniao } from '../../../models/reuniao-cc.model';
 import { AgendarReuniaoModal } from './modais/agendar-reuniao/agendar-reuniao.modal';
+import { DetalheReuniaoModal } from './modais/detalhe-reuniao/detalhe-reuniao.modal';
 
 @Component({
   selector: 'app-reunioes-cc',
@@ -93,7 +94,15 @@ export class ReuniaoCC implements OnInit {
       });
   }
 
-  abrirModalDetalhe(_reuniao: ReuniaoCCResponseDto): void {}
+  abrirModalDetalhe(reuniao: ReuniaoCCResponseDto): void {
+    this.modalService
+      .open<void, { reuniao: ReuniaoCCResponseDto }>(DetalheReuniaoModal, {
+        data: { reuniao },
+      })
+      .subscribe(() => {
+        this.carregarReunioes();
+      });
+  }
 
   // =========================================================================
   // PAGINAÇÃO

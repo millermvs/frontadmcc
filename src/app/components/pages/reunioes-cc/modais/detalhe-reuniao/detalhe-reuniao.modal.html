@@ -1,0 +1,242 @@
+<!-- Backdrop -->
+<div class="drc-backdrop" (click)="fechar()" aria-hidden="true"></div>
+
+<!-- Dialog -->
+<div
+  class="modal d-block"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="modal-detalhe-reuniao-titulo"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <!-- HEADER -->
+      <div class="modal-header">
+        <div class="drc-header-icon" aria-hidden="true">
+          <i class="bi bi-calendar-event-fill"></i>
+        </div>
+        <div class="drc-header-texto">
+          <h5 class="modal-title" id="modal-detalhe-reuniao-titulo">Detalhe da Reunião</h5>
+          @if (reuniao()) {
+            <span [class]="classeChipStatus(reuniao()!.status)">
+              {{ LABELS_STATUS[reuniao()!.status] }}
+            </span>
+          }
+        </div>
+        <button
+          type="button"
+          class="btn-close ms-auto"
+          (click)="fechar()"
+          aria-label="Fechar modal"
+        ></button>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body">
+
+        <!-- LOADING OVERLAY -->
+        @if (carregando()) {
+          <div class="drc-loading">
+            <div class="spinner-border text-success" role="status">
+              <span class="visually-hidden">Carregando...</span>
+            </div>
+          </div>
+        }
+
+        @if (reuniao(); as r) {
+
+          <!-- ALERTA DE PRAZO (≤ 7 dias restantes) -->
+          @if (mostrarAlertaPrazo()) {
+            <div class="alert alert-warning d-flex align-items-center gap-2 mb-3" role="alert">
+              <i class="bi bi-clock-history flex-shrink-0" aria-hidden="true"></i>
+              <span>
+                <strong>Atenção:</strong>
+                {{ diasRestantesParaValidar() }} dia(s) restante(s) para validar esta reunião.
+                O prazo encerra 21 dias após a criação.
+              </span>
+            </div>
+          }
+
+          <!-- ── DADOS PRINCIPAIS ──────────────────────────────────── -->
+          <div class="drc-secao">
+            <h6 class="drc-secao-titulo">
+              <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+              Informações
+            </h6>
+            <dl class="drc-dl">
+
+              <div class="drc-dl-row">
+                <dt>Participante 1</dt>
+                <dd>{{ r.nomeAssociado1 }}</dd>
+              </div>
+
+              <div class="drc-dl-row">
+                <dt>Participante 2</dt>
+                <dd>{{ r.nomeAssociado2 }}</dd>
+              </div>
+
+              <div class="drc-dl-row">
+                <dt>Data / Hora</dt>
+                <dd>{{ formatarDataHora(r.dataHora) }}</dd>
+              </div>
+
+              <div class="drc-dl-row">
+                <dt>Tipo</dt>
+                <dd>{{ r.tipoDescricao }}</dd>
+              </div>
+
+              @if (r.tipo === 'PRESENCIAL') {
+                <div class="drc-dl-row">
+                  <dt>Local</dt>
+                  <dd>{{ r.local ?? '—' }}</dd>
+                </div>
+              }
+
+              <div class="drc-dl-row">
+                <dt>Criado em</dt>
+                <dd>{{ formatarDataHora(r.criadoEm) }}</dd>
+              </div>
+
+            </dl>
+          </div>
+
+          <!-- ── HISTÓRICO DE REAGENDAMENTOS ───────────────────────── -->
+          @if (reagendamentosOrdenados().length > 0) {
+            <div class="drc-secao">
+              <h6 class="drc-secao-titulo">
+                <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                Histórico de Reagendamentos
+              </h6>
+
+              @for (item of reagendamentosOrdenados(); track item.idReagendamento) {
+                <div class="drc-historico-item">
+
+                  <div class="drc-historico-header">
+                    <span class="drc-historico-solicitante">{{ item.nomeSolicitante }}</span>
+                    <span class="drc-historico-data">{{ formatarDataHora(item.registradoEm) }}</span>
+                  </div>
+
+                  <div class="drc-historico-body">
+                    <span class="drc-historico-label">Motivo:</span>
+                    {{ item.motivoDescricao }}
+                    @if (item.motivoTexto) {
+                      — <em>{{ item.motivoTexto }}</em>
+                    }
+                  </div>
+
+                  <div class="drc-historico-resultado">
+                    @if (item.novaDataHora) {
+                      <span class="drc-badge-reagendado">
+                        <i class="bi bi-calendar-check" aria-hidden="true"></i>
+                        Nova data: {{ formatarDataHora(item.novaDataHora) }}
+                      </span>
+                    } @else {
+                      <span class="drc-badge-cancelado">
+                        <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
+                        Cancelamento
+                      </span>
+                    }
+                  </div>
+
+                </div>
+              }
+            </div>
+          }
+
+          <!-- ── VALIDAÇÕES REGISTRADAS ─────────────────────────────── -->
+          @if (r.validacoes.length > 0) {
+            <div class="drc-secao">
+              <h6 class="drc-secao-titulo">
+                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                Validações Registradas
+              </h6>
+
+              @for (val of r.validacoes; track val.idValidacao) {
+                <div class="drc-validacao-item">
+
+                  <div class="drc-validacao-header">
+                    <span class="drc-validacao-nome">{{ val.nomeAssociado }}</span>
+                    <span class="drc-validacao-data">{{ formatarDataHora(val.validadoEm) }}</span>
+                  </div>
+
+                  @if (val.nenhumaPossibilidadeProspect) {
+                    <p class="drc-sem-prospect">Nenhuma possibilidade de prospect identificada.</p>
+                  } @else if (val.prospects.length > 0) {
+                    <div class="drc-prospects">
+                      <span class="drc-sub-label">Prospects:</span>
+                      <ul class="drc-prospects-lista">
+                        @for (p of val.prospects; track p.idProspect) {
+                          <li>{{ p.nomeProspect }} — {{ p.nomeEmpresa }}</li>
+                        }
+                      </ul>
+                    </div>
+                  }
+
+                  @if (val.tangibilidades.length > 0) {
+                    <div class="drc-tangibilidades">
+                      <span class="drc-sub-label">Tangibilidades:</span>
+                      <div class="drc-tang-chips">
+                        @for (t of val.tangibilidades; track t.idTangibilidade) {
+                          <span class="drc-tang-chip">
+                            {{ t.opcaoDescricao }}
+                            @if (t.descricaoOutro) {
+                              — {{ t.descricaoOutro }}
+                            }
+                          </span>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                </div>
+              }
+            </div>
+          }
+
+        }
+
+      </div>
+
+      <!-- FOOTER -->
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="fechar()"
+          [disabled]="carregando()"
+        >
+          Fechar
+        </button>
+
+        @if (podeReagendarOuCancelar()) {
+          <button
+            type="button"
+            class="btn btn-outline-warning"
+            (click)="abrirModalReagendarCancelar()"
+            [disabled]="carregando()"
+          >
+            <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>
+            Reagendar / Cancelar
+          </button>
+        }
+
+        @if (podeValidar()) {
+          <button
+            type="button"
+            class="btn-salvar-modal"
+            (click)="abrirModalValidar()"
+            [disabled]="carregando()"
+          >
+            <i class="bi bi-check-circle-fill me-2" aria-hidden="true"></i>
+            Validar Reunião
+          </button>
+        }
+
+      </div>
+
+    </div>
+  </div>
+</div>

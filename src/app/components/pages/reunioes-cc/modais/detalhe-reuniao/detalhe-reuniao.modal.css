@@ -1,0 +1,275 @@
+/* ================================================================
+   DETALHE-REUNIAO.MODAL.CSS
+   Prefixo: drc- (Detalhe Reunião CC)
+   ================================================================ */
+
+.drc-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  background: rgba(15, 23, 42, 0.5);
+  cursor: pointer;
+}
+
+/* ================================================================
+   HEADER
+   ================================================================ */
+.drc-header-icon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: var(--radius-md);
+  background: var(--cor-primaria);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+.drc-header-texto {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.drc-header-texto .modal-title {
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* ================================================================
+   LOADING OVERLAY
+   ================================================================ */
+.drc-loading {
+  display: flex;
+  justify-content: center;
+  padding: 32px 0;
+}
+
+/* ================================================================
+   SEÇÕES
+   ================================================================ */
+.drc-secao {
+  margin-bottom: 24px;
+}
+
+.drc-secao:last-child {
+  margin-bottom: 0;
+}
+
+.drc-secao-titulo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--cor-texto-secundario);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+/* ================================================================
+   DEFINITION LIST — DADOS PRINCIPAIS
+   ================================================================ */
+.drc-dl {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.drc-dl-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.drc-dl-row dt {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cor-texto-secundario);
+  white-space: nowrap;
+}
+
+.drc-dl-row dd {
+  font-size: 14px;
+  color: var(--cor-texto);
+  margin: 0;
+  word-break: break-word;
+}
+
+/* ================================================================
+   HISTÓRICO DE REAGENDAMENTOS
+   ================================================================ */
+.drc-historico-item {
+  background: var(--cor-surface-alt);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.drc-historico-item:last-child {
+  margin-bottom: 0;
+}
+
+.drc-historico-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.drc-historico-solicitante {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+
+.drc-historico-data {
+  font-size: 12px;
+  color: var(--cor-texto-secundario);
+  white-space: nowrap;
+}
+
+.drc-historico-body {
+  font-size: 13px;
+  color: var(--cor-texto-secundario);
+  margin-bottom: 8px;
+}
+
+.drc-historico-resultado {
+  display: flex;
+}
+
+.drc-badge-reagendado,
+.drc-badge-cancelado {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.drc-badge-reagendado {
+  background: var(--cor-info-bg);
+  color: var(--cor-info);
+}
+
+.drc-badge-cancelado {
+  background: var(--cor-erro-bg);
+  color: var(--cor-erro);
+}
+
+/* ================================================================
+   VALIDAÇÕES REGISTRADAS
+   ================================================================ */
+.drc-validacao-item {
+  background: var(--cor-sucesso-bg);
+  border: 1px solid #86efac;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.drc-validacao-item:last-child {
+  margin-bottom: 0;
+}
+
+.drc-validacao-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.drc-validacao-nome {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cor-sucesso);
+}
+
+.drc-validacao-data {
+  font-size: 12px;
+  color: var(--cor-texto-secundario);
+  white-space: nowrap;
+}
+
+.drc-sem-prospect {
+  font-size: 13px;
+  color: var(--cor-texto-secundario);
+  font-style: italic;
+  margin: 0 0 6px;
+}
+
+.drc-sub-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cor-texto-secundario);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.drc-prospects {
+  margin-bottom: 8px;
+}
+
+.drc-prospects-lista {
+  margin: 4px 0 0 0;
+  padding-left: 16px;
+  font-size: 13px;
+  color: var(--cor-texto);
+}
+
+.drc-tangibilidades {
+  margin-top: 4px;
+}
+
+.drc-tang-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.drc-tang-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  background: var(--cor-surface);
+  border: 1px solid #86efac;
+  border-radius: var(--radius-pill);
+  color: var(--cor-sucesso);
+}
+
+/* ================================================================
+   RESPONSIVO
+   ================================================================ */
+@media (max-width: 576px) {
+  .drc-dl-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .drc-historico-header,
+  .drc-validacao-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
