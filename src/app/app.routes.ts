@@ -95,6 +95,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./components/pages/conexoes/conexoes').then((m) => m.Conexoes),
       },
+      {
+        path: 'reunioes-cc',
+        loadComponent: () =>
+          import('./components/pages/reunioes-cc/reunioes-cc').then((m) => m.ReuniaoCC),
+      },
     ],
   },
 

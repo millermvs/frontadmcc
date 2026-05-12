@@ -1,0 +1,173 @@
+<div class="reunioes-cc-page container-fluid">
+
+  <!-- ===================================================================
+       CABEÇALHO DA PÁGINA
+       =================================================================== -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <nav class="breadcrumb-nav" aria-label="Breadcrumb">
+        <span class="bc-item"><i class="bi bi-house-fill" aria-hidden="true"></i> Dashboard</span>
+        <i class="bi bi-chevron-right bc-sep" aria-hidden="true"></i>
+        <span class="bc-item bc-active">Reuniões C+C</span>
+      </nav>
+      <h2 class="page-title">Reuniões C+C</h2>
+      <p class="page-subtitle">Agende reuniões bilaterais de negócio e acompanhe o histórico com outros associados.</p>
+    </div>
+
+    <div class="page-header-right">
+      <button
+        class="btn-acao-pagina"
+        type="button"
+        (click)="abrirModalAgendamento()"
+      >
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        Nova Reunião
+      </button>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       TABELA DE REUNIÕES
+       =================================================================== -->
+  <div class="table-card">
+
+    <!-- LOADING -->
+    @if (carregando()) {
+      <div class="loading-state">
+        <div class="spinner-border text-success" role="status" aria-label="Carregando reuniões">
+          <span class="visually-hidden">Carregando...</span>
+        </div>
+        <p class="loading-label">Carregando reuniões...</p>
+      </div>
+    }
+
+    @if (!carregando()) {
+      <div class="table-wrapper">
+        <table class="reunioes-table">
+          <thead>
+            <tr>
+              <th>Participantes</th>
+              <th>Data / Hora</th>
+              <th>Tipo</th>
+              <th>Status</th>
+              <th class="col-acoes">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+
+            @for (reuniao of reunioes(); track reuniao.idReuniao) {
+              <tr>
+
+                <!-- PARTICIPANTES -->
+                <td>
+                  <div class="participantes-cell">
+                    <div class="participante-item">
+                      <div class="avatar-iniciais">{{ iniciaisNome(reuniao.nomeAssociado1) }}</div>
+                      <span class="participante-nome">{{ reuniao.nomeAssociado1 }}</span>
+                    </div>
+                    <div class="participante-sep">
+                      <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+                    </div>
+                    <div class="participante-item">
+                      <div class="avatar-iniciais avatar-iniciais--secundario">{{ iniciaisNome(reuniao.nomeAssociado2) }}</div>
+                      <span class="participante-nome">{{ reuniao.nomeAssociado2 }}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- DATA / HORA -->
+                <td class="td-data">
+                  <i class="bi bi-calendar3 td-data-icon" aria-hidden="true"></i>
+                  {{ formatarDataHora(reuniao.dataHora) }}
+                </td>
+
+                <!-- TIPO -->
+                <td>
+                  @if (reuniao.tipo === 'PRESENCIAL') {
+                    <span class="tipo-badge tipo-presencial">
+                      <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                      {{ reuniao.tipoDescricao }}
+                    </span>
+                  } @else {
+                    <span class="tipo-badge tipo-online">
+                      <i class="bi bi-camera-video-fill" aria-hidden="true"></i>
+                      {{ reuniao.tipoDescricao }}
+                    </span>
+                  }
+                </td>
+
+                <!-- STATUS -->
+                <td>
+                  <span [class]="classeChipStatus(reuniao.status)">
+                    {{ LABELS_STATUS[reuniao.status] }}
+                  </span>
+                </td>
+
+                <!-- AÇÕES -->
+                <td>
+                  <div class="acoes-group">
+                    <button
+                      class="btn-acao btn-editar"
+                      type="button"
+                      title="Ver detalhes"
+                      (click)="abrirModalDetalhe(reuniao)"
+                    >
+                      <i class="bi bi-eye-fill" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </td>
+
+              </tr>
+            }
+
+            @empty {
+              <tr>
+                <td colspan="5">
+                  <div class="empty-state">
+                    <div class="empty-icon">
+                      <i class="bi bi-calendar-x" aria-hidden="true"></i>
+                    </div>
+                    <p class="empty-title">Nenhuma reunião encontrada</p>
+                    <p class="empty-subtitle">Agende sua primeira reunião C+C com outro associado da rede.</p>
+                  </div>
+                </td>
+              </tr>
+            }
+
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINAÇÃO -->
+      @if (totalPaginas() > 1) {
+        <div class="paginacao-bar">
+          <button
+            class="btn-pag"
+            type="button"
+            [disabled]="!temAnterior()"
+            (click)="irParaPagina(paginaAtual() - 1)"
+            aria-label="Página anterior"
+          >
+            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+          </button>
+
+          <span class="pag-info">
+            Página {{ paginaAtual() + 1 }} de {{ totalPaginas() }}
+          </span>
+
+          <button
+            class="btn-pag"
+            type="button"
+            [disabled]="!temProxima()"
+            (click)="irParaPagina(paginaAtual() + 1)"
+            aria-label="Próxima página"
+          >
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+          </button>
+        </div>
+      }
+    }
+
+  </div>
+
+</div>

@@ -576,6 +576,12 @@ body {
 .status-fechada      { background: var(--cor-sucesso-bg); color: var(--cor-sucesso); }
 .status-nao-fechada  { background: var(--cor-erro-bg);   color: var(--cor-erro); }
 
+/* Reuniões CC */
+.status-pendente    { background: var(--cor-alerta-bg);  color: var(--cor-alerta); }
+.status-reagendada  { background: var(--cor-info-bg);    color: var(--cor-info); }
+.status-realizada   { background: var(--cor-sucesso-bg); color: var(--cor-sucesso); }
+.status-cancelada   { background: var(--cor-erro-bg);    color: var(--cor-erro); }
+
 /* Agenda */
 .agenda-hoje   { background: var(--cor-sucesso-bg); color: var(--cor-sucesso); }
 .agenda-online { background: #dbeafe; color: #1d4ed8; }
