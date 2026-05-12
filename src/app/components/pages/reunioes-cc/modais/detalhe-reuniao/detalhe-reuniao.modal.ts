@@ -10,6 +10,7 @@ import {
   StatusReuniao,
 } from '../../../../../models/reuniao-cc.model';
 import { ReagendarCancelarModal } from '../reagendar-cancelar/reagendar-cancelar.modal';
+import { ValidarReuniaoModal } from '../validar-reuniao/validar-reuniao.modal';
 
 @Component({
   selector: 'app-detalhe-reuniao-modal',
@@ -109,7 +110,15 @@ export class DetalheReuniaoModal {
       });
   }
 
-  abrirModalValidar(): void {}
+  abrirModalValidar(): void {
+    this.modalService
+      .open<boolean, { reuniao: ReuniaoCCResponseDto }>(ValidarReuniaoModal, {
+        data: { reuniao: this.reuniao()! },
+      })
+      .subscribe(sucesso => {
+        if (sucesso) this.recarregarReuniao();
+      });
+  }
 
   // =========================================================================
   // FECHAR

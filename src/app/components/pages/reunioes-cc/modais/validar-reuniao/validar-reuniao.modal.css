@@ -1,0 +1,133 @@
+/* ================================================================
+   VALIDAR-REUNIAO.MODAL.CSS
+   Prefixo: vrcc- (Validar Reunião CC)
+   ================================================================ */
+
+.vrcc-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  background: rgba(15, 23, 42, 0.5);
+  cursor: pointer;
+}
+
+/* ================================================================
+   HEADER
+   ================================================================ */
+.vrcc-header-icon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: var(--radius-md);
+  background: var(--cor-sucesso-bg);
+  color: var(--cor-sucesso);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+/* ================================================================
+   INFO DA REUNIÃO
+   ================================================================ */
+.vrcc-info-reuniao {
+  background: var(--cor-surface-alt);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vrcc-info-row {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.vrcc-info-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cor-texto-secundario);
+  white-space: nowrap;
+}
+
+.vrcc-info-valor {
+  font-size: 13px;
+  color: var(--cor-texto);
+  word-break: break-word;
+}
+
+/* ================================================================
+   SEÇÕES
+   ================================================================ */
+.vrcc-secao {
+  margin-bottom: 8px;
+}
+
+.vrcc-secao-titulo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--cor-texto-secundario);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.vrcc-secao-subtitulo {
+  font-size: 13px;
+  color: var(--cor-texto-secundario);
+  margin-bottom: 12px;
+}
+
+/* ================================================================
+   LISTA DE TANGIBILIDADES
+   ================================================================ */
+.vrcc-tang-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vrcc-tang-item {
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  transition: background 0.1s;
+}
+
+.vrcc-tang-item:has(.form-check-input:checked) {
+  background: var(--cor-sucesso-bg);
+}
+
+.vrcc-tang-label {
+  font-size: 14px;
+  color: var(--cor-texto);
+  cursor: pointer;
+}
+
+/* ================================================================
+   CAMPO DESCRICAO OUTRO
+   ================================================================ */
+.vrcc-desc-outro {
+  margin-top: 8px;
+  padding-left: 24px;
+}
+
+/* ================================================================
+   RESPONSIVO
+   ================================================================ */
+@media (max-width: 576px) {
+  .vrcc-info-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

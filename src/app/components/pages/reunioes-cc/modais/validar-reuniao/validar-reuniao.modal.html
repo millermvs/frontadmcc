@@ -1,0 +1,178 @@
+<!-- Backdrop -->
+<div class="vrcc-backdrop" (click)="fechar()" aria-hidden="true"></div>
+
+<!-- Dialog -->
+<div
+  class="modal d-block"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="modal-validar-reuniao-titulo"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <!-- HEADER -->
+      <div class="modal-header">
+        <div class="vrcc-header-icon" aria-hidden="true">
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <h5 class="modal-title" id="modal-validar-reuniao-titulo">Validar Reunião</h5>
+        <button
+          type="button"
+          class="btn-close"
+          (click)="fechar()"
+          [disabled]="salvando()"
+          aria-label="Fechar modal"
+        ></button>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body">
+
+        <!-- INFO DA REUNIÃO -->
+        <div class="vrcc-info-reuniao">
+          <div class="vrcc-info-row">
+            <span class="vrcc-info-label">Participante 1</span>
+            <span class="vrcc-info-valor">{{ reuniao.nomeAssociado1 }}</span>
+          </div>
+          <div class="vrcc-info-row">
+            <span class="vrcc-info-label">Participante 2</span>
+            <span class="vrcc-info-valor">{{ reuniao.nomeAssociado2 }}</span>
+          </div>
+          <div class="vrcc-info-row">
+            <span class="vrcc-info-label">Data</span>
+            <span class="vrcc-info-valor">{{ formatarDataHora(reuniao.dataHora) }}</span>
+          </div>
+        </div>
+
+        <!-- FORMULÁRIO -->
+        <form
+          [formGroup]="form"
+          id="form-validar-reuniao"
+          (ngSubmit)="salvar()"
+          novalidate
+        >
+
+          <!-- NENHUMA POSSIBILIDADE DE PROSPECT -->
+          <div class="vrcc-secao mb-4">
+            <h6 class="vrcc-secao-titulo">
+              <i class="bi bi-people-fill" aria-hidden="true"></i>
+              Prospects
+            </h6>
+            <div class="form-check">
+              <input
+                id="nenhuma-possibilidade"
+                type="checkbox"
+                class="form-check-input"
+                formControlName="nenhumaPossibilidadeProspect"
+              />
+              <label class="form-check-label" for="nenhuma-possibilidade">
+                Nenhuma possibilidade de prospect identificada nesta reunião
+              </label>
+            </div>
+          </div>
+
+          <!-- TANGIBILIDADES -->
+          <div class="vrcc-secao">
+            <h6 class="vrcc-secao-titulo">
+              <i class="bi bi-stars" aria-hidden="true"></i>
+              Tangibilidades <span class="text-danger">*</span>
+            </h6>
+            <p class="vrcc-secao-subtitulo">Selecione ao menos uma tangibilidade gerada nesta reunião.</p>
+
+            <div formArrayName="tangibilidades" class="vrcc-tang-lista">
+              @for (grupo of tangibilidadesArray.controls; track $index; let i = $index) {
+                <div [formGroupName]="i" class="vrcc-tang-item">
+
+                  <div class="form-check">
+                    <input
+                      [id]="'tang-' + i"
+                      type="checkbox"
+                      class="form-check-input"
+                      formControlName="marcado"
+                    />
+                    <label class="form-check-label vrcc-tang-label" [for]="'tang-' + i">
+                      {{ OPCOES_TANGIBILIDADE[i].label }}
+                    </label>
+                  </div>
+
+                  <!-- Campo descricaoOutro: visível apenas quando OUTRO está marcado -->
+                  @if (OPCOES_TANGIBILIDADE[i].valor === 'OUTRO' && tangibilidadesArray.at(i).get('marcado')?.value) {
+                    <div class="vrcc-desc-outro">
+                      <textarea
+                        class="form-control form-control-sm"
+                        formControlName="descricaoOutro"
+                        rows="2"
+                        placeholder="Descreva brevemente (máx. 150 caracteres)…"
+                        [class.is-invalid]="
+                          tangibilidadesArray.at(i).get('descricaoOutro')?.invalid &&
+                          tangibilidadesArray.at(i).get('descricaoOutro')?.touched
+                        "
+                      ></textarea>
+                      @if (
+                        tangibilidadesArray.at(i).get('descricaoOutro')?.errors?.['required'] &&
+                        tangibilidadesArray.at(i).get('descricaoOutro')?.touched
+                      ) {
+                        <div class="invalid-feedback">Descreva a tangibilidade.</div>
+                      }
+                      @if (
+                        tangibilidadesArray.at(i).get('descricaoOutro')?.errors?.['maxlength'] &&
+                        tangibilidadesArray.at(i).get('descricaoOutro')?.touched
+                      ) {
+                        <div class="invalid-feedback">Máximo 150 caracteres.</div>
+                      }
+                    </div>
+                  }
+
+                </div>
+              }
+            </div>
+          </div>
+
+        </form>
+
+      </div>
+
+      <!-- FOOTER -->
+      <div class="modal-footer">
+
+        @if (erroModal()) {
+          <div
+            class="alert alert-danger d-flex align-items-center gap-2 mb-0 flex-fill"
+            role="alert"
+          >
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+            <span>{{ erroModal() }}</span>
+          </div>
+        }
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="fechar()"
+          [disabled]="salvando()"
+        >
+          Fechar
+        </button>
+
+        <button
+          type="submit"
+          form="form-validar-reuniao"
+          class="btn-salvar-modal"
+          [disabled]="salvando()"
+        >
+          @if (salvando()) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Validando…
+          } @else {
+            <i class="bi bi-check-circle-fill me-2" aria-hidden="true"></i>
+            Confirmar Validação
+          }
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+</div>
