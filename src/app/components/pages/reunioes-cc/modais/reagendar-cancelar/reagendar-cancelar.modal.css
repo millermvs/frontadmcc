@@ -1,0 +1,128 @@
+/* ================================================================
+   REAGENDAR-CANCELAR.MODAL.CSS
+   Prefixo: rcc- (Reagendar/Cancelar CC)
+   ================================================================ */
+
+.rcc-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  background: rgba(15, 23, 42, 0.5);
+  cursor: pointer;
+}
+
+/* ================================================================
+   HEADER
+   ================================================================ */
+.rcc-header-icon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: var(--radius-md);
+  background: var(--cor-alerta-bg);
+  color: var(--cor-alerta);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+/* ================================================================
+   INFO DA REUNIÃO ATUAL
+   ================================================================ */
+.rcc-info-reuniao {
+  background: var(--cor-surface-alt);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rcc-info-row {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.rcc-info-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cor-texto-secundario);
+  white-space: nowrap;
+}
+
+.rcc-info-valor {
+  font-size: 13px;
+  color: var(--cor-texto);
+  word-break: break-word;
+}
+
+/* ================================================================
+   TOGGLE REAGENDAR / CANCELAR
+   ================================================================ */
+.rcc-toggle-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.rcc-toggle-btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--cor-borda);
+  background: var(--cor-surface);
+  color: var(--cor-texto-secundario);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.rcc-toggle-btn:hover:not(:disabled) {
+  border-color: var(--cor-info);
+  color: var(--cor-info);
+  background: var(--cor-info-bg);
+}
+
+.rcc-toggle-btn--ativo {
+  border-color: var(--cor-info) !important;
+  background: var(--cor-info-bg) !important;
+  color: var(--cor-info) !important;
+}
+
+.rcc-toggle-btn--cancelar:hover:not(:disabled) {
+  border-color: var(--cor-erro);
+  color: var(--cor-erro);
+  background: var(--cor-erro-bg);
+}
+
+.rcc-toggle-btn--ativo-cancelar {
+  border-color: var(--cor-erro) !important;
+  background: var(--cor-erro-bg) !important;
+  color: var(--cor-erro) !important;
+}
+
+.rcc-toggle-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ================================================================
+   RESPONSIVO
+   ================================================================ */
+@media (max-width: 576px) {
+  .rcc-info-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .rcc-toggle-group {
+    flex-direction: column;
+  }
+}

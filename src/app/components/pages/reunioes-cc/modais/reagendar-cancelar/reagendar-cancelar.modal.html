@@ -1,0 +1,209 @@
+<!-- Backdrop -->
+<div class="rcc-backdrop" (click)="fechar()" aria-hidden="true"></div>
+
+<!-- Dialog -->
+<div
+  class="modal d-block"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="modal-reagendar-cancelar-titulo"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <!-- HEADER -->
+      <div class="modal-header">
+        <div class="rcc-header-icon" aria-hidden="true">
+          <i class="bi bi-arrow-repeat"></i>
+        </div>
+        <h5 class="modal-title" id="modal-reagendar-cancelar-titulo">
+          Reagendar / Cancelar Reunião
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          (click)="fechar()"
+          [disabled]="salvando()"
+          aria-label="Fechar modal"
+        ></button>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body">
+
+        <!-- INFO DA REUNIÃO ATUAL -->
+        <div class="rcc-info-reuniao">
+          <div class="rcc-info-row">
+            <span class="rcc-info-label">Participante 1</span>
+            <span class="rcc-info-valor">{{ reuniao.nomeAssociado1 }}</span>
+          </div>
+          <div class="rcc-info-row">
+            <span class="rcc-info-label">Participante 2</span>
+            <span class="rcc-info-valor">{{ reuniao.nomeAssociado2 }}</span>
+          </div>
+          <div class="rcc-info-row">
+            <span class="rcc-info-label">Data atual</span>
+            <span class="rcc-info-valor">{{ formatarDataHora(reuniao.dataHora) }}</span>
+          </div>
+        </div>
+
+        <!-- TOGGLE REAGENDAR / CANCELAR -->
+        <div class="rcc-toggle-group" role="group" aria-label="Selecione a intenção">
+          <button
+            type="button"
+            class="rcc-toggle-btn"
+            [class.rcc-toggle-btn--ativo]="intencao() === 'REAGENDAR'"
+            (click)="mudarIntencao('REAGENDAR')"
+            [disabled]="salvando()"
+          >
+            <i class="bi bi-calendar-check me-1" aria-hidden="true"></i>
+            Reagendar
+          </button>
+          <button
+            type="button"
+            class="rcc-toggle-btn rcc-toggle-btn--cancelar"
+            [class.rcc-toggle-btn--ativo-cancelar]="intencao() === 'CANCELAR'"
+            (click)="mudarIntencao('CANCELAR')"
+            [disabled]="salvando()"
+          >
+            <i class="bi bi-x-circle me-1" aria-hidden="true"></i>
+            Cancelar
+          </button>
+        </div>
+
+        <!-- FORMULÁRIO -->
+        <form
+          [formGroup]="form"
+          id="form-reagendar-cancelar"
+          (ngSubmit)="salvar()"
+          novalidate
+        >
+
+          <!-- MOTIVO -->
+          <div class="mb-3">
+            <label class="form-label" for="motivo-reagendamento">
+              Motivo <span class="text-danger">*</span>
+            </label>
+            <select
+              id="motivo-reagendamento"
+              class="form-select"
+              formControlName="motivo"
+              [class.is-invalid]="form.get('motivo')?.invalid && form.get('motivo')?.touched"
+            >
+              <option value="" disabled>Selecione o motivo…</option>
+              @for (opcao of OPCOES_MOTIVO; track opcao.valor) {
+                <option [value]="opcao.valor">{{ opcao.label }}</option>
+              }
+            </select>
+            @if (form.get('motivo')?.invalid && form.get('motivo')?.touched) {
+              <div class="invalid-feedback">Selecione o motivo.</div>
+            }
+          </div>
+
+          <!-- MOTIVO TEXTO (condicional — apenas OUTRO) -->
+          @if (motivoSelecionado() === 'OUTRO') {
+            <div class="mb-3">
+              <label class="form-label" for="motivo-texto">
+                Descreva o motivo <span class="text-danger">*</span>
+              </label>
+              <textarea
+                id="motivo-texto"
+                class="form-control"
+                formControlName="motivoTexto"
+                rows="3"
+                placeholder="Descreva brevemente o motivo…"
+                [class.is-invalid]="form.get('motivoTexto')?.invalid && form.get('motivoTexto')?.touched"
+              ></textarea>
+              @if (form.get('motivoTexto')?.invalid && form.get('motivoTexto')?.touched) {
+                <div class="invalid-feedback">Descreva o motivo.</div>
+              }
+            </div>
+          }
+
+          <!-- NOVA DATA E HORA (condicional — apenas REAGENDAR) -->
+          @if (intencao() === 'REAGENDAR') {
+            <div class="mb-3">
+              <label class="form-label" for="nova-data-hora">
+                Nova data e hora <span class="text-danger">*</span>
+              </label>
+              <input
+                id="nova-data-hora"
+                type="datetime-local"
+                class="form-control"
+                formControlName="novaDataHora"
+                [min]="minNovaDataHora"
+                [class.is-invalid]="form.get('novaDataHora')?.invalid && form.get('novaDataHora')?.touched"
+              />
+              @if (form.get('novaDataHora')?.errors?.['required'] && form.get('novaDataHora')?.touched) {
+                <div class="invalid-feedback">A nova data e hora são obrigatórias.</div>
+              }
+              @if (form.get('novaDataHora')?.errors?.['dataPassada'] && form.get('novaDataHora')?.touched) {
+                <div class="invalid-feedback">A nova data e hora devem ser no futuro.</div>
+              }
+            </div>
+          }
+
+        </form>
+
+      </div>
+
+      <!-- FOOTER -->
+      <div class="modal-footer">
+
+        @if (erroModal()) {
+          <div
+            class="alert alert-danger d-flex align-items-center gap-2 mb-0 flex-fill"
+            role="alert"
+          >
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+            <span>{{ erroModal() }}</span>
+          </div>
+        }
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="fechar()"
+          [disabled]="salvando()"
+        >
+          Fechar
+        </button>
+
+        @if (intencao() === 'REAGENDAR') {
+          <button
+            type="submit"
+            form="form-reagendar-cancelar"
+            class="btn-salvar-modal"
+            [disabled]="form.invalid || salvando()"
+          >
+            @if (salvando()) {
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Reagendando…
+            } @else {
+              <i class="bi bi-calendar-check-fill me-2" aria-hidden="true"></i>
+              Confirmar Reagendamento
+            }
+          </button>
+        } @else {
+          <button
+            type="submit"
+            form="form-reagendar-cancelar"
+            class="btn btn-danger"
+            [disabled]="form.invalid || salvando()"
+          >
+            @if (salvando()) {
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Cancelando…
+            } @else {
+              <i class="bi bi-x-circle-fill me-2" aria-hidden="true"></i>
+              Confirmar Cancelamento
+            }
+          </button>
+        }
+
+      </div>
+
+    </div>
+  </div>
+</div>

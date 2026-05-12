@@ -9,6 +9,7 @@ import {
   ReuniaoCCReagendamentoResponseDto,
   StatusReuniao,
 } from '../../../../../models/reuniao-cc.model';
+import { ReagendarCancelarModal } from '../reagendar-cancelar/reagendar-cancelar.modal';
 
 @Component({
   selector: 'app-detalhe-reuniao-modal',
@@ -98,7 +99,15 @@ export class DetalheReuniaoModal {
   // MODAIS DE AÇÃO (implementados nas Tarefas 6 e 7)
   // =========================================================================
 
-  abrirModalReagendarCancelar(): void {}
+  abrirModalReagendarCancelar(): void {
+    this.modalService
+      .open<boolean, { reuniao: ReuniaoCCResponseDto }>(ReagendarCancelarModal, {
+        data: { reuniao: this.reuniao()! },
+      })
+      .subscribe(sucesso => {
+        if (sucesso) this.recarregarReuniao();
+      });
+  }
 
   abrirModalValidar(): void {}
 
