@@ -54,13 +54,15 @@
           novalidate
         >
 
-          <!-- NENHUMA POSSIBILIDADE DE PROSPECT -->
+          <!-- ── PROSPECTS ──────────────────────────────────────── -->
           <div class="vrcc-secao mb-4">
             <h6 class="vrcc-secao-titulo">
               <i class="bi bi-people-fill" aria-hidden="true"></i>
               Prospects
             </h6>
-            <div class="form-check">
+
+            <!-- Toggle: nenhuma possibilidade -->
+            <div class="form-check mb-3">
               <input
                 id="nenhuma-possibilidade"
                 type="checkbox"
@@ -71,9 +73,112 @@
                 Nenhuma possibilidade de prospect identificada nesta reunião
               </label>
             </div>
+
+            <!-- Lista dinâmica (visível quando nenhumaPossibilidade = false) -->
+            @if (!form.get('nenhumaPossibilidadeProspect')?.value) {
+
+              <div formArrayName="prospects">
+                @for (g of prospectsArray.controls; track $index; let i = $index) {
+                  <div [formGroupName]="i" class="vrcc-prospect-item">
+
+                    <div class="vrcc-prospect-campos">
+
+                      <!-- Nome do prospect -->
+                      <div class="vrcc-prospect-campo">
+                        <label [for]="'prospect-nome-' + i" class="form-label form-label-sm">
+                          Nome do prospect <span class="text-danger">*</span>
+                        </label>
+                        <input
+                          [id]="'prospect-nome-' + i"
+                          type="text"
+                          class="form-control form-control-sm"
+                          formControlName="nomeProspect"
+                          placeholder="Ex: João da Silva"
+                          [class.is-invalid]="
+                            prospectsArray.at(i).get('nomeProspect')?.invalid &&
+                            prospectsArray.at(i).get('nomeProspect')?.touched
+                          "
+                        />
+                        @if (
+                          prospectsArray.at(i).get('nomeProspect')?.invalid &&
+                          prospectsArray.at(i).get('nomeProspect')?.touched
+                        ) {
+                          <div class="invalid-feedback">O nome do prospect é obrigatório.</div>
+                        }
+                      </div>
+
+                      <!-- Empresa -->
+                      <div class="vrcc-prospect-campo">
+                        <label [for]="'prospect-empresa-' + i" class="form-label form-label-sm">
+                          Empresa <span class="text-danger">*</span>
+                        </label>
+                        <input
+                          [id]="'prospect-empresa-' + i"
+                          type="text"
+                          class="form-control form-control-sm"
+                          formControlName="nomeEmpresa"
+                          placeholder="Ex: Empresa Ltda"
+                          [class.is-invalid]="
+                            prospectsArray.at(i).get('nomeEmpresa')?.invalid &&
+                            prospectsArray.at(i).get('nomeEmpresa')?.touched
+                          "
+                        />
+                        @if (
+                          prospectsArray.at(i).get('nomeEmpresa')?.errors?.['required'] &&
+                          prospectsArray.at(i).get('nomeEmpresa')?.touched
+                        ) {
+                          <div class="invalid-feedback">O nome da empresa é obrigatório.</div>
+                        }
+                        @if (
+                          prospectsArray.at(i).get('nomeEmpresa')?.errors?.['maxlength'] &&
+                          prospectsArray.at(i).get('nomeEmpresa')?.touched
+                        ) {
+                          <div class="invalid-feedback">Máximo 30 caracteres.</div>
+                        }
+                      </div>
+
+                    </div>
+
+                    <!-- Botão remover -->
+                    <button
+                      type="button"
+                      class="vrcc-btn-remover"
+                      (click)="removerProspect(i)"
+                      [disabled]="salvando()"
+                      aria-label="Remover prospect"
+                    >
+                      <i class="bi bi-trash3" aria-hidden="true"></i>
+                    </button>
+
+                  </div>
+                }
+              </div>
+
+              @if (prospectsArray.length === 0) {
+                <p class="vrcc-prospects-vazio">
+                  Nenhum prospect adicionado ainda. Adicione ao menos um.
+                </p>
+              }
+
+              @if (prospectsArray.length < 3) {
+                <button
+                  type="button"
+                  class="vrcc-btn-adicionar"
+                  (click)="adicionarProspect()"
+                  [disabled]="salvando()"
+                >
+                  <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>
+                  Adicionar prospect
+                  @if (prospectsArray.length > 0) {
+                    <span class="vrcc-contador">({{ prospectsArray.length }}/3)</span>
+                  }
+                </button>
+              }
+
+            }
           </div>
 
-          <!-- TANGIBILIDADES -->
+          <!-- ── TANGIBILIDADES ─────────────────────────────────── -->
           <div class="vrcc-secao">
             <h6 class="vrcc-secao-titulo">
               <i class="bi bi-stars" aria-hidden="true"></i>
@@ -97,7 +202,7 @@
                     </label>
                   </div>
 
-                  <!-- Campo descricaoOutro: visível apenas quando OUTRO está marcado -->
+                  <!-- descricaoOutro: visível apenas quando OUTRO está marcado -->
                   @if (OPCOES_TANGIBILIDADE[i].valor === 'OUTRO' && tangibilidadesArray.at(i).get('marcado')?.value) {
                     <div class="vrcc-desc-outro">
                       <textarea

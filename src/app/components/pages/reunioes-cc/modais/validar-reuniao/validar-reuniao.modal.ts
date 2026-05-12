@@ -1,10 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
+  AbstractControl,
   FormArray,
   FormBuilder,
   FormGroup,
   ReactiveFormsModule,
+  ValidationErrors,
   Validators,
 } from '@angular/forms';
 import {
@@ -21,10 +23,19 @@ import { ToastService } from '../../../../../services/toast.service';
 import { ReuniaosCCService } from '../../../../../services/reuniao-cc.service';
 import {
   OpcaoTangibilidade,
+  ProspectRequestDto,
   ReuniaoCCResponseDto,
   TangibilidadeRequestDto,
   ValidarReuniaoRequestDto,
 } from '../../../../../models/reuniao-cc.model';
+
+// Validator de grupo: exige ao menos 1 prospect quando nenhumaPossibilidadeProspect = false.
+function prospectsValidator(group: AbstractControl): ValidationErrors | null {
+  const nenhuma = group.get('nenhumaPossibilidadeProspect')?.value as boolean;
+  if (nenhuma) return null;
+  const arr = group.get('prospects') as FormArray;
+  return arr && arr.length >= 1 ? null : { prospectsObrigatorio: true };
+}
 
 @Component({
   selector: 'app-validar-reuniao-modal',
@@ -55,15 +66,16 @@ export class ValidarReuniaoModal implements OnInit {
   // =========================================================================
   // FORMULÁRIO
   //
-  // tangibilidades é um FormArray com 10 grupos fixos (um por OpcaoTangibilidade).
-  // Cada grupo tem: marcado (boolean), opcao (string fixo), descricaoOutro (condicional).
-  // O grupo OUTRO ganha validators em descricaoOutro quando marcado é true.
+  // prospects — FormArray dinâmico (0–3 itens); obrigatório >= 1 quando
+  //             nenhumaPossibilidadeProspect = false (validator de grupo).
+  // tangibilidades — FormArray com 10 grupos fixos (um por OpcaoTangibilidade).
   // =========================================================================
 
   form = this.fb.group({
     nenhumaPossibilidadeProspect: [false],
+    prospects:     this.fb.array([]),
     tangibilidades: this.fb.array([]),
-  });
+  }, { validators: prospectsValidator });
 
   // =========================================================================
   // SIGNALS
@@ -90,8 +102,12 @@ export class ValidarReuniaoModal implements OnInit {
   ];
 
   // =========================================================================
-  // GETTER — acesso tipado ao FormArray
+  // GETTERS — acesso tipado aos FormArrays
   // =========================================================================
+
+  get prospectsArray(): FormArray {
+    return this.form.get('prospects') as FormArray;
+  }
 
   get tangibilidadesArray(): FormArray {
     return this.form.get('tangibilidades') as FormArray;
@@ -102,6 +118,15 @@ export class ValidarReuniaoModal implements OnInit {
   // =========================================================================
 
   ngOnInit(): void {
+    // Quando nenhumaPossibilidadeProspect muda para true, limpa a lista de prospects
+    this.form.get('nenhumaPossibilidadeProspect')!.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(nenhuma => {
+        if (nenhuma) this.prospectsArray.clear();
+        this.form.updateValueAndValidity();
+      });
+
+    // Inicializa os 10 grupos fixos de tangibilidade
     this.OPCOES_TANGIBILIDADE.forEach(op => {
       const grupo: FormGroup = this.fb.group({
         marcado:       [false],
@@ -109,7 +134,7 @@ export class ValidarReuniaoModal implements OnInit {
         descricaoOutro: [null as string | null],
       });
 
-      // Quando OUTRO é marcado, adiciona validators em descricaoOutro
+      // OUTRO: adiciona/remove validators em descricaoOutro conforme checkbox
       if (op.valor === 'OUTRO') {
         grupo.get('marcado')!.valueChanges
           .pipe(takeUntilDestroyed(this.destroyRef))
@@ -127,6 +152,22 @@ export class ValidarReuniaoModal implements OnInit {
 
       this.tangibilidadesArray.push(grupo);
     });
+  }
+
+  // =========================================================================
+  // PROSPECTS — adicionar / remover
+  // =========================================================================
+
+  adicionarProspect(): void {
+    if (this.prospectsArray.length >= 3) return;
+    this.prospectsArray.push(this.fb.group({
+      nomeProspect: ['', Validators.required],
+      nomeEmpresa:  ['', [Validators.required, Validators.maxLength(30)]],
+    }));
+  }
+
+  removerProspect(index: number): void {
+    this.prospectsArray.removeAt(index);
   }
 
   // =========================================================================
@@ -148,14 +189,30 @@ export class ValidarReuniaoModal implements OnInit {
       return;
     }
 
+    // Erro de grupo: nenhumaPossibilidade = false mas sem prospects
+    if (this.form.errors?.['prospectsObrigatorio']) {
+      this.toastService.erro('Informe ao menos um prospect ou marque "Nenhuma possibilidade".');
+      return;
+    }
+
+    // Erros de campo (nomeProspect/nomeEmpresa/descricaoOutro)
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
 
+    const nenhumaPossibilidade = this.form.get('nenhumaPossibilidadeProspect')!.value as boolean;
+
+    const prospectos: ProspectRequestDto[] = nenhumaPossibilidade
+      ? []
+      : this.prospectsArray.controls.map(g => ({
+          nomeProspect: g.get('nomeProspect')!.value as string,
+          nomeEmpresa:  g.get('nomeEmpresa')!.value as string,
+        }));
+
     const dto: ValidarReuniaoRequestDto = {
-      nenhumaPossibilidadeProspect: this.form.get('nenhumaPossibilidadeProspect')!.value as boolean,
-      prospects:     [],
+      nenhumaPossibilidadeProspect: nenhumaPossibilidade,
+      prospects:     prospectos,
       tangibilidades: selecionadas,
     };
 

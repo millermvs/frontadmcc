@@ -115,6 +115,97 @@
 }
 
 /* ================================================================
+   PROSPECTS
+   ================================================================ */
+.vrcc-prospect-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: var(--cor-surface-alt);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.vrcc-prospect-campos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  flex: 1;
+}
+
+.vrcc-prospect-campo {
+  display: flex;
+  flex-direction: column;
+}
+
+.vrcc-btn-remover {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--cor-erro);
+  border-radius: var(--radius-sm);
+  color: var(--cor-erro);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-top: 22px;
+  transition: background 0.15s;
+}
+
+.vrcc-btn-remover:hover:not(:disabled) {
+  background: var(--cor-erro-bg);
+}
+
+.vrcc-btn-remover:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vrcc-btn-adicionar {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cor-primaria);
+  background: transparent;
+  border: 1.5px dashed var(--cor-primaria-clara);
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.vrcc-btn-adicionar:hover:not(:disabled) {
+  background: var(--cor-sucesso-bg);
+  border-color: var(--cor-primaria);
+}
+
+.vrcc-btn-adicionar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vrcc-contador {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cor-texto-secundario);
+  margin-left: 4px;
+}
+
+.vrcc-prospects-vazio {
+  font-size: 13px;
+  color: var(--cor-texto-secundario);
+  font-style: italic;
+  margin: 4px 0 8px;
+}
+
+/* ================================================================
    CAMPO DESCRICAO OUTRO
    ================================================================ */
 .vrcc-desc-outro {
@@ -129,5 +220,14 @@
   .vrcc-info-row {
     grid-template-columns: 1fr;
     gap: 2px;
+  }
+
+  .vrcc-prospect-campos {
+    grid-template-columns: 1fr;
+  }
+
+  .vrcc-btn-remover {
+    margin-top: 0;
+    align-self: flex-end;
   }
 }
