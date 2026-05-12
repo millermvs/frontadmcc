@@ -6,6 +6,7 @@
 // ============================================================
 
 const baseUrl = 'https://apiadmcc.automica.com.br/api/v1';
+const baseUrlConversas = 'https://whatsappapi.automica.com.br/conversas';
 
 export const environment = {
   production: true,
@@ -226,6 +227,9 @@ export const environment = {
     ciclosSemanais: {
       porEquipe: (idEquipe: number) => `${baseUrl}/ciclos-semanais/equipe/${idEquipe}`,
     },
+
+    // ========== Whatsapp (MsgTemplate) ==========
+    mensagemInicialTemplate: `${baseUrlConversas}/criar`,
 
     // ========== PRODUTOS (Stripe) ==========
     produtos: {

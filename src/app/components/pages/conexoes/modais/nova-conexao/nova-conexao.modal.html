@@ -49,7 +49,7 @@
         <form
           [formGroup]="form"
           id="form-nova-conexao"
-          (ngSubmit)="salvar()"
+          (ngSubmit)="salvar(); enviarMensagemAssociadoDestinatario()"          
           novalidate
         >
 

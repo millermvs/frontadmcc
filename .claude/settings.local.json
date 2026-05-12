@@ -7,7 +7,13 @@
       "Bash(Sort-Object FullName)",
       "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\mille\\\\OneDrive\\\\Área de Trabalho\\\\Projects\\\\FRONT - Gestão Associados\\\\src\\\\app\" -Recurse | Where-Object { $_.PSIsContainer } | Select-Object FullName)",
       "PowerShell(head *)",
-      "Bash(Find C:\\\\Users\\\\mille\\\\OneDrive\\\\Área de Trabalho\\\\Projects\\\\FRONT - Gestão Associados\\\\src *)"
+      "Bash(Find C:\\\\Users\\\\mille\\\\OneDrive\\\\Área de Trabalho\\\\Projects\\\\FRONT - Gestão Associados\\\\src *)",
+      "Bash(git worktree *)",
+      "Bash(git branch *)",
+      "Bash(Remove-Item -Recurse -Force \".claude\\\\skills\\\\auth\")",
+      "Bash(Remove-Item -Recurse -Force \".claude\\\\skills\\\\components\")",
+      "Bash(Remove-Item -Recurse -Force \".claude\\\\skills\\\\models\")",
+      "Bash(Remove-Item -Recurse -Force \".claude\\\\skills\\\\services\")"
     ]
   }
 }

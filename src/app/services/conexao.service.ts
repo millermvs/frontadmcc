@@ -49,6 +49,7 @@ export class ConexaoService {
   // =========================================================================
 
   private api = environment.api.conexoes;
+  private apiMensagemTemplate = environment.api.mensagemInicialTemplate;
 
   // =========================================================================
   // MÉTODOS PÚBLICOS
@@ -64,6 +65,10 @@ export class ConexaoService {
    */
   registrar(dto: ConexaoRequestDto): Observable<ConexaoGeradaResponseDto> {
     return this.http.post<ConexaoGeradaResponseDto>(this.api.registrar, dto);
+  }
+
+  enviarMensagemAssociadoDestinatario(url: string) {
+    return this.http.post(this.apiMensagemTemplate + url, null);
   }
 
   /**

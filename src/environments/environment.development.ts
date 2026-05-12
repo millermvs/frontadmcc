@@ -7,6 +7,7 @@
 // ============================================================
 
 const baseUrl = 'http://localhost:8080/api/v1';
+const baseUrlConversas = 'http://localhost:8082/conversas';
 
 export const environment = {
   production: false,
@@ -227,6 +228,9 @@ export const environment = {
     ciclosSemanais: {
       porEquipe: (idEquipe: number) => `${baseUrl}/ciclos-semanais/equipe/${idEquipe}`,
     },
+
+    // ========== Whatsapp (MsgTemplate) ==========
+    mensagemInicialTemplate: `${baseUrlConversas}/criar`,
 
     // ========== PRODUTOS (Stripe) ==========
     produtos: {

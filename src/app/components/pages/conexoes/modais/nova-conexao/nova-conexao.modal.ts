@@ -251,4 +251,28 @@ export class NovaConexaoModal implements OnInit {
     sinal.set(mensagem);
     setTimeout(() => sinal.set(null), 3000);
   }
+
+  /*
+    * ENVIAR MENSAGEM PARA O DESTINATÁRIO VIA WHATSAPP
+  */
+  enviarMensagemAssociadoDestinatario() {
+    this.carregando.set(true);
+    const profileName = this.destinatarioSelecionado()?.nomeCompleto ?? 'Associado';
+    const waId = this.destinatarioSelecionado()?.telefonePrincipal;
+
+    console.log('Enviar mensagem para:', { profileName, waId });
+
+    const url = `?waid=55${waId}&phoneNumberId=445562525305334&wabaId=459801293879309&displayPhoneNumber=5521969579934&profileName=${profileName}`;
+    this.conexaoService.enviarMensagemAssociadoDestinatario(url).subscribe({
+      next: (response) => {
+        this.carregando.set(false);
+        console.log('Resposta do envio de mensagem:', response);
+        this.modalService.fechar(undefined);
+      },
+      error: (e: HttpErrorResponse) => {
+        this.carregando.set(false);
+        
+      }
+    });
+  }
 }
