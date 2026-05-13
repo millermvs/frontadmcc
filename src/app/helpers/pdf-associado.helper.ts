@@ -270,7 +270,7 @@ export function gerarPdfAssociado(
     for (const c of cargos) {
       const situacao = c.ativo ? 'Ativo' : 'Encerrado';
       const fim = c.dataFim ? formatarData(c.dataFim) : 'Em vigor';
-      row2(c.nomeCargo, `${formatarData(c.dataInicio)} → ${fim}`, 'Situação', situacao);
+      row2(c.nomeCargo, `${formatarData(c.dataInicio)} - ${fim}`, 'Situação', situacao);
     }
     y += 3;
   }

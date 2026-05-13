@@ -151,7 +151,7 @@ export class AgendarReuniaoModal implements OnInit {
         error: (err: HttpErrorResponse) => {
           this.salvando.set(false);
           if (err.status === 422) {
-            this.toastService.erro(err.error?.mensagem ?? 'Operação não permitida.');
+            this.toastService.erro(err.error?.message ?? 'Operação não permitida.');
           } else {
             this._mostrarErroNaModal(
               this.erroModal,
