@@ -237,6 +237,12 @@ export const environment = {
       validar: (id: number) => `${baseUrl}/reunioes-cc/${id}/validar`,
     },
 
+    // ========== PARCERIAS ==========
+    parcerias: {
+      registrar: `${baseUrl}/parcerias`,
+      listarMinhas: `${baseUrl}/parcerias/minhas`,
+    },
+
     // ========== Whatsapp (MsgTemplate) ==========
     mensagemInicialTemplate: `${baseUrlConversas}/criar`,
 
