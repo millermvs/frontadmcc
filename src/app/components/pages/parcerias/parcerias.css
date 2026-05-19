@@ -1,0 +1,192 @@
+/* ================================================================
+   PARCERIAS PAGE — estilos exclusivos desta página
+   Classes globais (page-header, filter-bar, table-card, kpi-card,
+   empty-state, status-chip, btn-acao-pagina) usadas diretamente
+   no template — não redeclaradas aqui.
+   ================================================================ */
+
+/* ================================================================
+   TABELA
+   ================================================================ */
+.parcerias-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.parcerias-table th {
+  padding: 13px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--cor-texto-secundario);
+  background: var(--cor-surface-alt);
+  border-bottom: 1px solid var(--cor-borda);
+  white-space: nowrap;
+}
+
+.parcerias-table td {
+  padding: 14px 16px;
+  font-size: 14px;
+  color: var(--cor-texto);
+  border-bottom: 1px solid var(--cor-borda);
+  vertical-align: middle;
+}
+
+.parcerias-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.parceria-row:hover td {
+  background: var(--cor-surface-alt);
+}
+
+/* ================================================================
+   CÉLULA: PESSOA (declarante / parceiro)
+   Avatar com iniciais + nome em linha
+   ================================================================ */
+.cell-pessoa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 160px;
+}
+
+.pessoa-avatar {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: var(--radius-md);
+  background: var(--cor-primaria);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar-initials {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.pessoa-nome {
+  font-weight: 500;
+  color: var(--cor-texto);
+  white-space: nowrap;
+}
+
+/* ================================================================
+   CÉLULA: COMPETÊNCIA E DATA
+   ================================================================ */
+.cell-competencia {
+  white-space: nowrap;
+}
+
+.cell-data {
+  white-space: nowrap;
+  color: var(--cor-texto-secundario);
+  font-size: 13px;
+  min-width: 100px;
+}
+
+/* ================================================================
+   SKELETON (loading state)
+   ================================================================ */
+.skeleton-row td {
+  padding: 16px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f1f5f9 25%,
+    #e2e8f0 50%,
+    #f1f5f9 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+}
+
+.skeleton-nome  { height: 14px; width: 140px; }
+.skeleton-chip  { height: 22px; width: 90px; border-radius: var(--radius-pill); }
+.skeleton-data  { height: 14px; width: 80px; }
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ================================================================
+   PAGINAÇÃO
+   ================================================================ */
+.paginacao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid var(--cor-borda);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-paginacao {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--cor-surface-alt);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cor-texto);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-paginacao:hover:not(:disabled) {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.btn-paginacao:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.paginacao-info {
+  font-size: 13px;
+  color: var(--cor-texto-secundario);
+  text-align: center;
+  flex: 1;
+  white-space: nowrap;
+}
+
+.paginacao-total {
+  color: var(--cor-texto-placeholder);
+  margin-left: 4px;
+}
+
+/* ================================================================
+   RESPONSIVO — mobile (< 768px)
+   ================================================================ */
+@media (max-width: 768px) {
+  .cell-pessoa {
+    min-width: 120px;
+  }
+
+  .paginacao {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .paginacao-info {
+    order: -1;
+  }
+}

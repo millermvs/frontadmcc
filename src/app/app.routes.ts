@@ -100,6 +100,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./components/pages/reunioes-cc/reunioes-cc').then((m) => m.ReuniaoCC),
       },
+      {
+        path: 'parcerias',
+        loadComponent: () =>
+          import('./components/pages/parcerias/parcerias').then((m) => m.Parcerias),
+      },
     ],
   },
 

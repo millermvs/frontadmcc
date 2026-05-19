@@ -1,0 +1,180 @@
+<!-- Backdrop — clique fecha o modal -->
+<div
+  class="npc-backdrop"
+  (click)="fechar()"
+  aria-hidden="true"
+></div>
+
+<!-- Dialog Bootstrap -->
+<div
+  class="modal d-block"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="modal-nova-parceria-titulo"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <!-- ============================================================
+           HEADER
+           ============================================================ -->
+      <div class="modal-header">
+        <div class="npc-header-icon" aria-hidden="true">
+          <i class="bi bi-people-fill"></i>
+        </div>
+        <h5 class="modal-title" id="modal-nova-parceria-titulo">Registrar Parceria</h5>
+        <button
+          type="button"
+          class="btn-close"
+          (click)="fechar()"
+          [disabled]="carregando()"
+          aria-label="Fechar modal"
+        ></button>
+      </div>
+
+      <!-- ============================================================
+           BODY — FORMULÁRIO
+           ============================================================ -->
+      <div class="modal-body">
+        <form
+          [formGroup]="form"
+          id="form-nova-parceria"
+          (ngSubmit)="salvar()"
+          novalidate
+        >
+
+          <!-- ── PARCEIRO (autocomplete) ──────────────────────────── -->
+          <div class="mb-3">
+            <label class="form-label" for="busca-parceiro">
+              Associado Parceiro <span class="text-danger">*</span>
+            </label>
+            <p class="npc-campo-hint">
+              Selecione o associado com quem você firmou parceria neste ciclo semanal.
+            </p>
+
+            <div class="npc-autocomplete-wrap">
+              <i class="bi bi-search npc-autocomplete-icon" aria-hidden="true"></i>
+
+              @if (parceiroSelecionado()) {
+                <!-- Estado: associado selecionado -->
+                <div class="npc-selecionado">
+                  <span class="npc-selecionado-nome">
+                    {{ parceiroSelecionado()!.nomeCompleto }}
+                  </span>
+                  <button
+                    type="button"
+                    class="npc-btn-limpar"
+                    (click)="limparParceiro()"
+                    title="Remover seleção"
+                    aria-label="Remover parceiro selecionado"
+                  >
+                    <i class="bi bi-x" aria-hidden="true"></i>
+                  </button>
+                </div>
+              } @else {
+                <!-- Estado: campo de busca -->
+                <input
+                  id="busca-parceiro"
+                  type="text"
+                  class="form-control npc-autocomplete-input"
+                  placeholder="Buscar associado pelo nome…"
+                  [value]="termoBuscaParceiro()"
+                  (input)="onBuscaParceiro($any($event.target).value)"
+                  (blur)="ocultarSugestoes()"
+                  autocomplete="off"
+                  [attr.aria-expanded]="mostrarSugestoes()"
+                  aria-haspopup="listbox"
+                  aria-autocomplete="list"
+                  aria-controls="sugestoes-parceiro"
+                />
+              }
+
+              @if (buscandoParceiro()) {
+                <span class="npc-spinner" aria-label="Buscando associados"></span>
+              }
+
+              @if (mostrarSugestoes() && sugestoes().length > 0) {
+                <ul
+                  id="sugestoes-parceiro"
+                  class="npc-sugestoes"
+                  role="listbox"
+                  aria-label="Sugestões de parceiro"
+                >
+                  @for (associado of sugestoes(); track associado.idAssociado) {
+                    <li
+                      class="npc-sugestao-item"
+                      role="option"
+                      (mousedown)="selecionarParceiro(associado)"
+                    >
+                      <div class="npc-sugestao-avatar" aria-hidden="true">
+                        {{ associado.nomeCompleto.charAt(0).toUpperCase() }}
+                      </div>
+                      <div class="npc-sugestao-info">
+                        <span class="npc-sugestao-nome">{{ associado.nomeCompleto }}</span>
+                        <small class="npc-sugestao-meta">{{ associado.nomeEquipe }}</small>
+                      </div>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+
+            @if (form.get('idDestinatario')?.invalid && form.get('idDestinatario')?.touched) {
+              <div class="invalid-feedback d-block">
+                Selecione o associado parceiro da lista.
+              </div>
+            }
+          </div>
+
+        </form>
+      </div>
+
+      <!-- ============================================================
+           FOOTER — erro + botões
+           ============================================================ -->
+      <div class="modal-footer">
+
+        @if (erroModal()) {
+          <div
+            class="alert alert-danger d-flex align-items-center gap-2 mb-0 flex-fill"
+            role="alert"
+          >
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+            <span>{{ erroModal() }}</span>
+          </div>
+        }
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="fechar()"
+          [disabled]="carregando()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          form="form-nova-parceria"
+          class="btn-salvar-modal"
+          [disabled]="form.invalid || carregando()"
+        >
+          @if (carregando()) {
+            <span
+              class="spinner-border spinner-border-sm me-2"
+              role="status"
+              aria-hidden="true"
+            ></span>
+            Registrando…
+          } @else {
+            <i class="bi bi-people-fill me-2" aria-hidden="true"></i>
+            Registrar Parceria
+          }
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+</div>

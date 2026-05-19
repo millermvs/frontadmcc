@@ -1,0 +1,195 @@
+<div class="parcerias-page container-fluid">
+
+  <!-- =====================================================================
+       CABEÇALHO
+       ===================================================================== -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <nav class="breadcrumb-nav" aria-label="Breadcrumb">
+        <span class="bc-item"><i class="bi bi-house-fill" aria-hidden="true"></i> Dashboard</span>
+        <i class="bi bi-chevron-right bc-sep" aria-hidden="true"></i>
+        <span class="bc-item bc-active">Parcerias</span>
+      </nav>
+      <h2 class="page-title">Parcerias</h2>
+      <p class="page-subtitle">Registre e acompanhe as parcerias declaradas com outros associados no ciclo semanal.</p>
+    </div>
+
+    <div class="page-header-right">
+      <button
+        class="btn-acao-pagina"
+        type="button"
+        (click)="abrirModalRegistrar()"
+      >
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        Registrar Parceria
+      </button>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       KPI
+       ===================================================================== -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-total">
+          <i class="bi bi-people-fill" aria-hidden="true"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Total de Parcerias</span>
+          <span class="kpi-value">{{ totalItens() }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       BARRA DE FILTROS
+       ===================================================================== -->
+  <div class="filter-bar">
+    <div class="filter-search-wrap">
+      <i class="bi bi-search filter-search-icon" aria-hidden="true"></i>
+      <input
+        class="filter-search-input"
+        type="text"
+        placeholder="Buscar por nome do associado…"
+        [value]="termoBusca()"
+        (input)="atualizarBusca($any($event.target).value)"
+        aria-label="Buscar parceria"
+      />
+    </div>
+
+    <span class="filter-count" aria-live="polite">
+      {{ parceirasFiltradas().length }}
+      {{ parceirasFiltradas().length === 1 ? 'parceria' : 'parcerias' }}
+    </span>
+  </div>
+
+  <!-- =====================================================================
+       TABELA
+       ===================================================================== -->
+  <div class="table-card">
+    <div class="table-wrapper">
+      <table class="parcerias-table" aria-label="Lista de parcerias">
+        <thead>
+          <tr>
+            <th scope="col">Declarante</th>
+            <th scope="col">Parceiro</th>
+            <th scope="col">Competência</th>
+            <th scope="col">Data</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <!-- ── CARREGANDO ──────────────────────────────────────────── -->
+          @if (carregando()) {
+            @for (_ of [1,2,3,4,5]; track $index) {
+              <tr class="skeleton-row" aria-hidden="true">
+                <td><div class="skeleton skeleton-nome"></div></td>
+                <td><div class="skeleton skeleton-nome"></div></td>
+                <td><div class="skeleton skeleton-chip"></div></td>
+                <td><div class="skeleton skeleton-data"></div></td>
+              </tr>
+            }
+          }
+
+          <!-- ── DADOS ───────────────────────────────────────────────── -->
+          @if (!carregando()) {
+            @for (parceria of parceirasFiltradas(); track parceria.idParceria) {
+              <tr class="parceria-row">
+
+                <!-- Declarante (quem enviou a parceria) -->
+                <td>
+                  <div class="cell-pessoa">
+                    <div class="pessoa-avatar">
+                      <span class="avatar-initials">{{ iniciaisNome(parceria.nomeRemetente) }}</span>
+                    </div>
+                    <span class="pessoa-nome">{{ parceria.nomeRemetente }}</span>
+                  </div>
+                </td>
+
+                <!-- Parceiro (quem recebeu a declaração) -->
+                <td>
+                  <div class="cell-pessoa">
+                    <div class="pessoa-avatar">
+                      <span class="avatar-initials">{{ iniciaisNome(parceria.nomeDestinatario) }}</span>
+                    </div>
+                    <span class="pessoa-nome">{{ parceria.nomeDestinatario }}</span>
+                  </div>
+                </td>
+
+                <!-- Mês de competência -->
+                <td class="cell-competencia">
+                  <span class="status-chip status-ativa">
+                    {{ formatarMesCompetencia(parceria.mesCompetencia) }}
+                  </span>
+                </td>
+
+                <!-- Data de criação -->
+                <td class="cell-data">
+                  {{ formatarData(parceria.criadoEm) }}
+                </td>
+
+              </tr>
+            }
+
+            <!-- ── VAZIO ───────────────────────────────────────────── -->
+            @if (parceirasFiltradas().length === 0) {
+              <tr>
+                <td colspan="4" class="empty-state">
+                  <div class="empty-icon">
+                    <i class="bi bi-people" aria-hidden="true"></i>
+                  </div>
+                  @if (termoBusca()) {
+                    <p class="empty-title">Nenhuma parceria encontrada</p>
+                    <p class="empty-subtitle">Tente ajustar o termo de busca.</p>
+                  } @else {
+                    <p class="empty-title">Você ainda não tem parcerias registradas</p>
+                    <p class="empty-subtitle">Clique em "Registrar Parceria" para declarar uma parceria com outro associado.</p>
+                  }
+                </td>
+              </tr>
+            }
+          }
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINAÇÃO -->
+    @if (!carregando() && totalPaginas() > 1) {
+      <div class="paginacao">
+        <button
+          class="btn-paginacao"
+          type="button"
+          [disabled]="!temAnterior()"
+          (click)="paginaAnterior()"
+          aria-label="Página anterior"
+        >
+          <i class="bi bi-chevron-left" aria-hidden="true"></i>
+          Anterior
+        </button>
+
+        <span class="paginacao-info">
+          Página {{ paginaAtual() + 1 }} de {{ totalPaginas() }}
+          <span class="paginacao-total">({{ totalItens() }} registros)</span>
+        </span>
+
+        <button
+          class="btn-paginacao"
+          type="button"
+          [disabled]="!temProxima()"
+          (click)="proximaPagina()"
+          aria-label="Próxima página"
+        >
+          Próxima
+          <i class="bi bi-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+    }
+
+  </div>
+  <!-- /table-card -->
+
+</div>
