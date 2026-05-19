@@ -243,6 +243,15 @@ export const environment = {
       listarMinhas: `${baseUrl}/parcerias/minhas`,
     },
 
+    // ========== VISITANTES EXTERNOS ==========
+    visitantesExternos: {
+      registrar: `${baseUrl}/visitantes-externos`,
+      listarPorEquipe: `${baseUrl}/visitantes-externos`,
+      buscarPorId: (id: number) => `${baseUrl}/visitantes-externos/${id}`,
+      validar: (id: number) => `${baseUrl}/visitantes-externos/${id}/validar`,
+      recusar: (id: number) => `${baseUrl}/visitantes-externos/${id}/recusar`,
+    },
+
     // ========== Whatsapp (MsgTemplate) ==========
     mensagemInicialTemplate: `${baseUrlConversas}/criar`,
 

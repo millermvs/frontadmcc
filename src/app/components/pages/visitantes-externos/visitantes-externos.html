@@ -1,0 +1,254 @@
+<div class="visitantes-externos-page container-fluid">
+
+  <!-- =====================================================================
+       CABEÇALHO
+       ===================================================================== -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <nav class="breadcrumb-nav" aria-label="Breadcrumb">
+        <span class="bc-item"><i class="bi bi-house-fill" aria-hidden="true"></i> Dashboard</span>
+        <i class="bi bi-chevron-right bc-sep" aria-hidden="true"></i>
+        <span class="bc-item bc-active">Visitantes Externos</span>
+      </nav>
+      <h2 class="page-title">Visitantes Externos</h2>
+      <p class="page-subtitle">Registre e acompanhe as pessoas de fora do C+C que participaram de reuniões de equipe.</p>
+    </div>
+
+    <div class="page-header-right">
+      <button
+        class="btn-acao-pagina"
+        type="button"
+        (click)="abrirModalRegistrar()"
+      >
+        <i class="bi bi-person-plus-fill" aria-hidden="true"></i>
+        Registrar Visitante
+      </button>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       KPI
+       ===================================================================== -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon kpi-icon-total">
+          <i class="bi bi-people-fill" aria-hidden="true"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Total de Visitantes</span>
+          <span class="kpi-value">{{ totalItens() }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       SELETOR DE EQUIPE
+       ===================================================================== -->
+  <div class="filter-bar">
+    <div class="filter-selects">
+      <div class="filter-select-wrap">
+        <select
+          class="filter-select"
+          [ngModel]="equipeSelecionadaId()"
+          (ngModelChange)="selecionarEquipe($event)"
+          aria-label="Selecionar equipe"
+        >
+          <option [ngValue]="null">Selecione uma equipe…</option>
+          @for (equipe of equipes(); track equipe.idEquipe) {
+            <option [ngValue]="equipe.idEquipe">{{ equipe.nomeEquipe }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    @if (equipeSelecionadaId() !== null) {
+      <span class="filter-count" aria-live="polite">
+        {{ totalItens() }} {{ totalItens() === 1 ? 'visitante' : 'visitantes' }}
+      </span>
+    }
+  </div>
+
+  <!-- =====================================================================
+       ESTADO INICIAL — nenhuma equipe selecionada
+       ===================================================================== -->
+  @if (equipeSelecionadaId() === null) {
+    <div class="table-card">
+      <div class="empty-state">
+        <div class="empty-icon">
+          <i class="bi bi-people" aria-hidden="true"></i>
+        </div>
+        <p class="empty-title">Selecione uma equipe</p>
+        <p class="empty-subtitle">Escolha uma equipe no filtro acima para visualizar os visitantes registrados.</p>
+      </div>
+    </div>
+  }
+
+  <!-- =====================================================================
+       TABELA
+       ===================================================================== -->
+  @if (equipeSelecionadaId() !== null) {
+    <div class="table-card">
+      <div class="table-wrapper">
+        <table class="visitantes-table" aria-label="Lista de visitantes externos">
+          <thead>
+            <tr>
+              <th scope="col">Visitante</th>
+              <th scope="col">Empresa</th>
+              <th scope="col">Data da Reunião</th>
+              <th scope="col">Responsável</th>
+              <th scope="col">Status</th>
+              @if (podeDecidirVisitante()) {
+                <th scope="col">Ações</th>
+              }
+            </tr>
+          </thead>
+
+          <tbody>
+
+            <!-- ── CARREGANDO ──────────────────────────────────────────── -->
+            @if (carregando()) {
+              @for (_ of [1,2,3,4,5]; track $index) {
+                <tr class="skeleton-row" aria-hidden="true">
+                  <td><div class="skeleton skeleton-nome"></div></td>
+                  <td><div class="skeleton skeleton-empresa"></div></td>
+                  <td><div class="skeleton skeleton-data"></div></td>
+                  <td><div class="skeleton skeleton-nome"></div></td>
+                  <td><div class="skeleton skeleton-chip"></div></td>
+                  @if (podeDecidirVisitante()) {
+                    <td><div class="skeleton skeleton-acoes"></div></td>
+                  }
+                </tr>
+              }
+            }
+
+            <!-- ── DADOS ───────────────────────────────────────────────── -->
+            @if (!carregando()) {
+              @for (visitante of visitantes(); track visitante.idVisitanteExterno) {
+                <tr class="visitante-row">
+
+                  <!-- Visitante -->
+                  <td>
+                    <div class="cell-visitante">
+                      <span class="visitante-nome">{{ visitante.nomeCompleto }}</span>
+                      <span class="visitante-cpf">{{ visitante.cpf }}</span>
+                    </div>
+                  </td>
+
+                  <!-- Empresa -->
+                  <td class="cell-empresa">
+                    @if (visitante.empresa) {
+                      {{ visitante.empresa }}
+                    } @else {
+                      <span class="sem-empresa">—</span>
+                    }
+                  </td>
+
+                  <!-- Data da Reunião -->
+                  <td class="cell-data">
+                    {{ formatarData(visitante.dataReuniao) }}
+                  </td>
+
+                  <!-- Responsável -->
+                  <td class="cell-responsavel">
+                    {{ visitante.nomeResponsavel }}
+                  </td>
+
+                  <!-- Status -->
+                  <td>
+                    <span [class]="classeStatus(visitante.status)">
+                      {{ labelsStatus[visitante.status] }}
+                    </span>
+                  </td>
+
+                  <!-- Ações (somente Diretor / ADM) -->
+                  @if (podeDecidirVisitante()) {
+                    <td>
+                      @if (visitante.status === 'AGUARDANDO_VALIDACAO') {
+                        <div class="acoes-group">
+                          <button
+                            class="btn-acao btn-validar"
+                            type="button"
+                            title="Validar visitante"
+                            (click)="abrirModalDecidir(visitante, 'validar')"
+                          >
+                            <i class="bi bi-check-lg" aria-hidden="true"></i>
+                            Validar
+                          </button>
+                          <button
+                            class="btn-acao btn-recusar"
+                            type="button"
+                            title="Recusar visitante"
+                            (click)="abrirModalDecidir(visitante, 'recusar')"
+                          >
+                            <i class="bi bi-x-lg" aria-hidden="true"></i>
+                            Recusar
+                          </button>
+                        </div>
+                      } @else {
+                        @if (visitante.nomeValidadoPor) {
+                          <span class="cell-validado-por">{{ visitante.nomeValidadoPor }}</span>
+                        }
+                      }
+                    </td>
+                  }
+
+                </tr>
+              }
+
+              <!-- ── VAZIO ───────────────────────────────────────────── -->
+              @if (visitantes().length === 0) {
+                <tr>
+                  <td [attr.colspan]="podeDecidirVisitante() ? 6 : 5" class="empty-state">
+                    <div class="empty-icon">
+                      <i class="bi bi-person-x" aria-hidden="true"></i>
+                    </div>
+                    <p class="empty-title">Nenhum visitante registrado</p>
+                    <p class="empty-subtitle">Clique em "Registrar Visitante" para adicionar o primeiro visitante desta equipe.</p>
+                  </td>
+                </tr>
+              }
+            }
+
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINAÇÃO -->
+      @if (!carregando() && totalPaginas() > 1) {
+        <div class="paginacao">
+          <button
+            class="btn-paginacao"
+            type="button"
+            [disabled]="!temAnterior()"
+            (click)="paginaAnterior()"
+            aria-label="Página anterior"
+          >
+            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+            Anterior
+          </button>
+
+          <span class="paginacao-info">
+            Página {{ paginaAtual() + 1 }} de {{ totalPaginas() }}
+            <span class="paginacao-total">({{ totalItens() }} registros)</span>
+          </span>
+
+          <button
+            class="btn-paginacao"
+            type="button"
+            [disabled]="!temProxima()"
+            (click)="proximaPagina()"
+            aria-label="Próxima página"
+          >
+            Próxima
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+          </button>
+        </div>
+      }
+
+    </div>
+    <!-- /table-card -->
+  }
+
+</div>

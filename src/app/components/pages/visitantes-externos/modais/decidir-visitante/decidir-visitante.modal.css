@@ -1,0 +1,122 @@
+﻿/* ================================================================
+   DECIDIR-VISITANTE.MODAL.CSS
+   Prefixo: dv- (Decidir Visitante)
+   ================================================================ */
+
+.dv-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  background: rgba(15, 23, 42, 0.5);
+  cursor: pointer;
+}
+
+.dv-header-icon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: var(--radius-md);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+.dv-header-icon-validar {
+  background: var(--cor-primaria);
+}
+
+.dv-header-icon-recusar {
+  background: var(--cor-erro);
+}
+
+/* ================================================================
+   AVISO DE IRREVERSIBILIDADE
+   ================================================================ */
+.dv-aviso {
+  font-size: 13px;
+  color: var(--cor-alerta);
+  background: var(--cor-alerta-bg);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+/* ================================================================
+   CARD DE CONTEXTO — dados do visitante
+   ================================================================ */
+.dv-context-card {
+  background: var(--cor-surface-alt);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius-sm);
+  padding: 4px 0;
+}
+
+.dv-context-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.dv-context-row:last-child {
+  border-bottom: none;
+}
+
+.dv-context-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cor-texto-secundario);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dv-context-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cor-texto);
+  text-align: right;
+}
+
+/* ================================================================
+   BOTÃO DE CONFIRMAÇÃO
+   ================================================================ */
+.dv-btn-confirmar {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  background: var(--cor-primaria);
+  color: #ffffff;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.dv-btn-confirmar:hover:not(:disabled) {
+  background: var(--cor-primaria-escura);
+}
+
+.dv-btn-confirmar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dv-btn-confirmar-recusar {
+  background: var(--cor-erro);
+}
+
+.dv-btn-confirmar-recusar:hover:not(:disabled) {
+  background: #7f1d1d;
+}

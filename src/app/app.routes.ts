@@ -105,6 +105,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./components/pages/parcerias/parcerias').then((m) => m.Parcerias),
       },
+      {
+        path: 'visitantes-externos',
+        loadComponent: () =>
+          import('./components/pages/visitantes-externos/visitantes-externos').then(
+            (m) => m.VisitantesExternos
+          ),
+      },
     ],
   },
 

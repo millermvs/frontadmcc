@@ -1,0 +1,115 @@
+﻿<!-- Backdrop -->
+<div class="dv-backdrop" (click)="fechar()" aria-hidden="true"></div>
+
+<!-- Dialog -->
+<div
+  class="modal d-block"
+  tabindex="-1"
+  role="dialog"
+  [attr.aria-labelledby]="'modal-decidir-visitante-titulo'"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <!-- HEADER -->
+      <div class="modal-header">
+        <div
+          class="dv-header-icon"
+          [class.dv-header-icon-validar]="tipo === 'validar'"
+          [class.dv-header-icon-recusar]="tipo === 'recusar'"
+          aria-hidden="true"
+        >
+          <i [class]="'bi ' + iconeAcao"></i>
+        </div>
+        <h5 class="modal-title" id="modal-decidir-visitante-titulo">{{ titulo }}</h5>
+        <button
+          type="button"
+          class="btn-close"
+          (click)="fechar()"
+          [disabled]="executando()"
+          aria-label="Fechar modal"
+        ></button>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body">
+
+        <!-- Aviso de irreversibilidade -->
+        <p class="dv-aviso">
+          <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>
+          Esta ação não pode ser desfeita. O visitante passará para um estado final.
+        </p>
+
+        <!-- Card de contexto -->
+        <div class="dv-context-card">
+
+          <div class="dv-context-row">
+            <span class="dv-context-label">Visitante</span>
+            <span class="dv-context-value">{{ visitante.nomeCompleto }}</span>
+          </div>
+
+          <div class="dv-context-row">
+            <span class="dv-context-label">Equipe</span>
+            <span class="dv-context-value">{{ visitante.nomeEquipe }}</span>
+          </div>
+
+          <div class="dv-context-row">
+            <span class="dv-context-label">Data da Reunião</span>
+            <span class="dv-context-value">
+              {{ visitante.dataReuniao | date:'dd/MM/yyyy' }}
+            </span>
+          </div>
+
+          <div class="dv-context-row">
+            <span class="dv-context-label">Responsável</span>
+            <span class="dv-context-value">{{ visitante.nomeResponsavel }}</span>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- FOOTER -->
+      <div class="modal-footer">
+
+        @if (erroModal()) {
+          <div
+            class="alert alert-danger d-flex align-items-center gap-2 mb-0 flex-fill"
+            role="alert"
+          >
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+            <span>{{ erroModal() }}</span>
+          </div>
+        }
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="fechar()"
+          [disabled]="executando()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="dv-btn-confirmar"
+          [class.dv-btn-confirmar-recusar]="tipo === 'recusar'"
+          (click)="confirmar()"
+          [disabled]="executando()"
+        >
+          @if (executando()) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            {{ labelExecutando }}
+          } @else {
+            <i [class]="'bi ' + iconeAcao + ' me-2'" aria-hidden="true"></i>
+            {{ labelBotao }}
+          }
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+</div>

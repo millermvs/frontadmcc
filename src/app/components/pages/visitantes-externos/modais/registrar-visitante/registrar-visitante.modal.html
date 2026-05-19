@@ -1,0 +1,205 @@
+<!-- Backdrop -->
+<div class="rv-backdrop" (click)="fechar()" aria-hidden="true"></div>
+
+<!-- Dialog -->
+<div
+  class="modal d-block"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="modal-registrar-visitante-titulo"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <!-- HEADER -->
+      <div class="modal-header">
+        <div class="rv-header-icon" aria-hidden="true">
+          <i class="bi bi-person-plus-fill"></i>
+        </div>
+        <h5 class="modal-title" id="modal-registrar-visitante-titulo">Registrar Visitante Externo</h5>
+        <button
+          type="button"
+          class="btn-close"
+          (click)="fechar()"
+          [disabled]="salvando()"
+          aria-label="Fechar modal"
+        ></button>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body">
+        <form
+          [formGroup]="form"
+          id="form-registrar-visitante"
+          (ngSubmit)="salvar()"
+          novalidate
+        >
+
+          <!-- NOME COMPLETO -->
+          <div class="mb-3">
+            <label class="form-label" for="nome-completo">
+              Nome completo <span class="text-danger">*</span>
+            </label>
+            <input
+              id="nome-completo"
+              type="text"
+              class="form-control"
+              formControlName="nomeCompleto"
+              placeholder="Ex: Carlos Eduardo Souza"
+              maxlength="100"
+              [class.is-invalid]="form.get('nomeCompleto')?.invalid && form.get('nomeCompleto')?.touched"
+            />
+            @if (form.get('nomeCompleto')?.errors?.['required'] && form.get('nomeCompleto')?.touched) {
+              <div class="invalid-feedback">O nome completo é obrigatório.</div>
+            }
+            @if (form.get('nomeCompleto')?.errors?.['maxlength'] && form.get('nomeCompleto')?.touched) {
+              <div class="invalid-feedback">Limite de 100 caracteres.</div>
+            }
+          </div>
+
+          <!-- CPF -->
+          <div class="mb-3">
+            <label class="form-label" for="cpf-visitante">
+              CPF <span class="text-danger">*</span>
+            </label>
+            <input
+              id="cpf-visitante"
+              type="text"
+              class="form-control"
+              formControlName="cpf"
+              placeholder="000.000.000-00"
+              inputmode="numeric"
+              [class.is-invalid]="form.get('cpf')?.invalid && form.get('cpf')?.touched"
+              (input)="aplicarMascaraCpf($any($event.target).value)"
+            />
+            @if (form.get('cpf')?.errors?.['required'] && form.get('cpf')?.touched) {
+              <div class="invalid-feedback">O CPF é obrigatório.</div>
+            }
+            @if (form.get('cpf')?.errors?.['cpfInvalido'] && form.get('cpf')?.touched) {
+              <div class="invalid-feedback">O CPF deve conter exatamente 11 dígitos numéricos.</div>
+            }
+          </div>
+
+          <!-- EMPRESA (opcional) -->
+          <div class="mb-3">
+            <label class="form-label" for="empresa-visitante">
+              Empresa <span class="rv-opcional">(opcional)</span>
+            </label>
+            <input
+              id="empresa-visitante"
+              type="text"
+              class="form-control"
+              formControlName="empresa"
+              placeholder="Ex: Souza Consultoria Ltda"
+              maxlength="100"
+              [class.is-invalid]="form.get('empresa')?.invalid && form.get('empresa')?.touched"
+            />
+            @if (form.get('empresa')?.errors?.['maxlength'] && form.get('empresa')?.touched) {
+              <div class="invalid-feedback">Limite de 100 caracteres.</div>
+            }
+          </div>
+
+          <!-- TELEFONE -->
+          <div class="mb-3">
+            <label class="form-label" for="telefone-visitante">
+              Telefone <span class="text-danger">*</span>
+            </label>
+            <input
+              id="telefone-visitante"
+              type="text"
+              class="form-control"
+              formControlName="telefone"
+              placeholder="(00) 00000-0000"
+              inputmode="numeric"
+              [class.is-invalid]="form.get('telefone')?.invalid && form.get('telefone')?.touched"
+              (input)="aplicarMascaraTelefone($any($event.target).value)"
+            />
+            @if (form.get('telefone')?.errors?.['required'] && form.get('telefone')?.touched) {
+              <div class="invalid-feedback">O telefone é obrigatório.</div>
+            }
+          </div>
+
+          <!-- DATA DA REUNIÃO -->
+          <div class="mb-3">
+            <label class="form-label" for="data-reuniao">
+              Data da reunião <span class="text-danger">*</span>
+            </label>
+            <input
+              id="data-reuniao"
+              type="date"
+              class="form-control"
+              formControlName="dataReuniao"
+              [class.is-invalid]="form.get('dataReuniao')?.invalid && form.get('dataReuniao')?.touched"
+            />
+            @if (form.get('dataReuniao')?.errors?.['required'] && form.get('dataReuniao')?.touched) {
+              <div class="invalid-feedback">A data da reunião é obrigatória.</div>
+            }
+          </div>
+
+          <!-- EQUIPE -->
+          <div class="mb-3">
+            <label class="form-label" for="equipe-visitante">
+              Equipe <span class="text-danger">*</span>
+            </label>
+            <select
+              id="equipe-visitante"
+              class="form-select"
+              formControlName="idEquipe"
+              [class.is-invalid]="form.get('idEquipe')?.invalid && form.get('idEquipe')?.touched"
+            >
+              <option [ngValue]="null" disabled>Selecione a equipe…</option>
+              @for (equipe of equipes(); track equipe.idEquipe) {
+                <option [ngValue]="equipe.idEquipe">{{ equipe.nomeEquipe }}</option>
+              }
+            </select>
+            @if (form.get('idEquipe')?.errors?.['required'] && form.get('idEquipe')?.touched) {
+              <div class="invalid-feedback">A equipe é obrigatória.</div>
+            }
+          </div>
+
+        </form>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="modal-footer">
+
+        @if (erroModal()) {
+          <div
+            class="alert alert-danger d-flex align-items-center gap-2 mb-0 flex-fill"
+            role="alert"
+          >
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0" aria-hidden="true"></i>
+            <span>{{ erroModal() }}</span>
+          </div>
+        }
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="fechar()"
+          [disabled]="salvando()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          form="form-registrar-visitante"
+          class="btn-salvar-modal"
+          [disabled]="form.invalid || salvando()"
+        >
+          @if (salvando()) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Registrando…
+          } @else {
+            <i class="bi bi-person-check-fill me-2" aria-hidden="true"></i>
+            Registrar Visitante
+          }
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+</div>
